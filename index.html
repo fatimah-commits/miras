@@ -1,0 +1,813 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مراس</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: workshop console. Workshop green bench, gold as the brand line, signal-cyan reserved for what the AI "sees". */
+:root{
+  --ink:#0b3b29; --bench:#0f4a34; --raise:#165a41; --edge:#2b6b50;
+  --paper:#f1f4ec; --dim:#b9cbbe;
+  --copper:#e2b54e; --copper-2:#f3d488; --copper-ink:#2a1e00;
+  --signal:#5ce1ff;
+  --ok:#47d78f; --ok-bg:rgba(71,215,143,.14); --bad:#ff5a4a; --bad-bg:rgba(255,93,93,.15); --warn:#ffc75a; --warn-bg:rgba(255,199,90,.14);
+  --plus:#ff5d5d; --minus:#5a93ff;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif;
+  --f-body:"IBM Plex Sans Arabic",Tahoma,"Segoe UI",sans-serif;
+  --f-data:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--ink);margin:0}
+body{color:var(--paper);font-family:var(--f-body);font-size:16px;line-height:1.65;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0 48px;
+  background-image:linear-gradient(rgba(70,217,230,.035) 1px,transparent 1px),linear-gradient(90deg,rgba(70,217,230,.035) 1px,transparent 1px);background-size:28px 28px}
+.app{max-width:1140px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+.bar{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;padding-block:16px 4px}
+.brand{display:flex;align-items:center;gap:12px;cursor:pointer}
+.brand svg{width:44px;height:44px;flex:none}
+.brand b{font-family:var(--f-display);font-weight:700;font-size:26px;display:block;line-height:1;letter-spacing:-.01em}
+.brand span{color:var(--dim);font-size:12px;letter-spacing:.06em}
+.user{display:flex;align-items:center;gap:10px;color:var(--dim);font-size:14px}
+.av{width:36px;height:36px;border-radius:50%;background:var(--raise);border:1px solid var(--copper);display:grid;place-items:center;color:var(--copper-2);font-weight:700}
+h1{font-family:var(--f-display);font-weight:700;font-size:clamp(24px,3.8vw,34px);line-height:1.25;margin:0;text-wrap:balance}
+h2{font-family:var(--f-display);font-weight:700;font-size:19px;margin:0}
+h3{font-family:var(--f-display);font-weight:700;font-size:16px;margin:0}
+p{margin:0}
+.note{color:var(--dim);font-size:14px}
+.eyebrow{font-family:var(--f-display);font-weight:500;font-size:14px;color:var(--copper-2)}
+.card{background:var(--bench);border:1px solid var(--edge);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.btn{font:inherit;font-family:var(--f-display);font-weight:700;border:0;border-radius:12px;padding:12px 22px;cursor:pointer;background:var(--copper);color:var(--copper-ink);min-height:48px;transition:transform .15s,background .15s}
+.btn:hover{background:var(--copper-2)} .btn:active{transform:translateY(1px)}
+.btn.ghost{background:transparent;color:var(--paper);border:1px solid var(--edge);font-weight:500}
+.btn.ghost:hover{border-color:var(--copper);background:transparent}
+.btn.small{min-height:38px;padding:6px 14px;font-size:14px}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:3px solid var(--signal);outline-offset:2px}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:18px}
+input{font:inherit;background:var(--ink);border:1px solid var(--edge);color:var(--paper);border-radius:12px;padding:12px 14px;width:100%;min-height:48px}
+label{font-size:14px;color:var(--dim);display:flex;flex-direction:column;gap:6px}
+.chip{white-space:nowrap;font:inherit;font-size:13px;background:var(--raise);border:1px solid var(--edge);color:var(--paper);border-radius:999px;padding:7px 13px;cursor:pointer}
+.chip:hover{border-color:var(--copper)}
+.chip[aria-pressed="true"]{background:var(--copper);color:var(--copper-ink);border-color:var(--copper)}
+.pill{display:inline-flex;align-items:center;gap:6px;border-radius:999px;padding:3px 11px;font-size:13px;font-weight:500;background:var(--raise);color:var(--paper);font-variant-numeric:tabular-nums}
+.pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.bad{background:var(--bad-bg);color:var(--bad)} .pill.warn{background:var(--warn-bg);color:var(--warn)}
+.err{color:var(--bad);font-size:14px;min-height:1.4em}
+
+/* landing */
+.hero{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:28px;align-items:center;padding-block:28px 8px}
+@media (max-width:860px){.hero{grid-template-columns:1fr}}
+.hero h1{font-size:clamp(32px,4.6vw,52px);font-weight:700;line-height:1.15}
+.hero h1 em{font-style:normal;color:var(--copper)}
+.hero .lead{font-size:18px;color:var(--dim);max-width:34em}
+.live{position:relative;border-radius:18px;overflow:hidden;border:1px solid var(--edge);background:#000;box-shadow:0 30px 80px -30px rgba(226,181,78,.28)}
+.live canvas{display:block;width:100%;height:auto}
+.live .tag{position:absolute;top:12px;inset-inline-start:12px;font-family:var(--f-data);font-size:12px;background:rgba(7,30,20,.8);color:var(--signal);padding:4px 10px;border-radius:8px;display:flex;gap:6px;align-items:center}
+.live .tag i{width:8px;height:8px;border-radius:50%;background:var(--bad);animation:blink 1.2s infinite}
+.live .say{position:absolute;inset-inline:12px;bottom:12px;border-radius:10px;padding:10px 14px;font-weight:700;background:rgba(7,30,20,.85);transition:background .2s,color .2s}
+.live .say.bad{background:rgba(80,16,20,.92);color:#ffd2d2} .live .say.ok{background:rgba(10,60,38,.92);color:#c9ffe3}
+@keyframes blink{50%{opacity:.25}}
+@media (prefers-reduced-motion:reduce){.live .tag i{animation:none}}
+.feats{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:14px}
+.feat{background:var(--bench);border:1px solid var(--edge);border-radius:16px;padding:18px;display:flex;flex-direction:column;gap:8px}
+.feat svg{width:34px;height:34px}
+.proof{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:0;border:1px solid var(--edge);border-radius:16px;overflow:hidden}
+.proof div{padding:18px;border-inline-start:1px solid var(--edge);display:flex;flex-direction:column;gap:2px}
+.proof div:first-child{border-inline-start:0}
+.proof b{font-family:var(--f-display);font-weight:700;font-size:34px;color:var(--copper-2);font-variant-numeric:tabular-nums;line-height:1.1}
+.proof span{color:var(--dim);font-size:13px}
+.road{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px}
+.road .ph{border-top:3px solid var(--edge);padding-top:12px;display:flex;flex-direction:column;gap:6px}
+.road .ph.now{border-color:var(--copper)}
+.foot{color:var(--dim);font-size:13px;text-align:center;padding-top:10px}
+
+/* login */
+.login{max-width:470px;margin:5vh auto 0;width:100%}
+/* guide */
+.steps{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px;padding:0;margin:0;list-style:none}
+.steps li{background:var(--raise);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:8px}
+.steps .n{width:32px;height:32px;border-radius:9px;background:var(--copper);color:var(--copper-ink);display:grid;place-items:center;font-weight:700;font-family:var(--f-display)}
+.steps svg{width:100%;height:auto;background:var(--ink);border-radius:10px}
+/* practice */
+.stage{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(270px,1fr);gap:18px;align-items:start}
+@media (max-width:820px){.stage{grid-template-columns:1fr}}
+.cam{position:relative;border-radius:16px;overflow:hidden;background:#000;border:1px solid var(--edge)}
+.cam canvas{display:block;width:100%;height:auto;touch-action:none}
+.hud{position:absolute;inset-inline:10px;top:10px;display:flex;justify-content:space-between;gap:8px;pointer-events:none}
+.hud .pill{background:rgba(7,30,20,.78);color:var(--signal);font-family:var(--f-data);font-size:12px}
+.banner{position:absolute;inset-inline:10px;bottom:10px;border-radius:12px;padding:11px 15px;font-weight:700;background:rgba(7,30,20,.85);color:var(--paper);pointer-events:none;font-size:15px}
+.banner.ok{background:rgba(10,60,38,.94);color:#c9ffe3} .banner.bad{background:rgba(80,16,20,.95);color:#ffd2d2} .banner.warn{background:rgba(70,50,8,.94);color:#ffe7b0}
+.flash{position:absolute;inset:0;border:6px solid var(--bad);border-radius:16px;pointer-events:none;opacity:0;transition:opacity .2s}
+.flash.on{opacity:1}
+.plist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px}
+.plist li{display:flex;gap:10px;align-items:flex-start;padding:11px;border-radius:12px;background:var(--raise);font-size:15px}
+.plist li .dot{flex:none;width:28px;height:28px;border-radius:8px;display:grid;place-items:center;font-size:13px;font-weight:700;background:var(--edge);color:var(--dim)}
+.plist li.now{outline:2px solid var(--copper)} .plist li.now .dot{background:var(--copper);color:var(--copper-ink)}
+.plist li.done .dot{background:var(--ok);color:#03200f}
+.meter{display:flex;gap:6px;flex-wrap:wrap}
+.meter span{font-family:var(--f-data);font-size:12px;color:var(--signal);background:var(--ink);border:1px solid var(--edge);border-radius:8px;padding:3px 8px}
+.demo-tools{display:flex;gap:8px;flex-wrap:wrap}
+/* result */
+.score{font-family:var(--f-display);font-size:64px;font-weight:700;line-height:1;font-variant-numeric:tabular-nums}
+.ring{width:160px;height:160px;border-radius:50%;display:grid;place-items:center;margin:0 auto}
+/* table */
+table{width:100%;border-collapse:collapse;font-size:14px}
+th,td{text-align:start;padding:10px 8px;border-bottom:1px solid var(--edge);vertical-align:top}
+th{color:var(--dim);font-weight:500;font-size:13px}
+td{font-variant-numeric:tabular-nums}
+tr.sel td{background:var(--raise)}
+tbody tr{cursor:pointer} tbody tr:hover td{background:rgba(255,255,255,.025)}
+.tablewrap{overflow-x:auto}
+.bars{display:flex;flex-direction:column;gap:10px}
+.bars .b{display:grid;grid-template-columns:150px 1fr 36px;gap:8px;align-items:center;font-size:14px}
+.bars .t{height:12px;background:var(--raise);border-radius:6px;overflow:hidden}
+.bars .t i{display:block;height:100%;background:linear-gradient(90deg,var(--bad),var(--copper));border-radius:6px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:var(--raise);border-radius:14px;padding:14px}
+.kpi b{font-family:var(--f-display);font-weight:700;font-size:30px;display:block;color:var(--copper-2);font-variant-numeric:tabular-nums}
+.kpi span{color:var(--dim);font-size:13px}
+
+.modal{position:fixed;inset:0;z-index:50;background:rgba(5,9,20,.8);display:grid;place-items:center;padding:max(16px,env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) max(16px,env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.modal-card{width:min(640px,100%);max-height:100%;overflow:auto}
+.report{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px}
+.sbar{display:grid;grid-template-columns:110px 1fr 54px;gap:8px;align-items:center;font-size:13px}
+.sbar .t{height:14px;background:var(--raise);border-radius:7px;position:relative;overflow:hidden}
+.sbar .t i{position:absolute;inset-block:0;inset-inline-start:0;background:var(--copper);border-radius:7px}
+.sbar .t s{position:absolute;inset-block:-2px;width:2px;background:var(--paper);opacity:.7}
+.insight{display:flex;gap:10px;align-items:flex-start;background:var(--raise);border-radius:12px;padding:12px;font-size:14px}
+.insight b{font-family:var(--f-display)}
+.sync{font-size:12px;color:var(--dim)}
+pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background:var(--ink);border:1px solid var(--edge);color:var(--signal);border-radius:12px;padding:14px;margin:0;max-height:280px;overflow:auto;direction:rtl}
+</style>
+
+</head>
+<body>
+<div class="app">
+
+<header class="bar">
+  <div class="brand" id="brandHome" role="button" tabindex="0" aria-label="مراس، الصفحة الرئيسية">
+    <svg viewBox="0 0 64 64" aria-hidden="true"><g fill="none" stroke="#e2b54e" stroke-width="7" stroke-linecap="square"><path d="M6 22V6H22"/><path d="M42 6H58V22"/><path d="M58 42V58H42"/><path d="M22 58H6V42"/></g><rect x="21" y="29" width="22" height="7" fill="#f1f4ec"/><rect x="28.5" y="21.5" width="7" height="22" fill="#f1f4ec"/></svg>
+    <div><b>مراس</b><span>MIRAS · MECHATRONICS LAB</span></div>
+  </div>
+  <div class="row" id="landingNav"><button class="btn small" id="navLogin">تسجيل الدخول</button></div>
+  <div class="user" id="userBox" hidden><div class="av" id="userAv"></div><div><div id="userName" style="color:var(--paper)"></div><div id="userRole"></div></div><button class="btn ghost small" id="logoutBtn">خروج</button></div>
+</header>
+
+<!-- LANDING -->
+<section id="scr-landing" style="display:flex;flex-direction:column;gap:34px">
+  <div class="hero">
+    <div style="display:flex;flex-direction:column;gap:18px">
+      <span class="eyebrow">منصة تدريب عملي للكليات التقنية</span>
+      <h1>المهارة تُتقن <em>باليد</em>،<br>والذكاء الاصطناعي يراقب كل سلك.</h1>
+      <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدربة تركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبهها بالصوت قبل ما تحترق القطعة.</p>
+      <div class="row"><button class="btn" id="heroStart">ابدئي التدريب</button><button class="btn ghost" id="heroDemo">شاهدي العرض التجريبي</button></div>
+    </div>
+    <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض حي: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>LIVE · AI VISION</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
+  </div>
+
+  <div class="feats">
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="8" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><circle cx="17" cy="18" r="5" fill="none" stroke="#46d9e6" stroke-width="2.5"/></svg><h3>كاميرا تشوف وين السلك</h3><p class="note">رؤية حاسوبية مع OpenCV.js تتابع السلك الأحمر والأسود وتحدد أي خط دخلوا فيه، طول وقت التطبيق.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4 L31 29 H3 Z" fill="none" stroke="#ff5d5d" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 13 v7" stroke="#ff5d5d" stroke-width="2.5" stroke-linecap="round"/><circle cx="17" cy="24.5" r="1.6" fill="#ff5d5d"/></svg><h3>إيقاف فوري لخطأ القطبية</h3><p class="note">لو الأحمر دخل في السالب، تتوقف الخطوة ويطلع تنبيه صوتي عربي، ويُسجّل الخطأ في ملف المتدربة.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" بالواقع المعزز</h3><p class="note">عند الخطأ يظهر دخان وشرارة فوق الفيديو الحقيقي، وتسمع المتدربة وش كان بيصير لو شغّلت. تتعلم العاقبة بدون ما تتلف قطعة.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="7" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><path d="M14 12 l8 5 -8 5z" fill="#46d9e6"/></svg><h3>لقطة الخطأ وتقرير الأداء</h3><p class="note">يحفظ التطبيق ثواني من الفيديو لحظة الخطأ، ويحسب وقت كل خطوة. المدربة تشوف وش صار، ووين تتأخر كل متدربة، ونقطة قوتها وضعفها.</p></div>
+    
+<div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 28 V18 M13 28 V10 M21 28 V15 M29 28 V6" stroke="#e2b54e" stroke-width="3" stroke-linecap="round"/></svg><h3>لوحة للمدربة</h3><p class="note">كل محاولة لها درجة ومدة وأخطاء. المدربة تعرف مين تحتاج دعم، وأي خطأ يتكرر في الشعبة.</p></div>
+  </div>
+
+  <div class="proof" aria-label="كيف يحكم مراس على الخطأ">
+    <div><b>لمستين</b><span>معايرة خط الموجب والسالب في لوحتك</span></div>
+    <div><b>ثانية ثبات</b><span>ما ينحسب الخطأ والسلك يتحرك في اليد</span></div>
+    <div><b>صوت عربي</b><span>تنبيه فوري مع شرح العاقبة</span></div>
+    <div><b>لقطة</b><span>ثواني من الفيديو لحظة الخطأ للمدربة</span></div>
+  </div>
+
+  <div class="card">
+    <span class="eyebrow">خارطة الطريق</span>
+    <div class="road">
+      <div class="ph now"><h3>المرحلة ١ · الآن</h3><p class="note">مهارة توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية وتشغيل LED.</p></div>
+      <div class="ph"><h3>المرحلة ٢</h3><p class="note">تعرّف على القطع نفسها (مقاومة، LED، حساسات) بنموذج مُدرّب، ومهارات ميكاترونكس إضافية.</p></div>
+      <div class="ph"><h3>المرحلة ٣</h3><p class="note">بيئة الواقع الافتراضي (الميتافيرس) وربط حساسات المعمل للتقييم الدقيق.</p></div>
+    </div>
+  </div>
+  <p class="foot">مراس · نموذج أولي للعرض في STIEX 2026، الرياض · بيانات الدخول والمتدربات تجريبية</p>
+</section>
+
+
+<!-- LOGIN -->
+<section id="scr-login" class="login card">
+  <h1>تسجيل الدخول</h1>
+  <p class="note">الكلية التقنية للبنات بالطائف · قسم الميكاترونكس</p>
+  <label>الرقم التدريبي أو رقم المدربة<input id="liId" inputmode="numeric" autocomplete="username"></label>
+  <label>كلمة المرور<input id="liPw" type="password" autocomplete="current-password"></label>
+  <div class="err" id="liErr"></div>
+  <button class="btn" id="liBtn">دخول</button>
+  <div class="note">حسابات تجريبية (اضغطي للتعبئة):</div>
+  <div class="row" id="demoAccounts"></div>
+</section>
+
+<!-- HOME -->
+<section id="scr-home" hidden>
+  <div class="card">
+    <span class="pill warn" style="align-self:flex-start">مهارة المرحلة الأولى</span>
+    <h1>توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية</h1>
+    <p class="note">تطبقين المهارة على قطع حقيقية والكاميرا شغالة. الذكاء الاصطناعي يتابع مكان كل سلك، ويوقفك فوراً لو السلك دخل في القطب الغلط.</p>
+    <div class="row"><span class="pill ok">٤ خطوات</span><span class="pill ok">قطع حقيقية</span><span class="pill ok">تعليق صوتي</span></div>
+    <div class="row"><button class="btn" id="toGuide">ابدئي: شرح الخطوات</button></div>
+  </div>
+  <div class="card" style="margin-top:16px">
+    <h2>محاولاتي السابقة</h2>
+    <div id="myAttempts" class="tablewrap"></div>
+  </div>
+</section>
+
+<!-- GUIDE -->
+<section id="scr-guide" hidden class="card">
+  <h1>قبل ما تبدئين</h1>
+  <p class="note">جهزي: أردوينو أونو، لوحة تجارب، سلك أحمر، سلك أسود، LED مع مقاومة 220 أوم. حطي الأردوينو <b style="color:var(--paper)">تحت</b> لوحة التجارب، وثبتي الآيباد فوقها بحيث يشوف الاثنين.</p>
+  <ol class="steps">
+    <li><span class="n">١</span><h3>ثبتي اللوحة في الإطار</h3><p class="note">الكاميرا تتأكد إن الإضاءة كافية والصورة ثابتة وواضحة.</p>
+      <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><rect x="8" y="6" width="184" height="100" fill="none" stroke="#e2b54e" stroke-dasharray="6 4" stroke-width="2"/></svg></li>
+    <li><span class="n">٢</span><h3>المسي على خط الموجب ثم السالب</h3><p class="note">علشان التطبيق يعرف وين خط <b style="color:var(--plus)">+</b> الأحمر ووين خط <b style="color:var(--minus)">−</b> الأزرق في لوحتك.</p>
+      <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><circle cx="120" cy="34" r="9" fill="none" stroke="#ff5a4f" stroke-width="3"/><circle cx="80" cy="24" r="9" fill="none" stroke="#4f8dff" stroke-width="3"/><text x="120" y="60" fill="#333" font-size="11" text-anchor="middle">١</text><text x="80" y="60" fill="#333" font-size="11" text-anchor="middle">٢</text></svg></li>
+    <li><span class="n">٣</span><h3>الأحمر من 5V إلى الموجب +</h3><p class="note">ثم الأسود من GND إلى السالب −. لو الأحمر دخل في السالب، يطلع لك تنبيه بالصوت.</p>
+      <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><path d="M88 82 Q86 55 110 34" stroke="#e53935" stroke-width="4" fill="none"/><path d="M104 82 Q120 50 140 24" stroke="#111" stroke-width="4" fill="none"/><text x="86" y="100" fill="#fff" font-size="8">5V</text><text x="100" y="100" fill="#fff" font-size="8">GND</text></svg></li>
+    <li><span class="n">٤</span><h3>شغّلي وتأكدي إن اللمبة ولّعت</h3><p class="note">وصلي الـ USB. الكاميرا تكتشف ضوء الـ LED وتعطيك النتيجة.</p>
+      <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><circle cx="130" cy="52" r="14" fill="#fff59d" opacity=".5"/><circle cx="130" cy="52" r="6" fill="#ffeb3b"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/></svg></li>
+  </ol>
+  <div class="row"><button class="btn" id="startCam">افتحي الكاميرا وابدئي</button><button class="btn ghost" id="startPhoto" hidden>صوّري خطوة بخطوة</button><button class="btn ghost" id="startDemo">عرض تجريبي بدون قطع</button><button class="btn ghost" id="backHome1">رجوع</button></div>
+  <p class="err" id="camErr"></p>
+</section>
+
+<!-- PRACTICE -->
+<section id="scr-practice" hidden>
+  <div class="stage">
+    <div class="cam" id="camBox">
+      <canvas id="view" width="640" height="480"></canvas>
+      <div class="hud"><span class="row" style="gap:6px"><span class="pill" id="cvBadge">رؤية حاسوبية</span><span class="pill" id="hudMode">كاميرا مباشرة</span></span><span class="pill" id="hudTime">00:00</span></div>
+      <div class="banner" id="banner">جاري التشغيل…</div>
+      <div class="flash" id="flash"></div>
+    </div>
+    <div class="card">
+      <div class="row" style="justify-content:space-between"><h2>الخطوات</h2><button class="chip" id="muteBtn" aria-pressed="false">🔊 الصوت شغال</button></div>
+      <ul class="plist" id="plist"></ul>
+      <div class="meter" id="meter"></div>
+      <div class="row"><button class="btn small" id="snapBtn" hidden>📷 التقطي صورة</button><input type="file" id="snapIn" accept="image/*" capture="environment" hidden><button class="btn ghost small" id="hintBtn">ساعديني</button><button class="btn ghost small" id="trainerOk">تأكيد المدربة</button><button class="btn ghost small" id="recal">إعادة المعايرة</button><button class="btn ghost small" id="quitBtn">إنهاء</button></div>
+      <div id="demoBox" hidden class="card" style="padding:12px;background:var(--raise)">
+        <h3>أدوات العرض التجريبي</h3>
+        <p class="note">اسحبي طرف السلك الأحمر والأسود على الصورة وحطيه في الخط. جربي الأخطاء كمان.</p>
+        <div class="demo-tools"><button class="chip" id="dPower" aria-pressed="false">⚡ تشغيل الأردوينو</button><button class="chip" id="dDim" aria-pressed="false">🌙 إضاءة ضعيفة</button><button class="chip" id="dShake" aria-pressed="false">📳 اهتزاز</button><button class="chip" id="dBlur" aria-pressed="false">🌫 صورة مو واضحة</button></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- RESULT -->
+<section id="scr-result" hidden class="grid2">
+  <div class="card" style="text-align:center">
+    <h1 id="resTitle">النتيجة</h1>
+    <div class="ring" id="resRing"><div><div class="score" id="resScore">0</div><div class="note">من ١٠٠</div></div></div>
+    <div class="row" style="justify-content:center" id="resPills"></div>
+    <div class="row" style="justify-content:center"><button class="btn" id="again">محاولة جديدة</button><button class="btn ghost" id="resClip" hidden>▶ لقطة الخطأ</button><button class="btn ghost" id="resHome">الرئيسية</button></div>
+  </div>
+  <div class="card"><h2>تفاصيل المحاولة</h2><ul class="plist" id="resLog"></ul><p class="note">تنحفظ المحاولة وتظهر للمدربة في لوحتها.</p></div>
+</section>
+
+<!-- TRAINER -->
+<section id="scr-trainer" hidden style="display:flex;flex-direction:column;gap:16px">
+  <div class="card"><div class="row" style="justify-content:space-between"><h1>لوحة المدربة</h1><span class="sync" id="syncNote">المحاولات محفوظة على هذا الجهاز</span></div><p class="note">مهارة: توصيل تغذية لوحة التجارب مع فحص القطبية · شعبة ميكاترونكس ١</p><div class="kpis" id="kpis"></div></div>
+  <div class="card" id="reportCard"></div>
+  <div class="grid2">
+    <div class="card"><h2>المتدربات</h2><div class="tablewrap" id="tTable"></div></div>
+    <div class="card"><h2>أكثر الأخطاء تكراراً</h2><div class="bars" id="tBars"></div><h2 id="tDetailTitle" style="margin-top:8px">المحاولات</h2><div class="tablewrap" id="tDetail"></div></div>
+  </div>
+  <div class="card"><h2>اختبار آلي بدون بشر (محاكاة)</h2><p class="note">هذا اختبار على صور مولّدة بالكمبيوتر، مو على كاميرا وقطع حقيقية. يثبت إن منطق الكشف صحيح، والتجربة الحقيقية خطوة لاحقة. متدربات افتراضيات يركّبن الأسلاك صح وغلط بشكل عشوائي، مع اهتزاز وتغير إضاءة وتشويش. نقارن قرار الذكاء الاصطناعي بالحقيقة المعروفة لكل حالة.</p><div class="row"><button class="btn" id="runTest">تشغيل ٣٠٠ حالة</button></div><pre class="log" id="testLog">لم يُشغّل بعد.</pre></div>
+</section>
+
+</div>
+<div id="clipModal" class="modal" hidden role="dialog" aria-modal="true" aria-labelledby="clipTitle">
+  <div class="card modal-card">
+    <div class="row" style="justify-content:space-between"><h2 id="clipTitle">لقطة الخطأ</h2><button class="btn ghost small" id="clipClose">إغلاق</button></div>
+    <img id="clipImg" alt="لقطة فيديو لحظة خطأ القطبية" style="width:100%;border-radius:12px;background:#000;aspect-ratio:4/3;object-fit:cover">
+    <p class="note" id="clipMeta"></p>
+    <p class="note">يحفظ التطبيق آخر ثانيتين قبل الخطأ وثانية بعده، علشان المدربة تشوف وش صار بالضبط.</p>
+  </div>
+</div>
+<script>
+(()=>{
+'use strict';
+const $=s=>document.querySelector(s);
+const AR=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+
+/* ---------- mock data ---------- */
+const USERS=[
+ {id:'4410201',pw:'1234',name:'نورة القحطاني',role:'trainee'},
+ {id:'4410202',pw:'1234',name:'ريم الزهراني',role:'trainee'},
+ {id:'4410203',pw:'1234',name:'لمى الشهري',role:'trainee'},
+ {id:'4410204',pw:'1234',name:'جود الحارثي',role:'trainee'},
+ {id:'4410205',pw:'1234',name:'شهد المالكي',role:'trainee'},
+ {id:'9001',pw:'1234',name:'م. أمل السبيعي',role:'trainer'}
+];
+const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلبت مساعدة',assisted:'تأكيد يدوي من المدربة'};
+function seed(){
+  let a=null;
+  const now=Date.now(),D=864e5; a=[];
+  const plan={ '4410201':[[1,0,1],[0,0,0]], '4410202':[[1,1,2],[1,0,0],[0,0,1]], '4410203':[[0,0,0]], '4410204':[[2,1,1],[1,1,0]], '4410205':[[0,1,3],[0,0,1]] };
+  Object.entries(plan).forEach(([uid,list])=>list.forEach(([rm,bp,un],i)=>{
+    const errs=[];for(let k=0;k<rm;k++)errs.push('red_minus');for(let k=0;k<bp;k++)errs.push('black_plus');for(let k=0;k<un;k++)errs.push('unclear');
+    a.push({uid,at:now-(list.length-i)*D*1.3,dur:150+rm*40+bp*35+un*15,errors:errs,score:scoreOf(errs),done:true});
+  }));
+  return a;
+}
+function scoreOf(errs){let s=100;errs.forEach(e=>{s-= e==='red_minus'||e==='black_plus'?15: e==='assisted'?8: e==='hint'?3:4});return Math.max(0,s)}
+let seeds=seed().map(a=>({...a,sample:true,steps:a.steps||fakeSteps(a)}));let realLocal=store.get('mx_real',[]);let realDb=null;let attempts=[];function mergeAttempts(){const byId={};[...realLocal,...(realDb||[])].forEach(a=>byId[a.id]=a);attempts=[...seeds,...Object.values(byId)]}
+function fakeSteps(a){const r=k=>Math.round((20+((a.at/1000+k*37)%40))*10)/10;const pen=e=>a.errors.filter(x=>x===e).length*30;return [r(1),r(2),r(3)+pen('red_minus'),r(4)+pen('black_plus'),r(5)]}
+mergeAttempts();
+let me=null;
+
+/* ---------- navigation ---------- */
+const screens=['landing','login','home','guide','practice','result','trainer'];
+function show(n){screens.forEach(s=>$('#scr-'+s).hidden=s!==n);$('#landingNav').hidden=!!me||n==='login';window.scrollTo(0,0);heroRun=n==='landing'}
+function setUser(u){me=u;$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدربة':'متدربة · '+AR(u.id)}
+USERS.forEach(u=>{const b=document.createElement('button');b.className='chip';b.textContent=(u.role==='trainer'?'👩‍🏫 ':'')+u.name;b.onclick=()=>{$('#liId').value=u.id;$('#liPw').value=u.pw};$('#demoAccounts').append(b)});
+function login(){const id=$('#liId').value.trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)),pw=$('#liPw').value;const u=USERS.find(x=>x.id===id&&x.pw===pw);if(!u){$('#liErr').textContent='الرقم أو كلمة المرور غير صحيحة';return}$('#liErr').textContent='';setUser(u);u.role==='trainer'?openTrainer():openHome()}
+$('#liBtn').onclick=login;$('#liPw').onkeydown=e=>{if(e.key==='Enter')login()};
+$('#logoutBtn').onclick=()=>{stopPractice();setUser(null);show('landing')};
+$('#navLogin').onclick=$('#heroStart').onclick=()=>show('login');
+$('#heroDemo').onclick=()=>{const u=USERS[0];setUser(u);show('guide')};
+$('#brandHome').onclick=()=>{if(!me)show('landing');else if(me.role==='trainer')openTrainer();else openHome()};
+function fmtDate(t){return new Date(t).toLocaleDateString('ar-SA-u-ca-gregory',{day:'numeric',month:'short'})}
+function fmtDur(s){s=Math.round(s);return AR(Math.floor(s/60))+':'+AR(String(s%60).padStart(2,'0'))}
+function errSummary(errs){const c={};errs.forEach(e=>c[e]=(c[e]||0)+1);const k=Object.keys(c);return k.length?k.map(x=>ERR[x]+(c[x]>1?' ×'+AR(c[x]):'')).join('، '):'بدون أخطاء'}
+function attemptsTable(list,showName){
+  if(!list.length)return '<p class="note">ما فيه محاولات للحين.</p>';
+  return '<table><thead><tr>'+(showName?'<th>المتدربة</th>':'')+'<th>التاريخ</th><th>الدرجة</th><th>المدة</th><th>الأخطاء</th><th>لقطة</th></tr></thead><tbody>'+
+  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+USERS.find(u=>u.id===a.uid).name+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+errSummary(a.errors)+'</td><td>'+(a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+aid(a)+'">▶ شاهدي</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
+}
+function openHome(){$('#myAttempts').innerHTML=attemptsTable(attempts.filter(a=>a.uid===me.id),false);show('home')}
+$('#toGuide').onclick=()=>show('guide');$('#backHome1').onclick=openHome;$('#resHome').onclick=openHome;$('#again').onclick=()=>show('guide');
+
+/* ---------- trainer ---------- */
+let selTrainee=null;
+function openTrainer(){
+  const tr=USERS.filter(u=>u.role==='trainee');
+  const all=attempts;const avg=all.length?Math.round(all.reduce((s,a)=>s+a.score,0)/all.length):0;
+  const pol=all.reduce((s,a)=>s+a.errors.filter(e=>e==='red_minus'||e==='black_plus').length,0);
+  const firstOk=tr.filter(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);return l.length&&l[l.length-1].score>=85}).length;
+  $('#kpis').innerHTML=[[AR(all.length),'محاولة'],[AR(avg),'متوسط الدرجات'],[AR(pol),'خطأ قطبية تم إيقافه'],[AR(firstOk)+' / '+AR(tr.length),'متدربات أتقنّ المهارة']].map(k=>'<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('');
+  $('#tTable').innerHTML='<table><thead><tr><th>المتدربة</th><th>المحاولات</th><th>آخر درجة</th><th>أكثر خطأ</th></tr></thead><tbody>'+tr.map(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);const last=l[l.length-1];const c={};l.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+    return '<tr data-u="'+u.id+'" class="'+(selTrainee===u.id?'sel':'')+'"><td>'+u.name+'</td><td>'+AR(l.length)+'</td><td>'+(last?'<span class="pill '+(last.score>=85?'ok':last.score>=60?'warn':'bad')+'">'+AR(last.score)+'</span>':'—')+'</td><td>'+(top?ERR[top[0]]:'—')+'</td></tr>'}).join('')+'</tbody></table>';
+  $('#tTable').querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>{selTrainee=r.dataset.u;openTrainer()});
+  const c={};all.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const mx=Math.max(1,...Object.values(c));
+  $('#tBars').innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<div class="b"><span>'+ERR[k]+'</span><div class="t"><i style="width:'+(v/mx*100)+'%"></i></div><span>'+AR(v)+'</span></div>').join('')||'<p class="note">لا أخطاء.</p>';
+  const sel=selTrainee?USERS.find(u=>u.id===selTrainee):null;
+  $('#tDetailTitle').textContent=sel?'محاولات '+sel.name:'كل المحاولات';
+  $('#tDetail').innerHTML=attemptsTable(sel?all.filter(a=>a.uid===sel.id):all,!sel);
+  renderReport(sel||tr[0],all);
+  show('trainer');
+}
+
+/* ---------- voice ---------- */
+let muted=false,arVoice=null;
+function pickVoice(){try{const v=speechSynthesis.getVoices();arVoice=v.find(x=>/^ar[-_]SA/i.test(x.lang))||v.find(x=>/^ar/i.test(x.lang))||null}catch(e){}}
+try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
+function say(t){if(muted)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ar-SA';if(arVoice)u.voice=arVoice;u.rate=1;speechSynthesis.speak(u)}catch(e){}}
+$('#muteBtn').onclick=()=>{muted=!muted;$('#muteBtn').textContent=muted?'🔇 الصوت مطفي':'🔊 الصوت شغال';$('#muteBtn').setAttribute('aria-pressed',muted);if(muted)try{speechSynthesis.cancel()}catch(e){}};
+
+/* ================= VISION ENGINE ================= */
+// Works on a small frame (AW x AH). Calibration gives the y of the + and − rails.
+const AW=240,AH=180;
+const isRed=(r,g,b)=>r>105&&r>g*1.7&&r>b*1.5;
+const lumOf=(r,g,b)=>0.299*r+0.587*g+0.114*b;
+function analyze(d,base,cal,prevLum){
+  // d, base: Uint8ClampedArray RGBA of AW*AH. returns quality + band readings.
+  let sum=0,grad=0,mot=0,n=0;const lum=new Float32Array(AW*AH);
+  for(let i=0,p=0;i<AW*AH;i++,p+=4)lum[i]=lumOf(d[p],d[p+1],d[p+2]);
+  for(let y=1;y<AH-1;y+=2)for(let x=1;x<AW-1;x+=2){const i=y*AW+x;const L=lum[i];sum+=L;grad+=Math.abs(L-lum[i+1])+Math.abs(L-lum[i+AW]);if(prevLum)mot+=Math.abs(L-prevLum[i]);n++}
+  const q={lum:sum/n,sharp:grad/n,motion:prevLum?mot/n:0};
+  const out={q,lum,bands:{},bright:0};
+  if(!base||!cal)return out;
+  const hh=Math.round(AH*0.035),x0=Math.round(AW*0.03),x1=Math.round(AW*0.97);
+  for(const role of ['plus','minus']){
+    const cy=Math.round(cal[role]*AH);let red=0,dark=0,chg=0,area=0,rx=0,dx=0;
+    for(let y=Math.max(0,cy-hh);y<=Math.min(AH-1,cy+hh);y++)for(let x=x0;x<x1;x++){
+      const p=(y*AW+x)*4;const r=d[p],g=d[p+1],b=d[p+2];const br=base[p],bg=base[p+1],bb=base[p+2];area++;
+      const diff=Math.abs(r-br)+Math.abs(g-bg)+Math.abs(b-bb);if(diff<70)continue;chg++;
+      if(isRed(r,g,b)&&!isRed(br,bg,bb)){red++;rx+=x}else{const L=lumOf(r,g,b);if(L<70&&lumOf(br,bg,bb)-L>45){dark++;dx+=x}}
+    }
+    out.bands[role]={red,dark,chg:chg/area,y:cal[role],rx:red?rx/red/AW:.5,dx:dark?dx/dark/AW:.5};
+  }
+  // LED glow: pixels that got much brighter than baseline
+  let br=0;for(let i=0,p=0;i<AW*AH;i++,p+=4){const L=lum[i];if(L>150&&L-lumOf(base[p],base[p+1],base[p+2])>60)br++}
+  out.bright=br;
+  return out;
+}
+const PRESENT=12; // pixels at 240x180
+function locate(bands,kind){ // kind 'red'|'dark' ; Arduino is below the board => wire comes from bottom
+  const roles=['plus','minus'].sort((a,b)=>bands[a].y-bands[b].y); // [far(top), near(bottom)]
+  const far=roles[0],near=roles[1];
+  if(bands[far][kind]>PRESENT)return far;
+  if(bands[near][kind]>PRESENT)return near;
+  return 'none';
+}
+function qualityIssue(q){
+  if(q.lum<45)return 'الإضاءة ضعيفة، قربي اللوحة من النور أو شغلي إضاءة';
+  if(q.lum>225)return 'الإضاءة قوية جداً، بعّدي الآيباد عن الشمس أو الضوء المباشر';
+  if(q.motion>14)return 'الصورة تتحرك، ثبتي الآيباد على الحامل';
+  if(q.sharp<3.2||(q.lap!=null&&q.lap<12))return 'الصورة مو واضحة، قربي أو بعدي الآيباد شوي لين تتضح';
+  return null;
+}
+
+/* ---------- demo scene (also used by automated test) ---------- */
+const SW=640,SH=480;
+const SC={minusY:150,plusY:182,pin5:{x:262,y:372},pinG:{x:300,y:372},trayRed:{x:540,y:430},trayBlack:{x:585,y:440},led:{x:420,y:250}};
+const demo={red:{...SC.trayRed},black:{...SC.trayBlack},power:false,dim:false,shake:false,blur:false,drag:null};
+function railAt(p){if(Math.abs(p.y-SC.plusY)<14&&p.x>70&&p.x<570)return 'plus';if(Math.abs(p.y-SC.minusY)<14&&p.x>70&&p.x<570)return 'minus';return 'none'}
+function drawScene(ctx,st,o){ // o:{dx,dy,gain,noise}
+  o=o||{};const dx=o.dx||0,dy=o.dy||0;
+  ctx.save();ctx.translate(dx,dy);
+  ctx.fillStyle='#6d5844';ctx.fillRect(-20,-20,SW+40,SH+40);
+  ctx.fillStyle='rgba(0,0,0,.08)';for(let i=0;i<12;i++){ctx.fillRect(-20,i*44,SW+40,3)}
+  // breadboard
+  ctx.fillStyle='#f3f0e7';ctx.fillRect(60,120,520,190);
+  ctx.fillStyle='#d9d4c6';ctx.fillRect(60,206,520,6);
+  ctx.strokeStyle='#3f7fe0';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(70,136);ctx.lineTo(570,136);ctx.stroke();
+  ctx.strokeStyle='#e0443a';ctx.beginPath();ctx.moveTo(70,196);ctx.lineTo(570,196);ctx.stroke();
+  ctx.fillStyle='#3b3b3b';ctx.font='bold 16px sans-serif';ctx.fillText('−',62,155);ctx.fillText('+',62,188);
+  ctx.fillStyle='#7a776f';
+  for(const y of [SC.minusY,SC.plusY])for(let x=86;x<560;x+=14)if(((x-86)/14)%6!==5)ctx.fillRect(x-2,y-2,4,4);
+  for(let r=0;r<5;r++)for(let x=86;x<560;x+=14)ctx.fillRect(x-2,226+r*16-2,4,4);
+  // resistor + LED
+  ctx.fillStyle='#d8b98a';ctx.fillRect(340,244,50,10);ctx.fillStyle='#8b4513';ctx.fillRect(352,244,4,10);ctx.fillRect(366,244,4,10);
+  ctx.strokeStyle='#999';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(340,249);ctx.lineTo(330,249);ctx.lineTo(330,SC.plusY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(440,256);ctx.lineTo(440,SC.minusY);ctx.stroke();
+  const lit=st.power&&railAt(st.red)==='plus'&&railAt(st.black)==='minus';
+  if(lit){const g=ctx.createRadialGradient(SC.led.x,SC.led.y,2,SC.led.x,SC.led.y,34);g.addColorStop(0,'rgba(255,255,240,1)');g.addColorStop(.35,'rgba(255,240,150,.9)');g.addColorStop(1,'rgba(255,220,80,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(SC.led.x,SC.led.y,34,0,7);ctx.fill()}
+  ctx.fillStyle=lit?'#fffbe0':'#c9a227';ctx.beginPath();ctx.arc(SC.led.x,SC.led.y,9,0,7);ctx.fill();
+  // arduino
+  ctx.fillStyle='#0a7e8c';ctx.fillRect(200,360,250,105);
+  ctx.fillStyle='#111';ctx.fillRect(240,366,120,12);
+  ctx.fillStyle='#e8e8e8';ctx.font='11px sans-serif';ctx.fillText('5V',255,394);ctx.fillText('GND',290,394);ctx.fillText('UNO',380,440);
+  ctx.fillStyle='#bbb';ctx.fillRect(420,330,30,34);
+  if(st.power){ctx.fillStyle='#4cff6a';ctx.fillRect(410,410,6,6)}
+  // wires
+  wire(ctx,SC.pinG,st.black,'#151515');wire(ctx,SC.pin5,st.red,'#d32020');
+  ctx.restore();
+  if(o.gain&&o.gain!==1||o.noise){const im=ctx.getImageData(0,0,ctx.canvas.width,ctx.canvas.height),a=im.data,G=o.gain||1,N=o.noise||0;
+    for(let i=0;i<a.length;i+=4){const z=N?(Math.random()-.5)*N:0;a[i]=a[i]*G+z;a[i+1]=a[i+1]*G+z;a[i+2]=a[i+2]*G+z}ctx.putImageData(im,0,0)}
+}
+function wire(ctx,a,b,col){
+  const mx=(a.x+b.x)/2+(b.x>a.x?-30:30),my=(a.y+b.y)/2+10;
+  ctx.strokeStyle=col;ctx.lineWidth=7;ctx.lineCap='round';ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo(mx,my,b.x,b.y+10);ctx.stroke();
+  ctx.fillStyle=col;ctx.fillRect(b.x-5,b.y-6,10,18);
+}
+
+/* ---------- practice runtime ---------- */
+const STEPS=[
+ {id:'frame',t:'ثبتي اللوحة والأردوينو داخل الصورة',say:'ثبتي الآيباد بحيث تظهر لوحة التجارب والأردوينو تحتها بوضوح'},
+ {id:'calib',t:'المسي خط الموجب + ثم خط السالب − على الشاشة',say:'المسي على الشاشة خط الموجب الأحمر'},
+ {id:'red',t:'السلك الأحمر من 5V إلى خط الموجب +',say:'ممتاز. الحين وصلي السلك الأحمر من منفذ فايف فولت إلى خط الموجب'},
+ {id:'black',t:'السلك الأسود من GND إلى خط السالب −',say:'أحسنتِ. الحين وصلي السلك الأسود من منفذ الأرضي جي إن دي إلى خط السالب'},
+ {id:'led',t:'شغّلي الأردوينو وتأكدي إن اللمبة ولّعت',say:'ممتاز. الحين شغلي الأردوينو بسلك اليو إس بي، وخلي اللمبة تظهر في الكاميرا'}
+];
+let R=null; // run state
+const view=$('#view'),vctx=view.getContext('2d');
+const small=document.createElement('canvas');small.width=AW;small.height=AH;const sctx=small.getContext('2d',{willReadFrequently:true});
+const sceneC=document.createElement('canvas');sceneC.width=SW;sceneC.height=SH;const scx=sceneC.getContext('2d',{willReadFrequently:true});
+let stream=null,video=null;
+
+async function startPractice(mode){
+  $('#camErr').textContent='';
+  if(mode==='camera'){
+    try{
+      stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
+      video=document.createElement('video');video.playsInline=true;video.muted=true;video.srcObject=stream;await video.play();
+    }catch(e){$('#camErr').textContent='الكاميرا المباشرة ما تفتح داخل هذا الرابط. استخدمي زر "صوّري خطوة بخطوة": تلتقطين صورة بعد كل خطوة، والتطبيق يحكم عليها بنفس الطريقة.';$('#startPhoto').hidden=false;return}
+  }
+  R={mode,step:0,t0:performance.now(),errors:[],log:[],cal:{},calStage:0,base:null,prevLum:null,hist:[],errLatch:{},qBad:0,fx:[],buf:[],lastCap:0,clips:[],pending:null,stepT:[],qWarned:false,ended:false,lastTick:0};
+  Object.assign(demo,{red:{...SC.trayRed},black:{...SC.trayBlack},power:false,dim:false,shake:false,blur:false});
+  ['dPower','dDim','dShake','dBlur'].forEach(id=>$('#'+id).setAttribute('aria-pressed','false'));
+  $('#demoBox').hidden=mode!=='demo';updCv();$('#hudMode').textContent=mode==='demo'?'عرض تجريبي':mode==='photo'?'وضع الصور':'● كاميرا مباشرة';$('#snapBtn').hidden=mode!=='photo';
+  if(mode==='photo'){view.width=640;view.height=480;R.photo=null}
+  else if(mode==='camera'){view.width=640;view.height=Math.round(640*(video.videoHeight||480)/(video.videoWidth||640))}else{view.width=SW;view.height=SH}
+  show('practice');renderSteps();enterStep(0);loop();
+}
+$('#startCam').onclick=()=>startPractice('camera');
+$('#startDemo').onclick=()=>startPractice('demo');
+function stopPractice(){if(R)R.ended=true;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}try{speechSynthesis.cancel()}catch(e){}}
+$('#quitBtn').onclick=()=>finish(false);
+
+function renderSteps(){
+  $('#plist').innerHTML=STEPS.map((s,i)=>'<li class="'+(i<R.step?'done':i===R.step?'now':'')+'"><span class="dot">'+(i<R.step?'✓':AR(i+1))+'</span><span>'+s.t+'</span></li>').join('');
+}
+function banner(t,cls){const b=$('#banner');b.textContent=t;b.className='banner'+(cls?' '+cls:'')}
+function enterStep(i){
+  R.step=i;R.hist=[];R.stepT[i]=elapsed();renderSteps();
+  if(i>=STEPS.length)return finish(true);
+  const s=STEPS[i];banner(s.t);say(s.say);
+  if(s.id==='calib'){R.calStage=0;R.cal={};R.base=null;
+    if(R.mode==='demo'){banner('عرض تجريبي: المسي على خط الموجب + (الخط الأحمر)')}
+  }
+  if(s.id==='black'||s.id==='led')R.rebase=true;
+}
+function addErr(code,msg){R.errors.push(code);R.log.push({ok:false,t:msg,at:elapsed()});}
+function addOk(msg){R.log.push({ok:true,t:msg,at:elapsed()})}
+function elapsed(){return (performance.now()-R.t0)/1000}
+function flash(){const f=$('#flash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),900);try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
+
+function grabSource(){
+  if(R.mode==='photo'){if(R.photo){vctx.drawImage(R.photo,0,0,view.width,view.height)}else{vctx.fillStyle='#071e14';vctx.fillRect(0,0,view.width,view.height);vctx.fillStyle='#f1f4ec';vctx.font='bold 20px sans-serif';vctx.textAlign='center';vctx.fillText('اضغطي "التقطي صورة" وصوري اللوحة والأردوينو',view.width/2,view.height/2);vctx.textAlign='start'}return view}
+  if(R.mode==='camera'){vctx.drawImage(video,0,0,view.width,view.height);return view}
+  const o={dx:demo.shake?(Math.random()-.5)*40:0,dy:demo.shake?(Math.random()-.5)*40:0,gain:demo.dim?0.18:1};
+  drawScene(scx,demo,o);
+  if(demo.blur){vctx.imageSmoothingEnabled=true;vctx.drawImage(sceneC,0,0,40,30);vctx.drawImage(view,0,0,40,30,0,0,SW,SH)}else vctx.drawImage(sceneC,0,0);
+  return view;
+}
+function overlay(){
+  const W=view.width,H=view.height;
+  if(R.cal.plus!=null||R.cal.minus!=null){
+    for(const role of ['plus','minus'])if(R.cal[role]!=null){const y=R.cal[role]*H,h=H*0.035;vctx.fillStyle=role==='plus'?'rgba(255,90,79,.18)':'rgba(79,141,255,.18)';vctx.fillRect(W*.03,y-h,W*.94,h*2);vctx.strokeStyle=role==='plus'?'#ff5a4f':'#4f8dff';vctx.lineWidth=2;vctx.setLineDash([8,6]);vctx.strokeRect(W*.03,y-h,W*.94,h*2);vctx.setLineDash([]);
+      vctx.fillStyle=vctx.strokeStyle;vctx.font='bold 18px sans-serif';vctx.fillText(role==='plus'?'+':'−',W*.97-16,y+6)}
+  }
+  if(STEPS[R.step]&&STEPS[R.step].id==='frame'){vctx.strokeStyle='#e2b54e';vctx.lineWidth=3;vctx.setLineDash([12,8]);vctx.strokeRect(W*.04,H*.06,W*.92,H*.88);vctx.setLineDash([]);
+    vctx.fillStyle='#e2b54e';vctx.font='bold 15px sans-serif';vctx.textAlign='center';vctx.fillText('الأردوينو هنا ↓',W/2,H*.9);vctx.textAlign='start'}
+}
+function loop(){
+  if(!R||R.ended)return;
+  const src=grabSource();
+  const now=performance.now();
+  if(now-R.lastTick>110){R.lastTick=now;tick(src)}
+  overlay();drawFx(now);capture(now);
+  const s=Math.floor(elapsed());$('#hudTime').textContent=AR(String(Math.floor(s/60)).padStart(2,'0'))+':'+AR(String(s%60).padStart(2,'0'));
+  requestAnimationFrame(loop);
+}
+function stable(v,n){R.hist.push(v);if(R.hist.length>n)R.hist.shift();return R.hist.length===n&&R.hist.every(x=>x===v)}
+function tick(src){
+  if(R.mode==='photo'&&!R.photo)return;
+  sctx.drawImage(src,0,0,AW,AH);const IM=sctx.getImageData(0,0,AW,AH),d=IM.data;
+  const A=analyze(d,R.base,R.cal.plus!=null&&R.cal.minus!=null?R.cal:null,R.prevLum);R.prevLum=A.lum;
+  const q=A.q;q.lap=cvLapVar(IM);const issue=qualityIssue(q);
+  $('#meter').innerHTML='<span>الإضاءة '+AR(Math.round(q.lum))+'</span><span>الوضوح '+AR(q.sharp.toFixed(1))+'</span><span>الحركة '+AR(q.motion.toFixed(1))+'</span>'+(A.bands.plus?'<span>+ : أحمر '+AR(A.bands.plus.red)+' أسود '+AR(A.bands.plus.dark)+'</span><span>− : أحمر '+AR(A.bands.minus.red)+' أسود '+AR(A.bands.minus.dark)+'</span>':'');
+  if(issue){R.qBad++;if(R.qBad===8){banner(issue,'warn');say(issue);if(!R.qWarned){addErr('unclear',issue);R.qWarned=true}}if(R.qBad>=8)banner(issue,'warn');R.hist=[];return}
+  if(R.qBad>=8){banner(STEPS[R.step].t)}R.qBad=0;R.qWarned=false;
+  const id=STEPS[R.step].id;
+  if(id==='frame'){if(stable('ok',12)){addOk('الصورة واضحة وثابتة');enterStep(1)}return}
+  if(id==='calib'){if(R.calStage===2&&q.motion<6){R.base=new Uint8ClampedArray(d);addOk('تمت معايرة خطي الموجب والسالب');enterStep(2)}return}
+  if(R.rebase){if(q.motion<6){R.base=new Uint8ClampedArray(d);R.rebase=false}return}
+  const B=A.bands;
+  if(Math.max(B.plus.chg,B.minus.chg)>0.45){banner('يدك تغطي الخطوط، أبعديها شوي علشان أتأكد','warn');R.hist=[];return}
+  if(id==='red'||id==='black'){
+    const kind=id==='red'?'red':'dark',target=id==='red'?'plus':'minus',wrong=id==='red'?'minus':'plus';
+    if(q.motion>=8){R.hist=[];return} // wire still moving in the hand: never judge it
+    const loc=locate(B,kind);
+    if(loc==='none'){R.errLatch[id]=false;banner(STEPS[R.step].t);R.hist=[];return}
+    if(stable(loc,10)){
+      if(loc===target){const m=id==='red'?'السلك الأحمر في خط الموجب +، صح':'السلك الأسود في خط السالب −، صح';addOk(m);banner(m,'ok');enterStep(R.step+1)}
+      else if(loc===wrong&&!R.errLatch[id]){R.errLatch[id]=true;const m=id==='red'?'خطأ! السلك الأحمر في خط السالب. انزعيه وحطيه في خط الموجب':'خطأ! السلك الأسود في خط الموجب. انزعيه وحطيه في خط السالب';
+        addErr(id==='red'?'red_minus':'black_plus',m);banner(m,'bad');flash();
+        const bw=B[wrong];startFx((kind==='red'?bw.rx:bw.dx)*view.width,bw.y*view.height);
+        say(m+'. ماذا لو شغلتي كذا؟ القطبية بتنعكس، اللمبة ما بتشتغل، والقطع الحساسة مثل المكثف والحساسات ممكن تتلف');
+        R.pending={code:id==='red'?'red_minus':'black_plus',at:elapsed(),until:performance.now()+1400}}
+      else if(loc===wrong)banner(id==='red'?'السلك الأحمر للحين في السالب ✗':'السلك الأسود للحين في الموجب ✗','bad');
+    }
+    return;
+  }
+  if(id==='led'){if(stable(A.bright>18,8)&&A.bright>18){addOk('اللمبة ولّعت، الدائرة شغالة');banner('اللمبة ولّعت! الدائرة صحيحة','ok');enterStep(R.step+1)}}
+}
+// taps (calibration) + demo dragging
+function toCanvas(e){const r=view.getBoundingClientRect();return{x:(e.clientX-r.left)/r.width*view.width,y:(e.clientY-r.top)/r.height*view.height}}
+view.addEventListener('pointerdown',e=>{
+  if(!R)return;const p=toCanvas(e);
+  if(STEPS[R.step]&&STEPS[R.step].id==='calib'&&R.calStage<2){
+    const role=R.calStage===0?'plus':'minus';R.cal[role]=p.y/view.height;R.calStage++;
+    if(R.calStage===1){banner('الحين المسي على خط السالب − (الخط الأزرق)');say('الحين المسي خط السالب الأزرق')}
+    else{if(Math.abs(R.cal.plus-R.cal.minus)<0.05){R.calStage=0;R.cal={};banner('الخطين قريبين مرة، المسي الموجب ثم السالب مرة ثانية','warn');say('المسي مرة ثانية');return}banner('جاري حفظ الصورة المرجعية… لا تحركين شي')}
+    return;
+  }
+  if(R.mode==='demo'){for(const k of ['red','black']){const w=demo[k];if(Math.hypot(w.x-p.x,w.y+2-p.y)<40){demo.drag=k;view.setPointerCapture(e.pointerId);break}}}
+});
+view.addEventListener('pointermove',e=>{if(demo.drag){const p=toCanvas(e);demo[demo.drag]={x:p.x,y:p.y}}});
+view.addEventListener('pointerup',()=>{if(demo.drag){const w=demo[demo.drag];const r=railAt(w);if(r!=='none')w.y=r==='plus'?SC.plusY:SC.minusY;demo.drag=null}});
+function tog(id,key){$('#'+id).onclick=()=>{demo[key]=!demo[key];$('#'+id).setAttribute('aria-pressed',demo[key])}}
+tog('dPower','power');tog('dDim','dim');tog('dShake','shake');tog('dBlur','blur');
+$('#recal').onclick=()=>{if(R&&R.step>=1){R.step=1;enterStep(1)}};
+$('#hintBtn').onclick=()=>{if(!R||R.step>=STEPS.length)return;const H={frame:'خلي الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. ادخلي طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. ادخلي السلك الأسود في أي فتحة على خط السالب الأزرق',led:'تأكدي إن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
+$('#trainerOk').onclick=()=>{if(!R||R.step<2||R.step>=STEPS.length)return;addErr('assisted','المدربة أكدت الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
+
+/* ---- "ماذا لو؟": AR consequence of a polarity mistake, drawn on the live video ---- */
+function mkFx(x,y,t0){return{x,y,t0,dur:4200,p:Array.from({length:26},(_,j)=>({a:j*.73+Math.random()*.3,v:.45+((j*7)%10)/14,s:7+(j%7)*2.2,d:(j%9)*95}))}}
+function startFx(x,y){R.fx.push(mkFx(x,y,performance.now()))}
+function drawFx(now){fxPaint(vctx,R.fx,now,view.width);R.fx=R.fx.filter(f=>now-f.t0<f.dur)}
+function fxPaint(c,list,now,W){
+  for(const f of list){const t=now-f.t0;if(t<0||t>f.dur)continue;const k=t/f.dur;
+    if(t<1600){c.save();c.strokeStyle='rgba(255,214,90,'+(1-t/1600)+')';c.lineWidth=2.5;for(const p of f.p.slice(0,12)){const r=8+(t/1600)*70*p.v;c.beginPath();c.moveTo(f.x+Math.cos(p.a)*r*.55,f.y+Math.sin(p.a)*r*.55);c.lineTo(f.x+Math.cos(p.a)*r,f.y+Math.sin(p.a)*r);c.stroke()}
+      const g=c.createRadialGradient(f.x,f.y,0,f.x,f.y,40);g.addColorStop(0,'rgba(255,240,180,'+Math.max(0,.9-t/1800)+')');g.addColorStop(1,'rgba(255,120,40,0)');c.fillStyle=g;c.beginPath();c.arc(f.x,f.y,40,0,7);c.fill();c.restore()}
+    for(const p of f.p){const tt=t-p.d;if(tt<0)continue;const q=tt/(f.dur-p.d);const yy=f.y-q*140*p.v,xx=f.x+Math.sin(q*6+p.a)*18*p.v;const r=p.s*(1+q*2.4);
+      c.fillStyle='rgba(70,70,78,'+(.45*(1-q))+')';c.beginPath();c.arc(xx,yy,r,0,7);c.fill()}
+    const a=Math.min(1,t/300)*(k>.85?(1-k)/.15:1);c.save();c.globalAlpha=Math.max(0,a);c.font='bold 15px "IBM Plex Sans Arabic",Tahoma,sans-serif';c.textAlign='center';
+    const txt='ماذا لو شغّلتي؟ القطبية معكوسة ⚡';const w=c.measureText(txt).width+24;const lx=Math.min(Math.max(f.x,w/2+8),W-w/2-8),ly=Math.max(30,f.y-70);
+    c.fillStyle='rgba(80,16,20,.92)';c.beginPath();if(c.roundRect)c.roundRect(lx-w/2,ly-20,w,32,10);else c.rect(lx-w/2,ly-20,w,32);c.fill();c.fillStyle='#ffd2d2';c.fillText(txt,lx,ly+2);c.restore()}
+}
+/* ---- "لقطة الخطأ": the last few seconds of video kept in memory, saved when a mistake happens ---- */
+const clipC=document.createElement('canvas');clipC.width=240;clipC.height=180;const clipX=clipC.getContext('2d');
+function capture(now){if(now-R.lastCap<150)return;R.lastCap=now;clipX.drawImage(view,0,0,240,180);try{R.buf.push(clipC.toDataURL('image/jpeg',.5))}catch(e){return}if(R.buf.length>22)R.buf.shift();if(R.pending&&now>R.pending.until)flushClip()}
+function flushClip(){R.clips.push({code:R.pending.code,at:Math.round(R.pending.at),frames:R.buf.slice(-20)});R.pending=null}
+const aid=a=>a.id||('s'+a.at);
+let lastAttempt=null,lastClips=null;
+/* ---- storage: online database when the page runs on claude.ai, this device otherwise ---- */
+let db=null;
+async function initDb(){
+  try{if(!window.claude||!window.claude.use)return;db=await window.claude.use('db');}catch(e){db=null}
+  if(!db)return;
+  let timer=setTimeout(()=>{setSync('قاعدة البيانات ما ردّت للحين، المعروض من هذا الجهاز')},10000);
+  try{db.collection('attempts').onSnapshot(snap=>{if(!snap.fromCache){clearTimeout(timer)}realDb=snap.docs.map(d=>d.data()).filter(x=>x&&x.id);mergeAttempts();setSync('متصلة بقاعدة البيانات · '+AR(realDb.length)+' محاولة حقيقية');refreshView()},e=>{clearTimeout(timer);setSync('تعذر الاتصال بقاعدة البيانات، المحاولات محفوظة على هذا الجهاز')})}catch(e){}
+}
+function setSync(t){const el=document.getElementById('syncNote');if(el)el.textContent=t}
+function refreshView(){if(!me)return;if(!$('#scr-trainer').hidden)openTrainer();else if(!$('#scr-home').hidden)openHome()}
+async function saveAttempt(a,clips){
+  realLocal.push(a);realLocal=realLocal.slice(-60);store.set('mx_real',realLocal);
+  if(clips.length){const all=store.get('mx_clips',{});all[a.id]=clips;const keys=Object.keys(all);while(keys.length>6)delete all[keys.shift()];
+    try{localStorage.setItem('mx_clips',JSON.stringify(all))}catch(e){try{localStorage.setItem('mx_clips',JSON.stringify({[a.id]:clips.slice(0,1)}))}catch(e2){}}}
+  mergeAttempts();
+  if(!db)return;
+  try{await db.collection('attempts').doc(a.id).set(a);
+    for(let i=0;i<clips.length&&i<3;i++){const c=clips[i];await db.collection('clips').doc(a.id+'_'+i).set({aid:a.id,code:c.code,at:c.at,frames:c.frames.slice(-14)})}
+  }catch(e){setSync(e&&e.code==='quota_exceeded'?'قاعدة البيانات ممتلئة، المحاولة محفوظة على هذا الجهاز':'ما قدرنا نرفع المحاولة، محفوظة على هذا الجهاز')}
+}
+// synthetic clip for the example attempts, built from the same scene and AR effect
+function sampleClip(code){
+  const C=document.createElement('canvas');C.width=SW;C.height=SH;const c=C.getContext('2d');const frames=[];const red=code==='red_minus';
+  const from=red?{...SC.trayRed}:{...SC.trayBlack},to=red?{x:230,y:SC.minusY}:{x:470,y:SC.plusY};const fx=[mkFx(to.x,to.y,0)];
+  for(let i=0;i<24;i++){const t=Math.min(1,i/9);const p={x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t};
+    const st=red?{red:p,black:{...SC.trayBlack},power:false}:{red:{x:230,y:SC.plusY},black:p,power:false};drawScene(c,st,{});
+    for(const role of ['plus','minus']){const y=(role==='plus'?SC.plusY:SC.minusY),h=SH*.035;c.strokeStyle=role==='plus'?'#ff5d5d':'#5a93ff';c.lineWidth=2;c.setLineDash([8,6]);c.strokeRect(SW*.03,y-h,SW*.94,h*2);c.setLineDash([])}
+    if(i>=11){c.strokeStyle='#ff5d5d';c.lineWidth=8;c.strokeRect(4,4,SW-8,SH-8);fxPaint(c,fx,(i-11)*230,SW)}
+    frames.push(C.toDataURL('image/jpeg',.6))}
+  return [{code,at:0,frames,sample:true}];
+}
+async function clipsFor(a){
+  if(a.sample){const e=a.errors.find(x=>x==='red_minus'||x==='black_plus');return e?sampleClip(e):[]}
+  const all=store.get('mx_clips',{});if(all[a.id])return all[a.id];
+  if(db){try{const out=[];for(let i=0;i<(a.clips||0)&&i<3;i++){const d=await db.collection('clips').doc(a.id+'_'+i).get();const v=d.data();if(v)out.push(v)}return out}catch(e){}}
+  return [];
+}
+let playT=null;
+async function openClip(a,given){
+  const m=$('#clipModal'),img=$('#clipImg');m.hidden=false;$('#clipTitle').textContent='جاري تحميل اللقطة…';$('#clipMeta').textContent='';img.removeAttribute('src');clearInterval(playT);
+  const clips=given&&given.length?given:await clipsFor(a);
+  if(!clips.length){$('#clipTitle').textContent='اللقطة غير متوفرة';$('#clipMeta').textContent='انحفظت هذه المحاولة على جهاز ثاني، واللقطة ما ارتفعت لقاعدة البيانات.';return}
+  const u=USERS.find(x=>x.id===a.uid);let ci=0,fi=0;
+  const showC=()=>{const c=clips[ci];$('#clipTitle').textContent='لقطة الخطأ · '+(u?u.name:'')+' · '+ERR[c.code];$('#clipMeta').textContent=(c.sample?'لقطة من بيانات تجريبية':'عند الدقيقة '+fmtDur(c.at))+(clips.length>1?' · خطأ '+AR(ci+1)+' من '+AR(clips.length):'');fi=0};
+  showC();
+  playT=setInterval(()=>{const c=clips[ci];img.src=c.frames[fi];fi++;if(fi>=c.frames.length){fi=0;if(clips.length>1){ci=(ci+1)%clips.length;showC()}}},150);
+}
+function closeClip(){clearInterval(playT);$('#clipModal').hidden=true}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-clip]');if(!b)return;e.stopPropagation();const a=attempts.find(x=>aid(x)===b.dataset.clip);if(a)openClip(a)});
+/* ---- تقرير الأداء: per-step time from the video timeline, trend across attempts, strengths ---- */
+const SHORT=['تثبيت الصورة','المعايرة','السلك الأحمر','السلك الأسود','تشغيل اللمبة'];
+function renderReport(u,all){
+  const el=$('#reportCard');if(!u){el.innerHTML='';return}
+  const mine=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);
+  if(!mine.length){el.innerHTML='<h2>تقرير أداء '+u.name+'</h2><p class="note">ما فيه محاولات للحين.</p>';return}
+  const last=mine[mine.length-1];const cls=STEPS.map((_,i)=>{const v=all.map(a=>a.steps&&a.steps[i]).filter(x=>x>0);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0});
+  const mxv=Math.max(1,...cls,...(last.steps||[]).map(x=>x||0));
+  const bars=STEPS.map((_,i)=>{const v=last.steps&&last.steps[i];return '<div class="sbar"><span>'+SHORT[i]+'</span><div class="t"><i style="width:'+((v||0)/mxv*100)+'%"></i><s style="inset-inline-start:'+(cls[i]/mxv*100)+'%"></s></div><span>'+(v!=null?AR(Math.round(v))+' ث':'—')+'</span></div>'}).join('');
+  // trend sparkline
+  const W=260,H=70,P=8;const xs=i=>mine.length===1?W/2:P+i*(W-2*P)/(mine.length-1);const ys=v=>H-P-(v/100)*(H-2*P);
+  const pts=mine.map((a,i)=>xs(i).toFixed(1)+','+ys(a.score).toFixed(1)).join(' ');
+  const spark='<svg viewBox="0 0 '+W+' '+H+'" style="direction:ltr;width:100%;max-width:320px;height:auto" role="img" aria-label="تطور الدرجة عبر المحاولات"><line x1="'+P+'" x2="'+(W-P)+'" y1="'+ys(85)+'" y2="'+ys(85)+'" stroke="#47d78f" stroke-dasharray="4 4" stroke-width="1" opacity=".6"/><text x="'+(W-P)+'" y="'+(ys(85)-4)+'" fill="#47d78f" font-size="10" text-anchor="end">إتقان ٨٥</text><polyline points="'+pts+'" fill="none" stroke="#e2b54e" stroke-width="2.5" stroke-linejoin="round"/>'+mine.map((a,i)=>'<circle cx="'+xs(i)+'" cy="'+ys(a.score)+'" r="'+(i===mine.length-1?4.5:3)+'" fill="'+(i===mine.length-1?'#f3d488':'#e2b54e')+'"/>').join('')+'</svg>';
+  // insights
+  const ratio=STEPS.map((_,i)=>last.steps&&last.steps[i]&&cls[i]?last.steps[i]/cls[i]:1);
+  const best=ratio.indexOf(Math.min(...ratio)),worst=ratio.indexOf(Math.max(...ratio));
+  const ec={};mine.forEach(a=>a.errors.forEach(e=>ec[e]=(ec[e]||0)+1));const topE=Object.entries(ec).sort((a,b)=>b[1]-a[1])[0];
+  const first=mine[0];const imp=last.score-first.score;
+  const ins=[];
+  ins.push(['قوة','أسرع من متوسط الشعبة في <b>'+SHORT[best]+'</b>.']);
+  if(ratio[worst]>1.15)ins.push(['تحتاج دعم','تأخذ وقت أطول من الشعبة في <b>'+SHORT[worst]+'</b> (×'+AR(ratio[worst].toFixed(1))+').']);
+  if(topE&&(topE[0]==='red_minus'||topE[0]==='black_plus'))ins.push(['تكرر','خطأ متكرر: <b>'+ERR[topE[0]]+'</b>، '+AR(topE[1])+' مرات. اعرضي عليها لقطة الخطأ.']);
+  if(mine.length>1)ins.push([imp>=0?'تحسّن':'تراجع','الدرجة من '+AR(first.score)+' إلى '+AR(last.score)+' خلال '+AR(mine.length)+' محاولات.']);
+  if(last.score>=85)ins.push(['جاهزة','وصلت حد الإتقان، تقدر تنتقل للمهارة التالية.']);
+  el.innerHTML='<div class="row" style="justify-content:space-between"><h2>تقرير أداء '+u.name+'</h2><span class="note">من فيديو آخر محاولة · '+fmtDate(last.at)+(last.sample?' · بيانات تجريبية':'')+'</span></div>'+
+   '<div class="report"><div style="display:flex;flex-direction:column;gap:8px"><h3>وقت كل خطوة</h3>'+bars+'<p class="note">العمود النحاسي وقتها، والخط الأبيض متوسط الشعبة.</p></div>'+
+   '<div style="display:flex;flex-direction:column;gap:8px"><h3>تطور الدرجة</h3>'+spark+'</div>'+
+   '<div style="display:flex;flex-direction:column;gap:8px"><h3>ملاحظات تلقائية</h3>'+ins.map(x=>'<div class="insight"><span class="pill '+(x[0]==='قوة'||x[0]==='تحسّن'||x[0]==='جاهزة'?'ok':x[0]==='تكرر'?'bad':'warn')+'">'+x[0]+'</span><span>'+x[1]+'</span></div>').join('')+'</div></div>';
+}
+initDb();
+
+function finish(completed){
+  if(!R||R.ended)return;const dur=elapsed();if(R.pending)flushClip();stopPractice();
+  const steps=STEPS.map((_,i)=>R.stepT[i]==null?null:Math.round(((R.stepT[i+1]!=null?R.stepT[i+1]:dur)-R.stepT[i])*10)/10);
+  const errs=R.errors.slice();if(!completed)errs.push('assisted');
+  const score=completed?scoreOf(errs):Math.min(40,scoreOf(errs));
+  const a={id:'a'+Date.now()+Math.floor(Math.random()*1e4),uid:me.id,at:Date.now(),dur:Math.round(dur),errors:errs,score,done:completed,steps,clips:R.clips.length};
+  saveAttempt(a,R.clips);lastAttempt=a;lastClips=R.clips;$('#resClip').hidden=!R.clips.length;
+  $('#resTitle').textContent=completed?(score>=85?'أتقنتِ المهارة 👏':'أنهيتِ المهارة'):'المحاولة لم تكتمل';
+  $('#resScore').textContent=AR(score);
+  const col=score>=85?'var(--ok)':score>=60?'var(--warn)':'var(--bad)';
+  $('#resRing').style.background='conic-gradient('+col+' '+score*3.6+'deg, var(--raise) 0)';
+  $('#resRing').firstElementChild.style.cssText='background:var(--bench);width:120px;height:120px;border-radius:50%;display:grid;place-content:center';
+  const pol=errs.filter(e=>e==='red_minus'||e==='black_plus').length;
+  $('#resPills').innerHTML='<span class="pill">⏱ '+fmtDur(dur)+'</span><span class="pill '+(pol?'bad':'ok')+'">أخطاء القطبية: '+AR(pol)+'</span><span class="pill warn">تنبيهات: '+AR(errs.length-pol)+'</span>';
+  $('#resLog').innerHTML=R.log.map(l=>'<li><span class="dot" style="background:'+(l.ok?'var(--ok)':'var(--bad)')+';color:#000">'+(l.ok?'✓':'!')+'</span><span>'+l.t+'<br><span class="note">'+fmtDur(l.at)+'</span></span></li>').join('')||'<li>لا توجد خطوات.</li>';
+  say(completed?'انتهيتِ. درجتك '+score+' من مية':'تم إنهاء المحاولة');
+  show('result');
+}
+
+/* ---------- automated test: virtual trainees ---------- */
+$('#runTest').onclick=()=>{
+  const log=$('#testLog');log.textContent='جاري التشغيل…';
+  setTimeout(()=>{
+    const C=document.createElement('canvas');C.width=SW;C.height=SH;const cx=C.getContext('2d',{willReadFrequently:true});
+    const S=document.createElement('canvas');S.width=AW;S.height=AH;const sx=S.getContext('2d',{willReadFrequently:true});
+    const NM={plus:'الموجب',minus:'السالب',none:'خارج الخطين'};const frame=(st,o)=>{drawScene(cx,st,o);sx.drawImage(C,0,0,AW,AH);return sx.getImageData(0,0,AW,AH).data};
+    const cal={plus:SC.plusY/SH,minus:SC.minusY/SH};
+    const spot=t=>{const x=90+Math.random()*460;return t==='plus'?{x,y:SC.plusY}:t==='minus'?{x,y:SC.minusY}:t==='board'?{x,y:230+Math.random()*60}:{x:500+Math.random()*100,y:410+Math.random()*40}};
+    let total=0,ok=0,polCaught=0,polTotal=0,falseAlarm=0,ledOk=0,ledTot=0;const conf={};const fails=[];
+    for(let i=0;i<300;i++){
+      const o={dx:(Math.random()-.5)*6,dy:(Math.random()-.5)*6,gain:0.75+Math.random()*0.5,noise:18};
+      const base=frame({red:spot('tray'),black:spot('tray'),power:false},o);
+      const opts=['plus','minus','board','tray'];
+      const rt=opts[Math.floor(Math.random()*4)];const st={red:spot(rt),black:spot('tray'),power:false};
+      const A=analyze(frame(st,o),base,cal,null);const got=locate(A.bands,'red');
+      const truth=rt==='plus'||rt==='minus'?rt:'none';
+      total++;if(got===truth)ok++;else fails.push('أحمر: الحقيقة '+NM[truth]+' والقرار '+NM[got]);
+      conf[truth+'→'+got]=(conf[truth+'→'+got]||0)+1;
+      if(truth==='minus'){polTotal++;if(got==='minus')polCaught++}
+      if(truth!=='minus'&&got==='minus')falseAlarm++;
+      // black wire, red already correctly placed
+      const st2={red:spot('plus'),black:spot('tray'),power:false};const base2=frame(st2,o);
+      const bt=opts[Math.floor(Math.random()*4)];const st3={red:st2.red,black:spot(bt),power:false};
+      const B=analyze(frame(st3,o),base2,cal,null);const gotB=locate(B.bands,'dark');const truthB=bt==='plus'||bt==='minus'?bt:'none';
+      total++;if(gotB===truthB)ok++;else fails.push('أسود: الحقيقة '+NM[truthB]+' والقرار '+NM[gotB]);
+      if(truthB==='plus'){polTotal++;if(gotB==='plus')polCaught++}
+      if(truthB!=='plus'&&gotB==='plus')falseAlarm++;
+      // LED
+      if(i%3===0){const goodWiring=Math.random()<.5;const st4={red:spot('plus'),black:goodWiring?spot('minus'):spot('plus'),power:false};const b4=frame(st4,o);const L=analyze(frame({...st4,power:true},o),b4,cal,null);ledTot++;if((L.bright>18)===goodWiring)ledOk++;else fails.push('اللمبة: متوقع '+(goodWiring?'تشتغل':'ما تشتغل')+' والقرار عكسه')}
+    }
+    log.textContent='الحالات: '+AR(total)+' قرار سلك + '+AR(ledTot)+' قرار لمبة\n'+
+      'نتيجة المحاكاة (صور مولّدة)، دقة تحديد مكان السلك: '+AR((ok/total*100).toFixed(1))+'٪\n'+
+      'أخطاء القطبية المكتشفة: '+AR(polCaught)+' من '+AR(polTotal)+'\n'+
+      'إنذارات كاذبة (قال خطأ وهو صح): '+AR(falseAlarm)+'\n'+
+      'دقة اكتشاف اللمبة: '+AR(ledOk)+' من '+AR(ledTot)+'\n'+
+      (fails.length?'\nأمثلة على الحالات الغلط:\n'+fails.slice(0,8).join('\n'):'\nكل الحالات صحيحة ✓');
+    window.__mxTest={total,ok,polCaught,polTotal,falseAlarm,ledOk,ledTot,fails};
+  },50);
+};
+// OpenCV.js (loaded async; app works without it)
+let cvReady=false;
+(function(){const sc=document.createElement('script');sc.async=true;sc.src='https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js';
+  sc.onload=()=>{const done=()=>{cvReady=!!(window.cv&&cv.Mat);updCv()};try{if(window.cv&&cv.Mat)done();else if(window.cv&&cv.then)cv.then(m=>{window.cv=m;done()});else if(window.cv)cv.onRuntimeInitialized=done}catch(e){}};
+  document.head.append(sc)})();
+function updCv(){const el=document.getElementById('cvBadge');if(el){el.textContent=cvReady?'OpenCV.js ✓':'رؤية حاسوبية';}}
+function cvLapVar(img){ // Laplacian variance = classic OpenCV blur measure
+  if(!cvReady)return null;let src,gray,lap,m,sd;
+  try{src=cv.matFromImageData(img);gray=new cv.Mat();lap=new cv.Mat();m=new cv.Mat();sd=new cv.Mat();
+    cv.cvtColor(src,gray,cv.COLOR_RGBA2GRAY);cv.Laplacian(gray,lap,cv.CV_64F);cv.meanStdDev(lap,m,sd);const v=sd.data64F[0]**2;return v}
+  catch(e){return null}finally{[src,gray,lap,m,sd].forEach(x=>{try{x&&x.delete()}catch(e){}})}
+}
+$('#clipClose').onclick=closeClip;$('#clipModal').onclick=e=>{if(e.target.id==='clipModal')closeClip()};document.addEventListener('keydown',e=>{if(e.key==='Escape')closeClip()});
+$('#resClip').onclick=()=>{if(lastAttempt)openClip(lastAttempt,lastClips)};
+$('#startPhoto').onclick=()=>startPractice('photo');
+$('#snapBtn').onclick=()=>$('#snapIn').click();
+$('#snapIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f||!R)return;const im=new Image();im.onload=()=>{
+  const W=640,H=Math.round(640*im.naturalHeight/im.naturalWidth);if(!R.photo){view.width=W;view.height=H}
+  R.photo=im;R.prevLum=null;R.hist=[];if(R.step===1&&R.calStage===0)banner('المسي على خط الموجب + في الصورة');};im.src=URL.createObjectURL(f);e.target.value=''};
+window.__mx={analyze,locate,drawScene,demo,SC,get R(){return R}};
+// hero live demo: scripted wire placement through the real vision engine
+let heroRun=true;
+(function(){
+  const cv=$('#heroCv'),cx=cv.getContext('2d');const S=document.createElement('canvas');S.width=AW;S.height=AH;const sx=S.getContext('2d',{willReadFrequently:true});
+  const cal={plus:SC.plusY/SH,minus:SC.minusY/SH};const st={red:{...SC.trayRed},black:{...SC.trayBlack},power:false};
+  drawScene(cx,st,{});sx.drawImage(cv,0,0,AW,AH);const base=new Uint8ClampedArray(sx.getImageData(0,0,AW,AH).data);
+  const key=[[0,{...SC.trayRed},{...SC.trayBlack},false],[1600,{x:230,y:SC.minusY},{...SC.trayBlack},false],[4200,{x:230,y:SC.plusY},{...SC.trayBlack},false],[6200,{x:450,y:SC.plusY},{x:470,y:SC.minusY},false],[8000,{x:450,y:SC.plusY},{x:470,y:SC.minusY},true],[10500,null]];
+  const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let t0=performance.now(),last='';
+  function frame(now){
+    if(heroRun){
+      let t=(now-t0)%10500;let i=0;while(key[i+1]&&key[i+1][0]<=t)i++;const k=key[i],n=key[i+1];
+      const f=n&&n[1]?Math.min(1,(t-k[0])/700):1;
+      st.red=n&&n[1]?lerp(k[1],n[1],f):k[1];st.black=n&&n[1]?lerp(k[2],n[2],f):k[2];st.power=k[3];
+      if(reduce){st.red={x:230,y:SC.minusY}}
+      drawScene(cx,st,{});sx.drawImage(cv,0,0,AW,AH);const A=analyze(sx.getImageData(0,0,AW,AH).data,base,cal,null);
+      const W=640,H=480;
+      for(const role of ['plus','minus']){const y=cal[role]*H,h=H*.035;cx.strokeStyle=role==='plus'?'#ff5d5d':'#5a93ff';cx.lineWidth=2;cx.setLineDash([8,6]);cx.strokeRect(W*.03,y-h,W*.94,h*2);cx.setLineDash([])}
+      const rl=locate(A.bands,'red'),bl=locate(A.bands,'dark');let msg='جاري المراقبة…',cls='';
+      if(rl==='minus'){msg='خطأ! السلك الأحمر في خط السالب';cls='bad';cx.strokeStyle='#ff5d5d';cx.lineWidth=8;cx.strokeRect(4,4,W-8,H-8)}
+      else if(A.bright>18){msg='اللمبة ولّعت، الدائرة صحيحة ✓';cls='ok'}
+      else if(rl==='plus'&&bl==='minus'){msg='الأحمر في الموجب والأسود في السالب ✓';cls='ok'}
+      else if(rl==='plus'){msg='السلك الأحمر في خط الموجب ✓';cls='ok'}
+      const key2=msg+cls;if(key2!==last){last=key2;const el=$('#heroSay');el.textContent=msg;el.className='say'+(cls?' '+cls:'')}
+    }
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+})();
+show('landing');
+})();
+</script>
+</body>
+</html>
