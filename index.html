@@ -782,7 +782,7 @@ async function openClip(a,given){
 function closeClip(){clipSeq++;clearInterval(playT);$('#clipModal').hidden=true}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-clip]');if(!b)return;e.stopPropagation();const a=attempts.find(x=>aid(x)===b.dataset.clip);if(a)openClip(a)});
 /* ---- تقرير الأداء: per-step time from the video timeline, trend across attempts, strengths ---- */
-const SHORT=['تثبيت الصورة','المعايرة','السلك الأحمر','السلك الأسود','تشغيل اللمبة'];
+const SHORT=['تثبيت الصورة','تركيب القطع','المعايرة','السلك الأحمر','السلك الأسود','تشغيل اللمبة'];
 function renderReport(u,all){
   const el=$('#reportCard');if(!u){el.innerHTML='';return}
   const mine=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);
