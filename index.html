@@ -163,49 +163,41 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div style="display:flex;flex-direction:column;gap:18px">
       <span class="eyebrow">منصة تدريب عملي للكليات التقنية</span>
       <h1>المهارة تُتقن <em>باليد</em>،<br>والذكاء الاصطناعي يراقب كل سلك.</h1>
-      <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدربة تركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبهها بالصوت قبل ما تحترق القطعة.</p>
-      <div class="row"><button class="btn" id="heroStart">ابدئي التدريب</button><button class="btn ghost" id="heroDemo">شاهدي العرض التجريبي</button></div>
+      <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدرب يركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبّه بالصوت قبل ما تحترق القطعة.</p>
+      <div class="row"><button class="btn" id="heroStart">ابدأ التدريب</button><button class="btn ghost" id="heroDemo">مشاهدة العرض التجريبي</button></div>
     </div>
     <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض حي: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>LIVE · AI VISION</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
   </div>
 
   <div class="feats">
     <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="8" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><circle cx="17" cy="18" r="5" fill="none" stroke="#46d9e6" stroke-width="2.5"/></svg><h3>كاميرا تشوف وين السلك</h3><p class="note">رؤية حاسوبية مع OpenCV.js تتابع السلك الأحمر والأسود وتحدد أي خط دخلوا فيه، طول وقت التطبيق.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4 L31 29 H3 Z" fill="none" stroke="#ff5d5d" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 13 v7" stroke="#ff5d5d" stroke-width="2.5" stroke-linecap="round"/><circle cx="17" cy="24.5" r="1.6" fill="#ff5d5d"/></svg><h3>إيقاف فوري لخطأ القطبية</h3><p class="note">لو الأحمر دخل في السالب، تتوقف الخطوة ويطلع تنبيه صوتي عربي، ويُسجّل الخطأ في ملف المتدربة.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" بالواقع المعزز</h3><p class="note">عند الخطأ يظهر دخان وشرارة فوق الفيديو الحقيقي، وتسمع المتدربة وش كان بيصير لو شغّلت. تتعلم العاقبة بدون ما تتلف قطعة.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="7" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><path d="M14 12 l8 5 -8 5z" fill="#46d9e6"/></svg><h3>لقطة الخطأ وتقرير الأداء</h3><p class="note">يحفظ التطبيق ثواني من الفيديو لحظة الخطأ، ويحسب وقت كل خطوة. المدربة تشوف وش صار، ووين تتأخر كل متدربة، ونقطة قوتها وضعفها.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4 L31 29 H3 Z" fill="none" stroke="#ff5d5d" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 13 v7" stroke="#ff5d5d" stroke-width="2.5" stroke-linecap="round"/><circle cx="17" cy="24.5" r="1.6" fill="#ff5d5d"/></svg><h3>إيقاف فوري لخطأ القطبية</h3><p class="note">لو الأحمر دخل في السالب، تتوقف الخطوة ويطلع تنبيه صوتي عربي، ويُسجّل الخطأ في ملف المتدرب.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" بالواقع المعزز</h3><p class="note">عند الخطأ يظهر دخان وشرارة فوق الفيديو الحقيقي، ويسمع المتدرب وش كان بيصير لو تم التشغيل. يتعلم العاقبة بدون ما تتلف قطعة.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="7" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><path d="M14 12 l8 5 -8 5z" fill="#46d9e6"/></svg><h3>لقطة الخطأ وتقرير الأداء</h3><p class="note">يحفظ التطبيق ثواني من الفيديو لحظة الخطأ، ويحسب وقت كل خطوة. المدرب يشوف وش صار، ووين يتأخر كل متدرب، ونقاط القوة والضعف.</p></div>
     
-<div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 28 V18 M13 28 V10 M21 28 V15 M29 28 V6" stroke="#e2b54e" stroke-width="3" stroke-linecap="round"/></svg><h3>لوحة للمدربة</h3><p class="note">كل محاولة لها درجة ومدة وأخطاء. المدربة تعرف مين تحتاج دعم، وأي خطأ يتكرر في الشعبة.</p></div>
+<div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 28 V18 M13 28 V10 M21 28 V15 M29 28 V6" stroke="#e2b54e" stroke-width="3" stroke-linecap="round"/></svg><h3>لوحة للمدرب</h3><p class="note">كل محاولة لها درجة ومدة وأخطاء. المدرب يعرف مين يحتاج دعم، وأي خطأ يتكرر في الشعبة.</p></div>
   </div>
 
   <div class="proof" aria-label="كيف يحكم مراس على الخطأ">
     <div><b>لمستين</b><span>معايرة خط الموجب والسالب في لوحتك</span></div>
     <div><b>ثانية ثبات</b><span>ما ينحسب الخطأ والسلك يتحرك في اليد</span></div>
     <div><b>صوت عربي</b><span>تنبيه فوري مع شرح العاقبة</span></div>
-    <div><b>لقطة</b><span>ثواني من الفيديو لحظة الخطأ للمدربة</span></div>
+    <div><b>لقطة</b><span>ثواني من الفيديو لحظة الخطأ للمدرب</span></div>
   </div>
 
-  <div class="card">
-    <span class="eyebrow">خارطة الطريق</span>
-    <div class="road">
-      <div class="ph now"><h3>المرحلة ١ · الآن</h3><p class="note">مهارة توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية وتشغيل LED.</p></div>
-      <div class="ph"><h3>المرحلة ٢</h3><p class="note">تعرّف على القطع نفسها (مقاومة، LED، حساسات) بنموذج مُدرّب، ومهارات ميكاترونكس إضافية.</p></div>
-      <div class="ph"><h3>المرحلة ٣</h3><p class="note">بيئة الواقع الافتراضي (الميتافيرس) وربط حساسات المعمل للتقييم الدقيق.</p></div>
-    </div>
-  </div>
-  <p class="foot">مراس · نموذج أولي للعرض في STIEX 2026، الرياض · بيانات الدخول والمتدربات تجريبية</p>
+  <p class="foot">مراس · نموذج أولي للعرض في STIEX 2026، الرياض · بيانات الدخول والمتدربين تجريبية</p>
 </section>
 
 
 <!-- LOGIN -->
 <section id="scr-login" class="login card">
   <h1>تسجيل الدخول</h1>
-  <p class="note">الكلية التقنية للبنات بالطائف · قسم الميكاترونكس</p>
-  <label>الرقم التدريبي أو رقم المدربة<input id="liId" inputmode="numeric" autocomplete="username"></label>
+  <p class="note">الكلية التقنية · قسم الميكاترونكس</p>
+  <label>الرقم التدريبي أو رقم المدرب<input id="liId" inputmode="numeric" autocomplete="username"></label>
   <label>كلمة المرور<input id="liPw" type="password" autocomplete="current-password"></label>
   <div class="err" id="liErr"></div>
   <button class="btn" id="liBtn">دخول</button>
-  <div class="note">حسابات تجريبية (اضغطي للتعبئة):</div>
+  <div class="note">حسابات تجريبية (اضغط للتعبئة):</div>
   <div class="row" id="demoAccounts"></div>
 </section>
 
@@ -214,31 +206,31 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
   <div class="card">
     <span class="pill warn" style="align-self:flex-start">مهارة المرحلة الأولى</span>
     <h1>توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية</h1>
-    <p class="note">تطبقين المهارة على قطع حقيقية والكاميرا شغالة. الذكاء الاصطناعي يتابع مكان كل سلك، ويوقفك فوراً لو السلك دخل في القطب الغلط.</p>
+    <p class="note">تطبيق المهارة على قطع حقيقية والكاميرا شغالة. الذكاء الاصطناعي يتابع مكان كل سلك، ويوقفك فوراً لو السلك دخل في القطب الغلط.</p>
     <div class="row"><span class="pill ok">٤ خطوات</span><span class="pill ok">قطع حقيقية</span><span class="pill ok">تعليق صوتي</span></div>
-    <div class="row"><button class="btn" id="toGuide">ابدئي: شرح الخطوات</button></div>
+    <div class="row"><button class="btn" id="toGuide">ابدأ: شرح الخطوات</button></div>
   </div>
   <div class="card" style="margin-top:16px">
-    <h2>محاولاتي السابقة</h2>
+    <h2>المحاولات السابقة</h2>
     <div id="myAttempts" class="tablewrap"></div>
   </div>
 </section>
 
 <!-- GUIDE -->
 <section id="scr-guide" hidden class="card">
-  <h1>قبل ما تبدئين</h1>
-  <p class="note">جهزي: أردوينو أونو، لوحة تجارب، سلك أحمر، سلك أسود، LED مع مقاومة 220 أوم. حطي الأردوينو <b style="color:var(--paper)">تحت</b> لوحة التجارب، وثبتي الآيباد فوقها بحيث يشوف الاثنين.</p>
+  <h1>قبل البدء</h1>
+  <p class="note">التجهيز: أردوينو أونو، لوحة تجارب، سلك أحمر، سلك أسود، LED مع مقاومة 220 أوم. يوضع الأردوينو <b style="color:var(--paper)">تحت</b> لوحة التجارب، ويُثبّت الآيباد فوقها بحيث يظهر الاثنان.</p>
   <ol class="steps">
-    <li><span class="n">١</span><h3>ثبتي اللوحة في الإطار</h3><p class="note">الكاميرا تتأكد إن الإضاءة كافية والصورة ثابتة وواضحة.</p>
+    <li><span class="n">١</span><h3>تثبيت اللوحة في الإطار</h3><p class="note">الكاميرا تتأكد إن الإضاءة كافية والصورة ثابتة وواضحة.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><rect x="8" y="6" width="184" height="100" fill="none" stroke="#e2b54e" stroke-dasharray="6 4" stroke-width="2"/></svg></li>
-    <li><span class="n">٢</span><h3>المسي على خط الموجب ثم السالب</h3><p class="note">علشان التطبيق يعرف وين خط <b style="color:var(--plus)">+</b> الأحمر ووين خط <b style="color:var(--minus)">−</b> الأزرق في لوحتك.</p>
+    <li><span class="n">٢</span><h3>تحديد خط الموجب ثم السالب</h3><p class="note">علشان التطبيق يعرف وين خط <b style="color:var(--plus)">+</b> الأحمر ووين خط <b style="color:var(--minus)">−</b> الأزرق في لوحتك.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><circle cx="120" cy="34" r="9" fill="none" stroke="#ff5a4f" stroke-width="3"/><circle cx="80" cy="24" r="9" fill="none" stroke="#4f8dff" stroke-width="3"/><text x="120" y="60" fill="#333" font-size="11" text-anchor="middle">١</text><text x="80" y="60" fill="#333" font-size="11" text-anchor="middle">٢</text></svg></li>
     <li><span class="n">٣</span><h3>الأحمر من 5V إلى الموجب +</h3><p class="note">ثم الأسود من GND إلى السالب −. لو الأحمر دخل في السالب، يطلع لك تنبيه بالصوت.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><path d="M88 82 Q86 55 110 34" stroke="#e53935" stroke-width="4" fill="none"/><path d="M104 82 Q120 50 140 24" stroke="#111" stroke-width="4" fill="none"/><text x="86" y="100" fill="#fff" font-size="8">5V</text><text x="100" y="100" fill="#fff" font-size="8">GND</text></svg></li>
-    <li><span class="n">٤</span><h3>شغّلي وتأكدي إن اللمبة ولّعت</h3><p class="note">وصلي الـ USB. الكاميرا تكتشف ضوء الـ LED وتعطيك النتيجة.</p>
+    <li><span class="n">٤</span><h3>التشغيل والتأكد من إضاءة اللمبة</h3><p class="note">توصيل سلك USB. الكاميرا تكتشف ضوء الـ LED وتعرض النتيجة.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><circle cx="130" cy="52" r="14" fill="#fff59d" opacity=".5"/><circle cx="130" cy="52" r="6" fill="#ffeb3b"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/></svg></li>
   </ol>
-  <div class="row"><button class="btn" id="startCam">افتحي الكاميرا وابدئي</button><button class="btn ghost" id="startPhoto" hidden>صوّري خطوة بخطوة</button><button class="btn ghost" id="startDemo">عرض تجريبي بدون قطع</button><button class="btn ghost" id="backHome1">رجوع</button></div>
+  <div class="row"><button class="btn" id="startCam">فتح الكاميرا والبدء</button><button class="btn ghost" id="startPhoto" hidden>التصوير خطوة بخطوة</button><button class="btn ghost" id="startDemo">عرض تجريبي بدون قطع</button><button class="btn ghost" id="backHome1">رجوع</button></div>
   <p class="err" id="camErr"></p>
 </section>
 
@@ -255,10 +247,10 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
       <div class="row" style="justify-content:space-between"><h2>الخطوات</h2><button class="chip" id="muteBtn" aria-pressed="false">🔊 الصوت شغال</button></div>
       <ul class="plist" id="plist"></ul>
       <div class="meter" id="meter"></div>
-      <div class="row"><button class="btn small" id="snapBtn" hidden>📷 التقطي صورة</button><input type="file" id="snapIn" accept="image/*" capture="environment" hidden><button class="btn ghost small" id="hintBtn">ساعديني</button><button class="btn ghost small" id="trainerOk">تأكيد المدربة</button><button class="btn ghost small" id="recal">إعادة المعايرة</button><button class="btn ghost small" id="quitBtn">إنهاء</button></div>
+      <div class="row"><button class="btn small" id="snapBtn" hidden>📷 التقاط صورة</button><input type="file" id="snapIn" accept="image/*" capture="environment" hidden><button class="btn ghost small" id="hintBtn">مساعدة</button><button class="btn ghost small" id="trainerOk">تأكيد المدرب</button><button class="btn ghost small" id="recal">إعادة المعايرة</button><button class="btn ghost small" id="quitBtn">إنهاء</button></div>
       <div id="demoBox" hidden class="card" style="padding:12px;background:var(--raise)">
         <h3>أدوات العرض التجريبي</h3>
-        <p class="note">اسحبي طرف السلك الأحمر والأسود على الصورة وحطيه في الخط. جربي الأخطاء كمان.</p>
+        <p class="note">اسحب طرف السلك الأحمر أو الأسود على الصورة إلى الخط. يمكن تجربة الأخطاء أيضاً.</p>
         <div class="demo-tools"><button class="chip" id="dPower" aria-pressed="false">⚡ تشغيل الأردوينو</button><button class="chip" id="dDim" aria-pressed="false">🌙 إضاءة ضعيفة</button><button class="chip" id="dShake" aria-pressed="false">📳 اهتزاز</button><button class="chip" id="dBlur" aria-pressed="false">🌫 صورة مو واضحة</button></div>
       </div>
     </div>
@@ -273,18 +265,18 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="row" style="justify-content:center" id="resPills"></div>
     <div class="row" style="justify-content:center"><button class="btn" id="again">محاولة جديدة</button><button class="btn ghost" id="resClip" hidden>▶ لقطة الخطأ</button><button class="btn ghost" id="resHome">الرئيسية</button></div>
   </div>
-  <div class="card"><h2>تفاصيل المحاولة</h2><ul class="plist" id="resLog"></ul><p class="note">تنحفظ المحاولة وتظهر للمدربة في لوحتها.</p></div>
+  <div class="card"><h2>تفاصيل المحاولة</h2><ul class="plist" id="resLog"></ul><p class="note">تنحفظ المحاولة وتظهر للمدرب في لوحته.</p></div>
 </section>
 
 <!-- TRAINER -->
 <section id="scr-trainer" hidden style="display:flex;flex-direction:column;gap:16px">
-  <div class="card"><div class="row" style="justify-content:space-between"><h1>لوحة المدربة</h1><span class="sync" id="syncNote">المحاولات محفوظة على هذا الجهاز</span></div><p class="note">مهارة: توصيل تغذية لوحة التجارب مع فحص القطبية · شعبة ميكاترونكس ١</p><div class="kpis" id="kpis"></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><h1>لوحة المدرب</h1><span class="sync" id="syncNote">المحاولات محفوظة على هذا الجهاز</span></div><p class="note">مهارة: توصيل تغذية لوحة التجارب مع فحص القطبية · شعبة ميكاترونكس ١</p><div class="kpis" id="kpis"></div></div>
   <div class="card" id="reportCard"></div>
   <div class="grid2">
-    <div class="card"><h2>المتدربات</h2><div class="tablewrap" id="tTable"></div></div>
+    <div class="card"><h2>المتدربون</h2><div class="tablewrap" id="tTable"></div></div>
     <div class="card"><h2>أكثر الأخطاء تكراراً</h2><div class="bars" id="tBars"></div><h2 id="tDetailTitle" style="margin-top:8px">المحاولات</h2><div class="tablewrap" id="tDetail"></div></div>
   </div>
-  <div class="card"><h2>اختبار آلي بدون بشر (محاكاة)</h2><p class="note">هذا اختبار على صور مولّدة بالكمبيوتر، مو على كاميرا وقطع حقيقية. يثبت إن منطق الكشف صحيح، والتجربة الحقيقية خطوة لاحقة. متدربات افتراضيات يركّبن الأسلاك صح وغلط بشكل عشوائي، مع اهتزاز وتغير إضاءة وتشويش. نقارن قرار الذكاء الاصطناعي بالحقيقة المعروفة لكل حالة.</p><div class="row"><button class="btn" id="runTest">تشغيل ٣٠٠ حالة</button></div><pre class="log" id="testLog">لم يُشغّل بعد.</pre></div>
+  <div class="card"><h2>اختبار آلي بدون بشر (محاكاة)</h2><p class="note">هذا اختبار على صور مولّدة بالكمبيوتر، مو على كاميرا وقطع حقيقية. يثبت إن منطق الكشف صحيح، والتجربة الحقيقية خطوة لاحقة. متدربون افتراضيون يركّبون الأسلاك صح وغلط بشكل عشوائي، مع اهتزاز وتغير إضاءة وتشويش. نقارن قرار الذكاء الاصطناعي بالحقيقة المعروفة لكل حالة.</p><div class="row"><button class="btn" id="runTest">تشغيل ٣٠٠ حالة</button></div><pre class="log" id="testLog">لم يُشغّل بعد.</pre></div>
 </section>
 
 </div>
@@ -293,7 +285,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="row" style="justify-content:space-between"><h2 id="clipTitle">لقطة الخطأ</h2><button class="btn ghost small" id="clipClose">إغلاق</button></div>
     <img id="clipImg" alt="لقطة فيديو لحظة خطأ القطبية" style="width:100%;border-radius:12px;background:#000;aspect-ratio:4/3;object-fit:cover">
     <p class="note" id="clipMeta"></p>
-    <p class="note">يحفظ التطبيق آخر ثانيتين قبل الخطأ وثانية بعده، علشان المدربة تشوف وش صار بالضبط.</p>
+    <p class="note">يحفظ التطبيق آخر ثانيتين قبل الخطأ وثانية بعده، علشان المدرب يشوف وش صار بالضبط.</p>
   </div>
 </div>
 <script>
@@ -306,13 +298,13 @@ const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v)
 /* ---------- mock data ---------- */
 const USERS=[
  {id:'4410201',pw:'1234',name:'نورة القحطاني',role:'trainee'},
- {id:'4410202',pw:'1234',name:'ريم الزهراني',role:'trainee'},
+ {id:'4410202',pw:'1234',name:'عبدالله الزهراني',role:'trainee'},
  {id:'4410203',pw:'1234',name:'لمى الشهري',role:'trainee'},
- {id:'4410204',pw:'1234',name:'جود الحارثي',role:'trainee'},
+ {id:'4410204',pw:'1234',name:'فهد الحارثي',role:'trainee'},
  {id:'4410205',pw:'1234',name:'شهد المالكي',role:'trainee'},
- {id:'9001',pw:'1234',name:'م. أمل السبيعي',role:'trainer'}
+ {id:'9001',pw:'1234',name:'م. سامي السبيعي',role:'trainer'}
 ];
-const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلبت مساعدة',assisted:'تأكيد يدوي من المدربة'};
+const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب'};
 function seed(){
   let a=null;
   const now=Date.now(),D=864e5; a=[];
@@ -332,8 +324,8 @@ let me=null;
 /* ---------- navigation ---------- */
 const screens=['landing','login','home','guide','practice','result','trainer'];
 function show(n){screens.forEach(s=>$('#scr-'+s).hidden=s!==n);$('#landingNav').hidden=!!me||n==='login';window.scrollTo(0,0);heroRun=n==='landing'}
-function setUser(u){me=u;$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدربة':'متدربة · '+AR(u.id)}
-USERS.forEach(u=>{const b=document.createElement('button');b.className='chip';b.textContent=(u.role==='trainer'?'👩‍🏫 ':'')+u.name;b.onclick=()=>{$('#liId').value=u.id;$('#liPw').value=u.pw};$('#demoAccounts').append(b)});
+function setUser(u){me=u;$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدرب':'متدرب · '+AR(u.id)}
+USERS.forEach(u=>{const b=document.createElement('button');b.className='chip';b.textContent=(u.role==='trainer'?'🧑‍🏫 ':'')+u.name;b.onclick=()=>{$('#liId').value=u.id;$('#liPw').value=u.pw};$('#demoAccounts').append(b)});
 function login(){const id=$('#liId').value.trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)),pw=$('#liPw').value;const u=USERS.find(x=>x.id===id&&x.pw===pw);if(!u){$('#liErr').textContent='الرقم أو كلمة المرور غير صحيحة';return}$('#liErr').textContent='';setUser(u);u.role==='trainer'?openTrainer():openHome()}
 $('#liBtn').onclick=login;$('#liPw').onkeydown=e=>{if(e.key==='Enter')login()};
 $('#logoutBtn').onclick=()=>{stopPractice();setUser(null);show('landing')};
@@ -345,8 +337,8 @@ function fmtDur(s){s=Math.round(s);return AR(Math.floor(s/60))+':'+AR(String(s%6
 function errSummary(errs){const c={};errs.forEach(e=>c[e]=(c[e]||0)+1);const k=Object.keys(c);return k.length?k.map(x=>ERR[x]+(c[x]>1?' ×'+AR(c[x]):'')).join('، '):'بدون أخطاء'}
 function attemptsTable(list,showName){
   if(!list.length)return '<p class="note">ما فيه محاولات للحين.</p>';
-  return '<table><thead><tr>'+(showName?'<th>المتدربة</th>':'')+'<th>التاريخ</th><th>الدرجة</th><th>المدة</th><th>الأخطاء</th><th>لقطة</th></tr></thead><tbody>'+
-  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+USERS.find(u=>u.id===a.uid).name+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+errSummary(a.errors)+'</td><td>'+(a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+aid(a)+'">▶ شاهدي</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
+  return '<table><thead><tr>'+(showName?'<th>المتدرب</th>':'')+'<th>التاريخ</th><th>الدرجة</th><th>المدة</th><th>الأخطاء</th><th>لقطة</th></tr></thead><tbody>'+
+  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+USERS.find(u=>u.id===a.uid).name+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+errSummary(a.errors)+'</td><td>'+(a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+aid(a)+'">▶ مشاهدة</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
 }
 function openHome(){$('#myAttempts').innerHTML=attemptsTable(attempts.filter(a=>a.uid===me.id),false);show('home')}
 $('#toGuide').onclick=()=>show('guide');$('#backHome1').onclick=openHome;$('#resHome').onclick=openHome;$('#again').onclick=()=>show('guide');
@@ -358,8 +350,8 @@ function openTrainer(){
   const all=attempts;const avg=all.length?Math.round(all.reduce((s,a)=>s+a.score,0)/all.length):0;
   const pol=all.reduce((s,a)=>s+a.errors.filter(e=>e==='red_minus'||e==='black_plus').length,0);
   const firstOk=tr.filter(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);return l.length&&l[l.length-1].score>=85}).length;
-  $('#kpis').innerHTML=[[AR(all.length),'محاولة'],[AR(avg),'متوسط الدرجات'],[AR(pol),'خطأ قطبية تم إيقافه'],[AR(firstOk)+' / '+AR(tr.length),'متدربات أتقنّ المهارة']].map(k=>'<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('');
-  $('#tTable').innerHTML='<table><thead><tr><th>المتدربة</th><th>المحاولات</th><th>آخر درجة</th><th>أكثر خطأ</th></tr></thead><tbody>'+tr.map(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);const last=l[l.length-1];const c={};l.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
+  $('#kpis').innerHTML=[[AR(all.length),'محاولة'],[AR(avg),'متوسط الدرجات'],[AR(pol),'خطأ قطبية تم إيقافه'],[AR(firstOk)+' / '+AR(tr.length),'متدربون أتقنوا المهارة']].map(k=>'<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('');
+  $('#tTable').innerHTML='<table><thead><tr><th>المتدرب</th><th>المحاولات</th><th>آخر درجة</th><th>أكثر خطأ</th></tr></thead><tbody>'+tr.map(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);const last=l[l.length-1];const c={};l.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
     return '<tr data-u="'+u.id+'" class="'+(selTrainee===u.id?'sel':'')+'"><td>'+u.name+'</td><td>'+AR(l.length)+'</td><td>'+(last?'<span class="pill '+(last.score>=85?'ok':last.score>=60?'warn':'bad')+'">'+AR(last.score)+'</span>':'—')+'</td><td>'+(top?ERR[top[0]]:'—')+'</td></tr>'}).join('')+'</tbody></table>';
   $('#tTable').querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>{selTrainee=r.dataset.u;openTrainer()});
   const c={};all.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const mx=Math.max(1,...Object.values(c));
@@ -415,10 +407,10 @@ function locate(bands,kind){ // kind 'red'|'dark' ; Arduino is below the board =
   return 'none';
 }
 function qualityIssue(q){
-  if(q.lum<45)return 'الإضاءة ضعيفة، قربي اللوحة من النور أو شغلي إضاءة';
-  if(q.lum>225)return 'الإضاءة قوية جداً، بعّدي الآيباد عن الشمس أو الضوء المباشر';
-  if(q.motion>14)return 'الصورة تتحرك، ثبتي الآيباد على الحامل';
-  if(q.sharp<3.2||(q.lap!=null&&q.lap<12))return 'الصورة مو واضحة، قربي أو بعدي الآيباد شوي لين تتضح';
+  if(q.lum<45)return 'الإضاءة ضعيفة، الرجاء تقريب اللوحة من النور أو تشغيل إضاءة';
+  if(q.lum>225)return 'الإضاءة قوية جداً، الرجاء إبعاد الآيباد عن الشمس أو الضوء المباشر';
+  if(q.motion>14)return 'الصورة تتحرك، الرجاء تثبيت الآيباد على الحامل';
+  if(q.sharp<3.2||(q.lap!=null&&q.lap<12))return 'الصورة غير واضحة، الرجاء تقريب الآيباد أو إبعاده قليلاً حتى تتضح';
   return null;
 }
 
@@ -468,11 +460,11 @@ function wire(ctx,a,b,col){
 
 /* ---------- practice runtime ---------- */
 const STEPS=[
- {id:'frame',t:'ثبتي اللوحة والأردوينو داخل الصورة',say:'ثبتي الآيباد بحيث تظهر لوحة التجارب والأردوينو تحتها بوضوح'},
- {id:'calib',t:'المسي خط الموجب + ثم خط السالب − على الشاشة',say:'المسي على الشاشة خط الموجب الأحمر'},
- {id:'red',t:'السلك الأحمر من 5V إلى خط الموجب +',say:'ممتاز. الحين وصلي السلك الأحمر من منفذ فايف فولت إلى خط الموجب'},
- {id:'black',t:'السلك الأسود من GND إلى خط السالب −',say:'أحسنتِ. الحين وصلي السلك الأسود من منفذ الأرضي جي إن دي إلى خط السالب'},
- {id:'led',t:'شغّلي الأردوينو وتأكدي إن اللمبة ولّعت',say:'ممتاز. الحين شغلي الأردوينو بسلك اليو إس بي، وخلي اللمبة تظهر في الكاميرا'}
+ {id:'frame',t:'تثبيت اللوحة والأردوينو داخل الصورة',say:'الرجاء تثبيت الآيباد بحيث تظهر لوحة التجارب والأردوينو تحتها بوضوح'},
+ {id:'calib',t:'تحديد خط الموجب + ثم خط السالب − باللمس على الشاشة',say:'الرجاء لمس خط الموجب الأحمر على الشاشة'},
+ {id:'red',t:'السلك الأحمر من 5V إلى خط الموجب +',say:'ممتاز. الخطوة التالية: توصيل السلك الأحمر من منفذ فايف فولت إلى خط الموجب'},
+ {id:'black',t:'السلك الأسود من GND إلى خط السالب −',say:'أحسنت. الخطوة التالية: توصيل السلك الأسود من منفذ الأرضي جي إن دي إلى خط السالب'},
+ {id:'led',t:'تشغيل الأردوينو والتأكد من إضاءة اللمبة',say:'ممتاز. الخطوة الأخيرة: تشغيل الأردوينو بسلك اليو إس بي، مع ظهور اللمبة في الكاميرا'}
 ];
 let R=null; // run state
 const view=$('#view'),vctx=view.getContext('2d');
@@ -486,7 +478,7 @@ async function startPractice(mode){
     try{
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
       video=document.createElement('video');video.playsInline=true;video.muted=true;video.srcObject=stream;await video.play();
-    }catch(e){$('#camErr').textContent='الكاميرا المباشرة ما تفتح داخل هذا الرابط. استخدمي زر "صوّري خطوة بخطوة": تلتقطين صورة بعد كل خطوة، والتطبيق يحكم عليها بنفس الطريقة.';$('#startPhoto').hidden=false;return}
+    }catch(e){$('#camErr').textContent='الكاميرا المباشرة لا تعمل داخل هذا الرابط. يمكن استخدام زر "التصوير خطوة بخطوة": صورة بعد كل خطوة، والتطبيق يحكم عليها بنفس الطريقة.';$('#startPhoto').hidden=false;return}
   }
   R={mode,step:0,t0:performance.now(),errors:[],log:[],cal:{},calStage:0,base:null,prevLum:null,hist:[],errLatch:{},qBad:0,fx:[],buf:[],lastCap:0,clips:[],pending:null,stepT:[],qWarned:false,ended:false,lastTick:0};
   Object.assign(demo,{red:{...SC.trayRed},black:{...SC.trayBlack},power:false,dim:false,shake:false,blur:false});
@@ -510,7 +502,7 @@ function enterStep(i){
   if(i>=STEPS.length)return finish(true);
   const s=STEPS[i];banner(s.t);say(s.say);
   if(s.id==='calib'){R.calStage=0;R.cal={};R.base=null;
-    if(R.mode==='demo'){banner('عرض تجريبي: المسي على خط الموجب + (الخط الأحمر)')}
+    if(R.mode==='demo'){banner('عرض تجريبي: المس خط الموجب + (الخط الأحمر)')}
   }
   if(s.id==='black'||s.id==='led')R.rebase=true;
 }
@@ -520,7 +512,7 @@ function elapsed(){return (performance.now()-R.t0)/1000}
 function flash(){const f=$('#flash');f.classList.add('on');setTimeout(()=>f.classList.remove('on'),900);try{navigator.vibrate&&navigator.vibrate(200)}catch(e){}}
 
 function grabSource(){
-  if(R.mode==='photo'){if(R.photo){vctx.drawImage(R.photo,0,0,view.width,view.height)}else{vctx.fillStyle='#071e14';vctx.fillRect(0,0,view.width,view.height);vctx.fillStyle='#f1f4ec';vctx.font='bold 20px sans-serif';vctx.textAlign='center';vctx.fillText('اضغطي "التقطي صورة" وصوري اللوحة والأردوينو',view.width/2,view.height/2);vctx.textAlign='start'}return view}
+  if(R.mode==='photo'){if(R.photo){vctx.drawImage(R.photo,0,0,view.width,view.height)}else{vctx.fillStyle='#071e14';vctx.fillRect(0,0,view.width,view.height);vctx.fillStyle='#f1f4ec';vctx.font='bold 20px sans-serif';vctx.textAlign='center';vctx.fillText('اضغط "التقاط صورة" لتصوير اللوحة والأردوينو',view.width/2,view.height/2);vctx.textAlign='start'}return view}
   if(R.mode==='camera'){vctx.drawImage(video,0,0,view.width,view.height);return view}
   const o={dx:demo.shake?(Math.random()-.5)*40:0,dy:demo.shake?(Math.random()-.5)*40:0,gain:demo.dim?0.18:1};
   drawScene(scx,demo,o);
@@ -559,7 +551,7 @@ function tick(src){
   if(id==='calib'){if(R.calStage===2&&q.motion<6){R.base=new Uint8ClampedArray(d);addOk('تمت معايرة خطي الموجب والسالب');enterStep(2)}return}
   if(R.rebase){if(q.motion<6){R.base=new Uint8ClampedArray(d);R.rebase=false}return}
   const B=A.bands;
-  if(Math.max(B.plus.chg,B.minus.chg)>0.45){banner('يدك تغطي الخطوط، أبعديها شوي علشان أتأكد','warn');R.hist=[];return}
+  if(Math.max(B.plus.chg,B.minus.chg)>0.45){banner('اليد تغطي الخطوط، الرجاء إبعادها قليلاً للتأكد','warn');R.hist=[];return}
   if(id==='red'||id==='black'){
     const kind=id==='red'?'red':'dark',target=id==='red'?'plus':'minus',wrong=id==='red'?'minus':'plus';
     if(q.motion>=8){R.hist=[];return} // wire still moving in the hand: never judge it
@@ -567,10 +559,10 @@ function tick(src){
     if(loc==='none'){R.errLatch[id]=false;banner(STEPS[R.step].t);R.hist=[];return}
     if(stable(loc,10)){
       if(loc===target){const m=id==='red'?'السلك الأحمر في خط الموجب +، صح':'السلك الأسود في خط السالب −، صح';addOk(m);banner(m,'ok');enterStep(R.step+1)}
-      else if(loc===wrong&&!R.errLatch[id]){R.errLatch[id]=true;const m=id==='red'?'خطأ! السلك الأحمر في خط السالب. انزعيه وحطيه في خط الموجب':'خطأ! السلك الأسود في خط الموجب. انزعيه وحطيه في خط السالب';
+      else if(loc===wrong&&!R.errLatch[id]){R.errLatch[id]=true;const m=id==='red'?'خطأ! السلك الأحمر في خط السالب. يجب نقله إلى خط الموجب':'خطأ! السلك الأسود في خط الموجب. يجب نقله إلى خط السالب';
         addErr(id==='red'?'red_minus':'black_plus',m);banner(m,'bad');flash();
         const bw=B[wrong];startFx((kind==='red'?bw.rx:bw.dx)*view.width,bw.y*view.height);
-        say(m+'. ماذا لو شغلتي كذا؟ القطبية بتنعكس، اللمبة ما بتشتغل، والقطع الحساسة مثل المكثف والحساسات ممكن تتلف');
+        say(m+'. ماذا لو تم التشغيل هكذا؟ القطبية بتنعكس، اللمبة ما بتشتغل، والقطع الحساسة مثل المكثف والحساسات ممكن تتلف');
         R.pending={code:id==='red'?'red_minus':'black_plus',at:elapsed(),until:performance.now()+1400}}
       else if(loc===wrong)banner(id==='red'?'السلك الأحمر للحين في السالب ✗':'السلك الأسود للحين في الموجب ✗','bad');
     }
@@ -584,8 +576,8 @@ view.addEventListener('pointerdown',e=>{
   if(!R)return;const p=toCanvas(e);
   if(STEPS[R.step]&&STEPS[R.step].id==='calib'&&R.calStage<2){
     const role=R.calStage===0?'plus':'minus';R.cal[role]=p.y/view.height;R.calStage++;
-    if(R.calStage===1){banner('الحين المسي على خط السالب − (الخط الأزرق)');say('الحين المسي خط السالب الأزرق')}
-    else{if(Math.abs(R.cal.plus-R.cal.minus)<0.05){R.calStage=0;R.cal={};banner('الخطين قريبين مرة، المسي الموجب ثم السالب مرة ثانية','warn');say('المسي مرة ثانية');return}banner('جاري حفظ الصورة المرجعية… لا تحركين شي')}
+    if(R.calStage===1){banner('الخطوة التالية: لمس خط السالب − (الخط الأزرق)');say('الآن لمس خط السالب الأزرق')}
+    else{if(Math.abs(R.cal.plus-R.cal.minus)<0.05){R.calStage=0;R.cal={};banner('الخطان متقاربان جداً، يُعاد لمس الموجب ثم السالب','warn');say('الرجاء إعادة اللمس');return}banner('جاري حفظ الصورة المرجعية… الرجاء عدم التحريك')}
     return;
   }
   if(R.mode==='demo'){for(const k of ['red','black']){const w=demo[k];if(Math.hypot(w.x-p.x,w.y+2-p.y)<40){demo.drag=k;view.setPointerCapture(e.pointerId);break}}}
@@ -595,8 +587,8 @@ view.addEventListener('pointerup',()=>{if(demo.drag){const w=demo[demo.drag];con
 function tog(id,key){$('#'+id).onclick=()=>{demo[key]=!demo[key];$('#'+id).setAttribute('aria-pressed',demo[key])}}
 tog('dPower','power');tog('dDim','dim');tog('dShake','shake');tog('dBlur','blur');
 $('#recal').onclick=()=>{if(R&&R.step>=1){R.step=1;enterStep(1)}};
-$('#hintBtn').onclick=()=>{if(!R||R.step>=STEPS.length)return;const H={frame:'خلي الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. ادخلي طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. ادخلي السلك الأسود في أي فتحة على خط السالب الأزرق',led:'تأكدي إن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
-$('#trainerOk').onclick=()=>{if(!R||R.step<2||R.step>=STEPS.length)return;addErr('assisted','المدربة أكدت الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
+$('#hintBtn').onclick=()=>{if(!R||R.step>=STEPS.length)return;const H={frame:'يوضع الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. يدخل طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. يدخل السلك الأسود في أي فتحة على خط السالب الأزرق',led:'التأكد من أن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
+$('#trainerOk').onclick=()=>{if(!R||R.step<2||R.step>=STEPS.length)return;addErr('assisted','المدرب أكد الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
 
 /* ---- "ماذا لو؟": AR consequence of a polarity mistake, drawn on the live video ---- */
 function mkFx(x,y,t0){return{x,y,t0,dur:4200,p:Array.from({length:26},(_,j)=>({a:j*.73+Math.random()*.3,v:.45+((j*7)%10)/14,s:7+(j%7)*2.2,d:(j%9)*95}))}}
@@ -609,7 +601,7 @@ function fxPaint(c,list,now,W){
     for(const p of f.p){const tt=t-p.d;if(tt<0)continue;const q=tt/(f.dur-p.d);const yy=f.y-q*140*p.v,xx=f.x+Math.sin(q*6+p.a)*18*p.v;const r=p.s*(1+q*2.4);
       c.fillStyle='rgba(70,70,78,'+(.45*(1-q))+')';c.beginPath();c.arc(xx,yy,r,0,7);c.fill()}
     const a=Math.min(1,t/300)*(k>.85?(1-k)/.15:1);c.save();c.globalAlpha=Math.max(0,a);c.font='bold 15px "IBM Plex Sans Arabic",Tahoma,sans-serif';c.textAlign='center';
-    const txt='ماذا لو شغّلتي؟ القطبية معكوسة ⚡';const w=c.measureText(txt).width+24;const lx=Math.min(Math.max(f.x,w/2+8),W-w/2-8),ly=Math.max(30,f.y-70);
+    const txt='ماذا لو تم التشغيل؟ القطبية معكوسة ⚡';const w=c.measureText(txt).width+24;const lx=Math.min(Math.max(f.x,w/2+8),W-w/2-8),ly=Math.max(30,f.y-70);
     c.fillStyle='rgba(80,16,20,.92)';c.beginPath();if(c.roundRect)c.roundRect(lx-w/2,ly-20,w,32,10);else c.rect(lx-w/2,ly-20,w,32);c.fill();c.fillStyle='#ffd2d2';c.fillText(txt,lx,ly+2);c.restore()}
 }
 /* ---- "لقطة الخطأ": the last few seconds of video kept in memory, saved when a mistake happens ---- */
@@ -688,7 +680,7 @@ function renderReport(u,all){
   const ins=[];
   ins.push(['قوة','أسرع من متوسط الشعبة في <b>'+SHORT[best]+'</b>.']);
   if(ratio[worst]>1.15)ins.push(['تحتاج دعم','تأخذ وقت أطول من الشعبة في <b>'+SHORT[worst]+'</b> (×'+AR(ratio[worst].toFixed(1))+').']);
-  if(topE&&(topE[0]==='red_minus'||topE[0]==='black_plus'))ins.push(['تكرر','خطأ متكرر: <b>'+ERR[topE[0]]+'</b>، '+AR(topE[1])+' مرات. اعرضي عليها لقطة الخطأ.']);
+  if(topE&&(topE[0]==='red_minus'||topE[0]==='black_plus'))ins.push(['تكرر','خطأ متكرر: <b>'+ERR[topE[0]]+'</b>، '+AR(topE[1])+' مرات. يُنصح بعرض لقطة الخطأ.']);
   if(mine.length>1)ins.push([imp>=0?'تحسّن':'تراجع','الدرجة من '+AR(first.score)+' إلى '+AR(last.score)+' خلال '+AR(mine.length)+' محاولات.']);
   if(last.score>=85)ins.push(['جاهزة','وصلت حد الإتقان، تقدر تنتقل للمهارة التالية.']);
   el.innerHTML='<div class="row" style="justify-content:space-between"><h2>تقرير أداء '+u.name+'</h2><span class="note">من فيديو آخر محاولة · '+fmtDate(last.at)+(last.sample?' · بيانات تجريبية':'')+'</span></div>'+
@@ -705,7 +697,7 @@ function finish(completed){
   const score=completed?scoreOf(errs):Math.min(40,scoreOf(errs));
   const a={id:'a'+Date.now()+Math.floor(Math.random()*1e4),uid:me.id,at:Date.now(),dur:Math.round(dur),errors:errs,score,done:completed,steps,clips:R.clips.length};
   saveAttempt(a,R.clips);lastAttempt=a;lastClips=R.clips;$('#resClip').hidden=!R.clips.length;
-  $('#resTitle').textContent=completed?(score>=85?'أتقنتِ المهارة 👏':'أنهيتِ المهارة'):'المحاولة لم تكتمل';
+  $('#resTitle').textContent=completed?(score>=85?'تم إتقان المهارة 👏':'اكتملت المهارة'):'المحاولة لم تكتمل';
   $('#resScore').textContent=AR(score);
   const col=score>=85?'var(--ok)':score>=60?'var(--warn)':'var(--bad)';
   $('#resRing').style.background='conic-gradient('+col+' '+score*3.6+'deg, var(--raise) 0)';
@@ -713,7 +705,7 @@ function finish(completed){
   const pol=errs.filter(e=>e==='red_minus'||e==='black_plus').length;
   $('#resPills').innerHTML='<span class="pill">⏱ '+fmtDur(dur)+'</span><span class="pill '+(pol?'bad':'ok')+'">أخطاء القطبية: '+AR(pol)+'</span><span class="pill warn">تنبيهات: '+AR(errs.length-pol)+'</span>';
   $('#resLog').innerHTML=R.log.map(l=>'<li><span class="dot" style="background:'+(l.ok?'var(--ok)':'var(--bad)')+';color:#000">'+(l.ok?'✓':'!')+'</span><span>'+l.t+'<br><span class="note">'+fmtDur(l.at)+'</span></span></li>').join('')||'<li>لا توجد خطوات.</li>';
-  say(completed?'انتهيتِ. درجتك '+score+' من مية':'تم إنهاء المحاولة');
+  say(completed?'انتهت المحاولة. الدرجة '+score+' من مية':'تم إنهاء المحاولة');
   show('result');
 }
 
@@ -775,7 +767,7 @@ $('#startPhoto').onclick=()=>startPractice('photo');
 $('#snapBtn').onclick=()=>$('#snapIn').click();
 $('#snapIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f||!R)return;const im=new Image();im.onload=()=>{
   const W=640,H=Math.round(640*im.naturalHeight/im.naturalWidth);if(!R.photo){view.width=W;view.height=H}
-  R.photo=im;R.prevLum=null;R.hist=[];if(R.step===1&&R.calStage===0)banner('المسي على خط الموجب + في الصورة');};im.src=URL.createObjectURL(f);e.target.value=''};
+  R.photo=im;R.prevLum=null;R.hist=[];if(R.step===1&&R.calStage===0)banner('لمس خط الموجب + في الصورة');};im.src=URL.createObjectURL(f);e.target.value=''};
 window.__mx={analyze,locate,drawScene,demo,SC,get R(){return R}};
 // hero live demo: scripted wire placement through the real vision engine
 let heroRun=true;
