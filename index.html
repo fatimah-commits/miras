@@ -244,7 +244,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="cam" id="camBox">
       <canvas id="view" width="640" height="480"></canvas>
       <div class="hud"><span class="row" style="gap:6px"><span class="pill" id="cvBadge">رؤية حاسوبية</span><span class="pill" id="hudMode">كاميرا مباشرة</span></span><span class="pill" id="hudTime">00:00</span></div>
-      <div class="banner" id="banner">جاري التشغيل…</div>
+      <div class="banner" id="banner" role="status" aria-live="assertive">جاري التشغيل…</div>
       <div class="flash" id="flash"></div>
     </div>
     <div class="card">
@@ -286,7 +286,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="row" style="justify-content:center" id="resPills"></div>
     <div class="row" style="justify-content:center"><button class="btn" id="again">محاولة جديدة</button><button class="btn ghost" id="resClip" hidden>▶ لقطة الخطأ</button><button class="btn ghost" id="resHome">الرئيسية</button></div>
   </div>
-  <div class="card"><h2>تفاصيل المحاولة</h2><ul class="plist" id="resLog"></ul><p class="note">تنحفظ المحاولة وتظهر للمدرب في لوحته.</p></div>
+  <div class="card"><h2>تفاصيل المحاولة</h2><ul class="plist" id="resLog"></ul><p class="note" id="resSaved">تنحفظ المحاولة وتظهر للمدرب في لوحته.</p></div>
 </section>
 
 <!-- TRAINER -->
@@ -318,6 +318,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
 'use strict';
 const $=s=>document.querySelector(s);
 const AR=n=>String(n).replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d]);
+const esc=v=>String(v==null?'':v).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 
 /* ---------- mock data ---------- */
@@ -329,7 +330,7 @@ const USERS=[
  {id:'4410205',pw:'1234',name:'شهد المالكي',role:'trainee'},
  {id:'9001',pw:'1234',name:'م. سامي السبيعي',role:'trainer'}
 ];
-const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'قصر: السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب'};
+const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'قصر: السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب',quit:'إنهاء قبل الاكتمال'};
 function seed(){
   let a=null;
   const now=Date.now(),D=864e5; a=[];
@@ -340,33 +341,39 @@ function seed(){
   }));
   return a;
 }
-function scoreOf(errs){let s=100;errs.forEach(e=>{s-= e==='red_minus'||e==='black_plus'?15: e==='assisted'?8: e==='hint'?3:4});return Math.max(0,s)}
-let seeds=seed().map(a=>({...a,sample:true,steps:a.steps||fakeSteps(a)}));let realLocal=store.get('mx_real',[]);let realDb=null;let attempts=[];function mergeAttempts(){const byId={};[...realLocal,...(realDb||[])].forEach(a=>byId[a.id]=a);attempts=[...seeds,...Object.values(byId)]}
+const GUEST={id:'guest',pw:null,name:'زائر',role:'guest'};
+const nameOf=uid=>{const u=USERS.find(x=>x.id===uid);return u?u.name:'غير معروف'};
+const errName=e=>ERR[e]||'خطأ غير معروف';
+// keep only well-formed attempts (data may come from localStorage or the shared db)
+const validAttempt=a=>a&&typeof a.id==='string'&&typeof a.uid==='string'&&Number.isFinite(a.at)&&Number.isFinite(a.score)&&Number.isFinite(a.dur)&&Array.isArray(a.errors);
+function scoreOf(errs){let s=100;errs.forEach(e=>{s-= e==='red_minus'||e==='black_plus'?15: e==='assisted'||e==='quit'?8: e==='hint'?3:4});return Math.max(0,s)}
+let seeds=seed().map(a=>({...a,sample:true,steps:a.steps||fakeSteps(a)}));let realLocal=store.get('mx_real',[]);let realDb=null;let attempts=[];function mergeAttempts(){const byId={};[...realLocal,...(realDb||[])].filter(validAttempt).forEach(a=>byId[a.id]=a);attempts=[...seeds,...Object.values(byId)]}
 function fakeSteps(a){const r=k=>Math.round((20+((a.at/1000+k*37)%40))*10)/10;const pen=e=>a.errors.filter(x=>x===e).length*30;return [r(1),r(6),r(2),r(3)+pen('red_minus'),r(4)+pen('black_plus'),r(5)]}
 mergeAttempts();
 let me=null;
 
 /* ---------- navigation ---------- */
 const screens=['landing','login','home','guide','practice','result','trainer'];
-function show(n){screens.forEach(s=>$('#scr-'+s).hidden=s!==n);$('#landingNav').hidden=!!me||n==='login';window.scrollTo(0,0);heroRun=n==='landing'}
-function setUser(u){me=u;$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدرب':'متدرب · '+AR(u.id)}
+function show(n){if(n!=='practice'&&R&&!R.ended)stopPractice();screens.forEach(s=>$('#scr-'+s).hidden=s!==n);$('#landingNav').hidden=!!me||n==='login';window.scrollTo(0,0);heroRun=n==='landing'}
+function setUser(u){me=u;$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدرب':u.role==='guest'?'عرض تجريبي · لا يُحفظ':'متدرب · '+AR(u.id)}
 USERS.forEach(u=>{const b=document.createElement('button');b.className='chip';b.textContent=(u.role==='trainer'?'🧑‍🏫 ':'')+u.name;b.onclick=()=>{$('#liId').value=u.id;$('#liPw').value=u.pw};$('#demoAccounts').append(b)});
 function login(){const id=$('#liId').value.trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)),pw=$('#liPw').value;const u=USERS.find(x=>x.id===id&&x.pw===pw);if(!u){$('#liErr').textContent='الرقم أو كلمة المرور غير صحيحة';return}$('#liErr').textContent='';setUser(u);u.role==='trainer'?openTrainer():openHome()}
 $('#liBtn').onclick=login;$('#liPw').onkeydown=e=>{if(e.key==='Enter')login()};
 $('#logoutBtn').onclick=()=>{stopPractice();setUser(null);show('landing')};
 $('#navLogin').onclick=$('#heroStart').onclick=()=>show('login');
-$('#heroDemo').onclick=()=>{const u=USERS[0];setUser(u);show('guide')};
-$('#brandHome').onclick=()=>{if(!me)show('landing');else if(me.role==='trainer')openTrainer();else openHome()};
+$('#heroDemo').onclick=()=>{setUser(GUEST);show('guide')};
+const goHome=()=>{if(!me||me.role==='guest'){setUser(null);show('landing')}else if(me.role==='trainer')openTrainer();else openHome()};
+$('#brandHome').onclick=goHome;$('#brandHome').onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();goHome()}};
 function fmtDate(t){return new Date(t).toLocaleDateString('ar-SA-u-ca-gregory',{day:'numeric',month:'short'})}
 function fmtDur(s){s=Math.round(s);return AR(Math.floor(s/60))+':'+AR(String(s%60).padStart(2,'0'))}
-function errSummary(errs){const c={};errs.forEach(e=>c[e]=(c[e]||0)+1);const k=Object.keys(c);return k.length?k.map(x=>ERR[x]+(c[x]>1?' ×'+AR(c[x]):'')).join('، '):'بدون أخطاء'}
+function errSummary(errs){const c={};errs.forEach(e=>c[e]=(c[e]||0)+1);const k=Object.keys(c);return k.length?k.map(x=>errName(x)+(c[x]>1?' ×'+AR(c[x]):'')).join('، '):'بدون أخطاء'}
 function attemptsTable(list,showName){
   if(!list.length)return '<p class="note">ما فيه محاولات للحين.</p>';
   return '<table><thead><tr>'+(showName?'<th>المتدرب</th>':'')+'<th>التاريخ</th><th>الدرجة</th><th>المدة</th><th>الأخطاء</th><th>لقطة</th></tr></thead><tbody>'+
-  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+USERS.find(u=>u.id===a.uid).name+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+errSummary(a.errors)+'</td><td>'+(a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+aid(a)+'">▶ مشاهدة</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
+  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+esc(nameOf(a.uid))+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+esc(errSummary(a.errors))+(a.mode==='demo'?' <span class="pill">عرض تجريبي</span>':'')+(a.sample?' <span class="pill">عيّنة</span>':'')+'</td><td>'+(a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+esc(aid(a))+'">▶ مشاهدة</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
 }
-function openHome(){$('#myAttempts').innerHTML=attemptsTable(attempts.filter(a=>a.uid===me.id),false);show('home')}
-$('#toGuide').onclick=()=>show('guide');$('#backHome1').onclick=openHome;$('#resHome').onclick=openHome;$('#again').onclick=()=>show('guide');
+function openHome(){if(!me||me.role==='guest'){show('guide');return}$('#myAttempts').innerHTML=attemptsTable(attempts.filter(a=>a.uid===me.id),false);show('home')}
+$('#toGuide').onclick=()=>show('guide');$('#backHome1').onclick=goHome;$('#resHome').onclick=goHome;$('#again').onclick=()=>show('guide');
 
 /* ---------- trainer ---------- */
 let selTrainee=null;
@@ -375,12 +382,12 @@ function openTrainer(){
   const all=attempts;const avg=all.length?Math.round(all.reduce((s,a)=>s+a.score,0)/all.length):0;
   const pol=all.reduce((s,a)=>s+a.errors.filter(e=>e==='red_minus'||e==='black_plus').length,0);
   const firstOk=tr.filter(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);return l.length&&l[l.length-1].score>=85}).length;
-  $('#kpis').innerHTML=[[AR(all.length),'محاولة'],[AR(avg),'متوسط الدرجات'],[AR(pol),'خطأ قطبية تم إيقافه'],[AR(firstOk)+' / '+AR(tr.length),'متدربون أتقنوا المهارة']].map(k=>'<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('');
+  $('#kpis').innerHTML=[[AR(all.length),'محاولة'],[AR(avg),'متوسط الدرجات'],[AR(pol),'خطأ قطبية تم إيقافه'],[AR(firstOk)+' / '+AR(tr.length),'متدربون أتقنوا المهارة']].map(k=>'<div class="kpi"><b>'+k[0]+'</b><span>'+k[1]+'</span></div>').join('')+(seeds.length?'<p class="note" style="grid-column:1/-1">الأرقام تشمل '+AR(seeds.length)+' محاولة عيّنة (بيانات تجريبية) مع المحاولات الحقيقية.</p>':'');
   $('#tTable').innerHTML='<table><thead><tr><th>المتدرب</th><th>المحاولات</th><th>آخر درجة</th><th>أكثر خطأ</th></tr></thead><tbody>'+tr.map(u=>{const l=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);const last=l[l.length-1];const c={};l.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const top=Object.entries(c).sort((a,b)=>b[1]-a[1])[0];
-    return '<tr data-u="'+u.id+'" class="'+(selTrainee===u.id?'sel':'')+'"><td>'+u.name+'</td><td>'+AR(l.length)+'</td><td>'+(last?'<span class="pill '+(last.score>=85?'ok':last.score>=60?'warn':'bad')+'">'+AR(last.score)+'</span>':'—')+'</td><td>'+(top?ERR[top[0]]:'—')+'</td></tr>'}).join('')+'</tbody></table>';
+    return '<tr data-u="'+u.id+'" class="'+(selTrainee===u.id?'sel':'')+'"><td>'+u.name+'</td><td>'+AR(l.length)+'</td><td>'+(last?'<span class="pill '+(last.score>=85?'ok':last.score>=60?'warn':'bad')+'">'+AR(last.score)+'</span>':'—')+'</td><td>'+(top?esc(errName(top[0])):'—')+'</td></tr>'}).join('')+'</tbody></table>';
   $('#tTable').querySelectorAll('tr[data-u]').forEach(r=>r.onclick=()=>{selTrainee=r.dataset.u;openTrainer()});
   const c={};all.forEach(a=>a.errors.forEach(e=>c[e]=(c[e]||0)+1));const mx=Math.max(1,...Object.values(c));
-  $('#tBars').innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<div class="b"><span>'+ERR[k]+'</span><div class="t"><i style="width:'+(v/mx*100)+'%"></i></div><span>'+AR(v)+'</span></div>').join('')||'<p class="note">لا أخطاء.</p>';
+  $('#tBars').innerHTML=Object.entries(c).sort((a,b)=>b[1]-a[1]).map(([k,v])=>'<div class="b"><span>'+esc(errName(k))+'</span><div class="t"><i style="width:'+(v/mx*100)+'%"></i></div><span>'+AR(v)+'</span></div>').join('')||'<p class="note">لا أخطاء.</p>';
   const sel=selTrainee?USERS.find(u=>u.id===selTrainee):null;
   $('#tDetailTitle').textContent=sel?'محاولات '+sel.name:'كل المحاولات';
   $('#tDetail').innerHTML=attemptsTable(sel?all.filter(a=>a.uid===sel.id):all,!sel);
@@ -397,6 +404,7 @@ try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
 /* Recorded human voice: voice/voice.json = [{file,text}] next to the page. Missing clips fall back to the device voice. */
 const vkey=t=>String(t).replace(/[^\u0621-\u064Aa-zA-Z0-9]/g,'');let VOICE={},curAudio=null;
 fetch('voice/voice.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(list=>{(list||[]).forEach(x=>{if(x&&x.file&&x.text)VOICE[vkey(x.text)]='voice/'+x.file})}).catch(()=>{});
+function unlockSpeech(){try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
 function say(t){if(muted)return;try{if(curAudio){curAudio.pause();curAudio=null}}catch(e){}
   const rec=VOICE[vkey(t)];if(rec){try{speechSynthesis.cancel()}catch(e){}const a=new Audio(rec);curAudio=a;a.play().catch(()=>{curAudio=null;tts(t)});return}
   tts(t)}
@@ -449,6 +457,10 @@ function findArduino(d){const row=new Uint16Array(AH);let n=0;
   return {x:x0/AW,y:y0/AH,w:(x1-x0+1)/AW,h:(y1-y0+1)/AH,cy:(y0+y1)/2/AH,n:m};
 }
 const ARD_MIN=500; // pixels at 240x180; not yet tuned on real boards
+function railColor(d,yFrac){const cy=Math.round(yFrac*AH),hh=Math.round(AH*0.035);let r=0,b=0;
+  for(let y=Math.max(0,cy-hh);y<=Math.min(AH-1,cy+hh);y++)for(let x=Math.round(AW*.03);x<Math.round(AW*.97);x++){const p=(y*AW+x)*4,R_=d[p],G=d[p+1],B=d[p+2];if(R_>90&&R_>G*1.5&&R_>B*1.4)r++;else if(B>80&&B>R_*1.3&&B>G*1.05)b++}
+  return{r,b}}
+function calibSwapped(d,cal){const p=railColor(d,cal.plus),m=railColor(d,cal.minus);return p.b>=15&&m.r>=15&&p.b>p.r*2&&m.r>m.b*2}
 const PRESENT=12; // pixels at 240x180
 function locate(bands,kind){ // kind 'red'|'dark' ; Arduino is below the board => wire comes from bottom
   const roles=['plus','minus'].sort((a,b)=>bands[a].y-bands[b].y); // [far(top), near(bottom)]
@@ -522,27 +534,37 @@ let R=null; // run state
 const view=$('#view'),vctx=view.getContext('2d');
 const small=document.createElement('canvas');small.width=AW;small.height=AH;const sctx=small.getContext('2d',{willReadFrequently:true});
 const sceneC=document.createElement('canvas');sceneC.width=SW;sceneC.height=SH;const scx=sceneC.getContext('2d',{willReadFrequently:true});
-let stream=null,video=null;
+let stream=null,video=null,camStarting=false,cvRequested=false,runSeq=0;
 
 async function startPractice(mode){
-  $('#camErr').textContent='';
+  if(camStarting)return;unlockSpeech();loadCv();
+  $('#camErr').textContent='';if(R&&!R.ended)stopPractice();
   if(mode==='camera'){
+    camStarting=true;$('#startCam').disabled=true;
     try{
+      if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia)throw Object.assign(new Error('nomd'),{name:'NoMediaDevices'});
       stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:'environment',width:{ideal:1280},height:{ideal:720}},audio:false});
       video=document.createElement('video');video.playsInline=true;video.muted=true;video.srcObject=stream;await video.play();
-    }catch(e){$('#camErr').textContent='الكاميرا المباشرة لا تعمل داخل هذا الرابط. يمكن استخدام زر "التصوير خطوة بخطوة": صورة بعد كل خطوة، والتطبيق يحكم عليها بنفس الطريقة.';$('#startPhoto').hidden=false;return}
+    }catch(e){
+      if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}
+      const n=e&&e.name;
+      $('#camErr').textContent=n==='NotAllowedError'?'تم رفض إذن الكاميرا. اسمح للمتصفح باستخدام الكاميرا من الإعدادات ثم حاول مرة ثانية، أو استخدم "التصوير خطوة بخطوة".':n==='NotFoundError'||n==='OverconstrainedError'?'ما لقينا كاميرا في هذا الجهاز. استخدم "التصوير خطوة بخطوة".':n==='NotReadableError'?'الكاميرا مشغولة بتطبيق ثاني. اقفله وحاول مرة ثانية.':'الكاميرا المباشرة لا تعمل داخل هذا الرابط. يمكن استخدام زر "التصوير خطوة بخطوة": صورة بعد كل خطوة، والتطبيق يحكم عليها بنفس الطريقة.';
+      $('#startPhoto').hidden=false;return}
+    finally{camStarting=false;$('#startCam').disabled=false}
+    if(!$('#scr-guide').hidden===false&&!me){stream.getTracks().forEach(t=>t.stop());stream=null;return}
+    stream.getVideoTracks().forEach(t=>t.addEventListener('ended',()=>{if(R&&!R.ended&&R.mode==='camera'){R.camLost=true;banner('انقطعت الكاميرا. اضغط "إنهاء" ثم ابدأ من جديد','bad');say('انقطعت الكاميرا')}}));
   }
-  R={mode,step:0,t0:performance.now(),errors:[],log:[],cal:{},calStage:0,base:null,prevLum:null,hist:[],errLatch:{},qBad:0,fx:[],buf:[],lastCap:0,clips:[],pending:null,stepT:[],qWarned:false,ended:false,lastTick:0};
+  R={seq:++runSeq,qPen:{},mode,step:0,t0:performance.now(),errors:[],log:[],cal:{},calStage:0,base:null,prevLum:null,hist:[],errLatch:{},qBad:0,fx:[],buf:[],lastCap:0,clips:[],pending:null,stepT:[],qWarned:false,ended:false,lastTick:0};
   Object.assign(demo,{red:{...SC.trayRed},black:{...SC.trayBlack},power:false,dim:false,shake:false,blur:false});
   ['dPower','dDim','dShake','dBlur'].forEach(id=>$('#'+id).setAttribute('aria-pressed','false'));
   $('#demoBox').hidden=mode!=='demo';updCv();$('#hudMode').textContent=mode==='demo'?'عرض تجريبي':mode==='photo'?'وضع الصور':'● كاميرا مباشرة';$('#snapBtn').hidden=mode!=='photo';
   if(mode==='photo'){view.width=640;view.height=480;R.photo=null}
   else if(mode==='camera'){view.width=640;view.height=Math.round(640*(video.videoHeight||480)/(video.videoWidth||640))}else{view.width=SW;view.height=SH}
-  show('practice');renderSteps();enterStep(0);loop();
+  show('practice');renderSteps();enterStep(0);loop(R.seq);
 }
 $('#startCam').onclick=()=>startPractice('camera');
 $('#startDemo').onclick=()=>startPractice('demo');
-function stopPractice(){if(R)R.ended=true;try{curAudio&&curAudio.pause()}catch(e){}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}try{speechSynthesis.cancel()}catch(e){}}
+function stopPractice(){if(R)R.ended=true;try{curAudio&&curAudio.pause()}catch(e){}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}if(video){try{video.pause();video.srcObject=null}catch(e){}video=null}demo.drag=null;try{speechSynthesis.cancel()}catch(e){}}
 $('#quitBtn').onclick=()=>finish(false);
 
 function renderSteps(){
@@ -558,6 +580,7 @@ function enterStep(i){
   }
   if(s.id==='black'||s.id==='led')R.rebase=true;
   $('#placeBox').hidden=s.id!=='place';
+  R.errLatch={};
 }
 function addErr(code,msg){R.errors.push(code);R.log.push({ok:false,t:msg,at:elapsed()});}
 function addOk(msg){R.log.push({ok:true,t:msg,at:elapsed()})}
@@ -582,14 +605,16 @@ function overlay(){
   if(STEPS[R.step]&&STEPS[R.step].id==='frame'){vctx.strokeStyle='#e2b54e';vctx.lineWidth=3;vctx.setLineDash([12,8]);vctx.strokeRect(W*.04,H*.06,W*.92,H*.88);vctx.setLineDash([]);
     vctx.fillStyle='#e2b54e';vctx.font='bold 15px sans-serif';vctx.textAlign='center';vctx.fillText('الأردوينو هنا ↓',W/2,H*.9);vctx.textAlign='start'}
 }
-function loop(){
-  if(!R||R.ended)return;
+function loop(seq){
+  if(!R||R.ended||R.seq!==seq)return; // exactly one loop per run
+  if(R.camLost){requestAnimationFrame(()=>loop(seq));return}
   const src=grabSource();
   const now=performance.now();
-  if(now-R.lastTick>110){R.lastTick=now;tick(src)}
+  if(now-R.lastTick>110){R.lastTick=now;try{tick(src)}catch(e){console.error('tick',e)}}
+  if(!R||R.ended||R.seq!==seq)return;
   overlay();drawFx(now);capture(now);
   const s=Math.floor(elapsed());$('#hudTime').textContent=AR(String(Math.floor(s/60)).padStart(2,'0'))+':'+AR(String(s%60).padStart(2,'0'));
-  requestAnimationFrame(loop);
+  requestAnimationFrame(()=>loop(seq));
 }
 function stable(v,n){R.hist.push(v);if(R.hist.length>n)R.hist.shift();return R.hist.length===n&&R.hist.every(x=>x===v)}
 function tick(src){
@@ -598,8 +623,8 @@ function tick(src){
   const A=analyze(d,R.base,R.cal.plus!=null&&R.cal.minus!=null?R.cal:null,R.prevLum);R.prevLum=A.lum;
   const q=A.q;q.lap=cvLapVar(IM);const issue=qualityIssue(q);
   $('#meter').innerHTML='<span>الإضاءة '+AR(Math.round(q.lum))+'</span><span>الوضوح '+AR(q.sharp.toFixed(1))+'</span><span>الحركة '+AR(q.motion.toFixed(1))+'</span>'+(A.bands.plus?'<span>+ : أحمر '+AR(A.bands.plus.red)+' أسود '+AR(A.bands.plus.dark)+'</span><span>− : أحمر '+AR(A.bands.minus.red)+' أسود '+AR(A.bands.minus.dark)+'</span>':'');
-  if(issue){R.qBad++;if(R.qBad===8){banner(issue,'warn');say(issue);if(!R.qWarned){addErr('unclear',issue);R.qWarned=true}}if(R.qBad>=8)banner(issue,'warn');R.hist=[];return}
-  if(R.qBad>=8){banner(STEPS[R.step].t)}R.qBad=0;R.qWarned=false;
+  if(issue){R.qBad++;if(R.qBad===8){banner(issue,'warn');say(issue);if(!R.qPen[R.step]){addErr('unclear',issue);R.qPen[R.step]=true}}if(R.qBad>=8)banner(issue,'warn');if(R.qBad===80&&R.step===0)banner(issue+' · لو الصورة واضحة فعلاً، المدرب يقدر يضغط "تأكيد المدرب"','warn');R.hist=[];return}
+  if(R.qBad>=8){banner(STEPS[R.step].t)}R.qBad=0;
   const id=STEPS[R.step].id;
   R.ard=A.ard;
   if(id==='frame'){
@@ -609,7 +634,9 @@ function tick(src){
     if(A.ard.cy<0.45){R.hist=[];if(!R.ardUp){R.ardUp=true;const m='الأردوينو لازم يكون تحت اللوحة في الصورة، مو فوقها';banner(m,'warn');say(m)}return}
     if(R.noArd>=15||R.ardUp){banner('شفت الأردوينو ✓','ok')}R.noArd=0;R.ardUp=false;
     if(stable('ok',12)){addOk('الصورة واضحة وثابتة، والأردوينو ظاهر');enterStep(1)}return}
-  if(id==='calib'){if(R.calStage===2&&q.motion<6){R.base=new Uint8ClampedArray(d);addOk('تمت معايرة خطي الموجب والسالب');enterStep(R.step+1)}return}
+  if(id==='calib'){if(R.calStage===2&&q.motion<6){
+    if(calibSwapped(d,R.cal)){R.calStage=0;R.cal={};banner('يبدو إن الخطين انعكسوا: المكان الأول كان أزرق (سالب). المس الخط الأحمر + أول، ثم الأزرق −','warn');say('يبدو إن الخطين انعكسوا. المس الخط الأحمر الموجب أول');return}
+    R.base=new Uint8ClampedArray(d);addOk('تمت معايرة خطي الموجب والسالب');enterStep(R.step+1)}return}
   if(id==='place')return;
   if(R.rebase){if(q.motion<6){R.base=new Uint8ClampedArray(d);R.rebase=false}return}
   const B=A.bands;
@@ -645,13 +672,15 @@ view.addEventListener('pointerdown',e=>{
   if(R.mode==='demo'){for(const k of ['red','black']){const w=demo[k];if(Math.hypot(w.x-p.x,w.y+2-p.y)<40){demo.drag=k;view.setPointerCapture(e.pointerId);break}}}
 });
 view.addEventListener('pointermove',e=>{if(demo.drag){const p=toCanvas(e);demo[demo.drag]={x:p.x,y:p.y}}});
+view.addEventListener('pointercancel',()=>{demo.drag=null});
 view.addEventListener('pointerup',()=>{if(demo.drag){const w=demo[demo.drag];const r=railAt(w);if(r!=='none')w.y=r==='plus'?SC.plusY:SC.minusY;demo.drag=null}});
 function tog(id,key){$('#'+id).onclick=()=>{demo[key]=!demo[key];$('#'+id).setAttribute('aria-pressed',demo[key])}}
 tog('dPower','power');tog('dDim','dim');tog('dShake','shake');tog('dBlur','blur');
 const CAL_I=STEPS.findIndex(x=>x.id==='calib');
-$('#recal').onclick=()=>{if(R&&R.step>=CAL_I){enterStep(CAL_I)}};
-$('#hintBtn').onclick=()=>{if(!R||R.step>=STEPS.length)return;const H={frame:'يوضع الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. يدخل طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. يدخل السلك الأسود في أي فتحة على خط السالب الأزرق',place:'المقاومة من خط الموجب لصف في الوسط. الرجل الطويلة للمبة في نفس صف المقاومة، والقصيرة في خط السالب',led:'التأكد من أن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
-$('#trainerOk').onclick=()=>{if(!R||R.step<=CAL_I||R.step>=STEPS.length)return;addErr('assisted','المدرب أكد الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
+$('#recal').onclick=()=>{if(R&&!R.ended&&R.step>=CAL_I&&R.step<STEPS.length){enterStep(CAL_I)}};
+$('#hintBtn').onclick=()=>{if(!R||R.ended||R.step>=STEPS.length)return;const H={frame:'يوضع الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. يدخل طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. يدخل السلك الأسود في أي فتحة على خط السالب الأزرق',place:'المقاومة من خط الموجب لصف في الوسط. الرجل الطويلة للمبة في نفس صف المقاومة، والقصيرة في خط السالب',led:'التأكد من أن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
+$('#trainerOk').onclick=()=>{if(!R||R.ended||R.step===CAL_I||R.step>=STEPS.length)return; // calibration needs the two taps; every other step can be confirmed by the trainer
+  addErr('assisted','المدرب أكد الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
 
 /* ---- "ماذا لو؟": AR consequence of a polarity mistake, drawn on the live video ---- */
 function mkFx(x,y,t0,kind){return{kind:kind||'short',x,y,t0,dur:4200,p:Array.from({length:26},(_,j)=>({a:j*.73+Math.random()*.3,v:.45+((j*7)%10)/14,s:7+(j%7)*2.2,d:(j%9)*95}))}}
@@ -673,7 +702,7 @@ function fxPaint(c,list,now,W){
 const clipC=document.createElement('canvas');clipC.width=240;clipC.height=180;const clipX=clipC.getContext('2d');
 function capture(now){if(now-R.lastCap<150)return;R.lastCap=now;clipX.drawImage(view,0,0,240,180);try{R.buf.push(clipC.toDataURL('image/jpeg',.5))}catch(e){return}if(R.buf.length>22)R.buf.shift();if(R.pending&&now>R.pending.until)flushClip()}
 function flushClip(){R.clips.push({code:R.pending.code,at:Math.round(R.pending.at),frames:R.buf.slice(-20)});R.pending=null}
-const aid=a=>a.id||('s'+a.at);
+const aid=a=>a.id||('s'+a.uid+'_'+a.at);
 let lastAttempt=null,lastClips=null;
 /* ---- storage: online database when the page runs on claude.ai, this device otherwise ---- */
 let db=null;
@@ -682,7 +711,7 @@ async function initDb(){
   if(!db)return;
   watchSamples();
   let timer=setTimeout(()=>{setSync('قاعدة البيانات ما ردّت للحين، المعروض من هذا الجهاز')},10000);
-  try{db.collection('attempts').onSnapshot(snap=>{if(!snap.fromCache){clearTimeout(timer)}realDb=snap.docs.map(d=>d.data()).filter(x=>x&&x.id);mergeAttempts();setSync('متصلة بقاعدة البيانات · '+AR(realDb.length)+' محاولة حقيقية');refreshView()},e=>{clearTimeout(timer);setSync('تعذر الاتصال بقاعدة البيانات، المحاولات محفوظة على هذا الجهاز')})}catch(e){}
+  try{db.collection('attempts').onSnapshot(snap=>{if(!snap.fromCache){clearTimeout(timer)}realDb=snap.docs.map(d=>d.data()).filter(validAttempt);mergeAttempts();setSync('متصلة بقاعدة البيانات · '+AR(realDb.length)+' محاولة حقيقية');refreshView()},e=>{clearTimeout(timer);setSync('تعذر الاتصال بقاعدة البيانات، المحاولات محفوظة على هذا الجهاز')})}catch(e){}
 }
 
 /* ---------- data collection for model training ---------- */
@@ -694,13 +723,13 @@ paintLab();
 function paintSamples(){const c={};samples.forEach(x=>c[x.label]=(c[x.label]||0)+1);
   const SH={ok:'صحيح',red_minus:'أحمر في السالب',black_plus:'أسود في الموجب',none:'بدون أسلاك',led_on:'لمبة شغالة',unclear:'غير واضحة'};$('#colCounts').innerHTML=LABELS.map(([k])=>'<span class="chip">'+SH[k]+' · '+AR(c[k]||0)+'</span>').join('');
   $('#colThumbs').innerHTML=samples.slice().sort((a,b)=>b.at-a.at).slice(0,8).map(x=>'<img src="'+x.img+'" alt="" style="width:72px;height:54px;object-fit:cover;border-radius:6px">').join('')}
-function shrink(f){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const W=320,H=Math.round(W*im.height/im.width),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(im,0,0,W,H);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.72))};im.onerror=rej;im.src=u})}
+function shrink(f){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const W=320,H=Math.round(W*im.height/im.width),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(im,0,0,W,H);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.72))};im.onerror=e=>{URL.revokeObjectURL(u);rej(e)};im.src=u})}
 $('#colBtn').onclick=()=>{if(!db){$('#colMsg').textContent='الحفظ في قاعدة البيانات يشتغل من رابط claude.ai فقط. افتح مراس من هناك وصوّر.';return}$('#colIn').click()};
 $('#colIn').onchange=async e=>{const fs=[...(e.target.files||[])];e.target.value='';let n=0;
   for(const f of fs){try{$('#colMsg').textContent='جاري الحفظ '+AR(n+1)+' من '+AR(fs.length);const img=await shrink(f);const id='smp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
     await db.collection('samples').doc(id).set({id,label:colLab,img,at:Date.now(),by:me?me.id:''});n++}catch(err){$('#colMsg').textContent='تعذر حفظ صورة، حاول مرة ثانية'}}
   $('#colMsg').textContent='انحفظت '+AR(n)+' صورة'};
-function watchSamples(){if(!db)return;try{db.collection('samples').onSnapshot(sn=>{samples=sn.docs.map(d=>d.data()).filter(x=>x&&x.img);paintSamples()},()=>{})}catch(e){}}
+function watchSamples(){if(!db)return;try{db.collection('samples').onSnapshot(sn=>{samples=sn.docs.map(d=>d.data()).filter(x=>x&&typeof x.img==='string'&&/^data:image\/(jpeg|png|webp);base64,[A-Za-z0-9+/=]+$/.test(x.img));paintSamples()},()=>{})}catch(e){}}
 paintSamples();
 function setSync(t){const el=document.getElementById('syncNote');if(el)el.textContent=t}
 function refreshView(){if(!me)return;if(!$('#scr-trainer').hidden)openTrainer();else if(!$('#scr-home').hidden)openHome()}
@@ -717,7 +746,7 @@ async function saveAttempt(a,clips){
 // synthetic clip for the example attempts, built from the same scene and AR effect
 function sampleClip(code){
   const C=document.createElement('canvas');C.width=SW;C.height=SH;const c=C.getContext('2d');const frames=[];const red=code==='red_minus';
-  const from=red?{...SC.trayRed}:{...SC.trayBlack},to=red?{x:230,y:SC.minusY}:{x:470,y:SC.plusY};const fx=[mkFx(to.x,to.y,0)];
+  const from=red?{...SC.trayRed}:{...SC.trayBlack},to=red?{x:230,y:SC.minusY}:{x:470,y:SC.plusY};const fx=[mkFx(to.x,to.y,0,red?'rev':'short')];
   for(let i=0;i<24;i++){const t=Math.min(1,i/9);const p={x:from.x+(to.x-from.x)*t,y:from.y+(to.y-from.y)*t};
     const st=red?{red:p,black:{...SC.trayBlack},power:false}:{red:{x:230,y:SC.plusY},black:p,power:false};drawScene(c,st,{});
     for(const role of ['plus','minus']){const y=(role==='plus'?SC.plusY:SC.minusY),h=SH*.035;c.strokeStyle=role==='plus'?'#ff5d5d':'#5a93ff';c.lineWidth=2;c.setLineDash([8,6]);c.strokeRect(SW*.03,y-h,SW*.94,h*2);c.setLineDash([])}
@@ -731,24 +760,26 @@ async function clipsFor(a){
   if(db){try{const out=[];for(let i=0;i<(a.clips||0)&&i<3;i++){const d=await db.collection('clips').doc(a.id+'_'+i).get();const v=d.data();if(v)out.push(v)}return out}catch(e){}}
   return [];
 }
-let playT=null;
+let playT=null,clipSeq=0;
 async function openClip(a,given){
+  const my=++clipSeq;
   const m=$('#clipModal'),img=$('#clipImg');m.hidden=false;$('#clipTitle').textContent='جاري تحميل اللقطة…';$('#clipMeta').textContent='';img.removeAttribute('src');clearInterval(playT);
   const clips=given&&given.length?given:await clipsFor(a);
+  if(my!==clipSeq||m.hidden)return; // closed or another clip opened while loading
   if(!clips.length){$('#clipTitle').textContent='اللقطة غير متوفرة';$('#clipMeta').textContent='انحفظت هذه المحاولة على جهاز ثاني، واللقطة ما ارتفعت لقاعدة البيانات.';return}
   const u=USERS.find(x=>x.id===a.uid);let ci=0,fi=0;
-  const showC=()=>{const c=clips[ci];$('#clipTitle').textContent='لقطة الخطأ · '+(u?u.name:'')+' · '+ERR[c.code];$('#clipMeta').textContent=(c.sample?'لقطة من بيانات تجريبية':'عند الدقيقة '+fmtDur(c.at))+(clips.length>1?' · خطأ '+AR(ci+1)+' من '+AR(clips.length):'');fi=0};
+  const showC=()=>{const c=clips[ci];$('#clipTitle').textContent='لقطة الخطأ · '+(u?u.name:'')+' · '+errName(c.code);$('#clipMeta').textContent=(c.sample?'لقطة من بيانات تجريبية':'عند الدقيقة '+fmtDur(c.at))+(clips.length>1?' · خطأ '+AR(ci+1)+' من '+AR(clips.length):'');fi=0};
   showC();
-  playT=setInterval(()=>{const c=clips[ci];img.src=c.frames[fi];fi++;if(fi>=c.frames.length){fi=0;if(clips.length>1){ci=(ci+1)%clips.length;showC()}}},150);
+  playT=setInterval(()=>{const c=clips[ci];const fr=c.frames&&c.frames[fi];if(typeof fr==='string'&&fr.startsWith('data:image/'))img.src=fr;fi++;if(fi>=c.frames.length){fi=0;if(clips.length>1){ci=(ci+1)%clips.length;showC()}}},150);
 }
-function closeClip(){clearInterval(playT);$('#clipModal').hidden=true}
+function closeClip(){clipSeq++;clearInterval(playT);$('#clipModal').hidden=true}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-clip]');if(!b)return;e.stopPropagation();const a=attempts.find(x=>aid(x)===b.dataset.clip);if(a)openClip(a)});
 /* ---- تقرير الأداء: per-step time from the video timeline, trend across attempts, strengths ---- */
 const SHORT=['تثبيت الصورة','المعايرة','السلك الأحمر','السلك الأسود','تشغيل اللمبة'];
 function renderReport(u,all){
   const el=$('#reportCard');if(!u){el.innerHTML='';return}
   const mine=all.filter(a=>a.uid===u.id).sort((a,b)=>a.at-b.at);
-  if(!mine.length){el.innerHTML='<h2>تقرير أداء '+u.name+'</h2><p class="note">ما فيه محاولات للحين.</p>';return}
+  if(!mine.length){el.innerHTML='<h2>تقرير أداء '+esc(u.name)+'</h2><p class="note">ما فيه محاولات للحين.</p>';return}
   const last=mine[mine.length-1];const cls=STEPS.map((_,i)=>{const v=all.map(a=>a.steps&&a.steps[i]).filter(x=>x>0);return v.length?v.reduce((s,x)=>s+x,0)/v.length:0});
   const mxv=Math.max(1,...cls,...(last.steps||[]).map(x=>x||0));
   const bars=STEPS.map((_,i)=>{const v=last.steps&&last.steps[i];return '<div class="sbar"><span>'+SHORT[i]+'</span><div class="t"><i style="width:'+((v||0)/mxv*100)+'%"></i><s style="inset-inline-start:'+(cls[i]/mxv*100)+'%"></s></div><span>'+(v!=null?AR(Math.round(v))+' ث':'—')+'</span></div>'}).join('');
@@ -757,30 +788,34 @@ function renderReport(u,all){
   const pts=mine.map((a,i)=>xs(i).toFixed(1)+','+ys(a.score).toFixed(1)).join(' ');
   const spark='<svg viewBox="0 0 '+W+' '+H+'" style="direction:ltr;width:100%;max-width:320px;height:auto" role="img" aria-label="تطور الدرجة عبر المحاولات"><line x1="'+P+'" x2="'+(W-P)+'" y1="'+ys(85)+'" y2="'+ys(85)+'" stroke="#47d78f" stroke-dasharray="4 4" stroke-width="1" opacity=".6"/><text x="'+(W-P)+'" y="'+(ys(85)-4)+'" fill="#47d78f" font-size="10" text-anchor="end">إتقان ٨٥</text><polyline points="'+pts+'" fill="none" stroke="#e2b54e" stroke-width="2.5" stroke-linejoin="round"/>'+mine.map((a,i)=>'<circle cx="'+xs(i)+'" cy="'+ys(a.score)+'" r="'+(i===mine.length-1?4.5:3)+'" fill="'+(i===mine.length-1?'#f3d488':'#e2b54e')+'"/>').join('')+'</svg>';
   // insights
-  const ratio=STEPS.map((_,i)=>last.steps&&last.steps[i]&&cls[i]?last.steps[i]/cls[i]:1);
-  const best=ratio.indexOf(Math.min(...ratio)),worst=ratio.indexOf(Math.max(...ratio));
+  const ratio=STEPS.map((_,i)=>last.steps&&last.steps[i]>0&&cls[i]?last.steps[i]/cls[i]:null);
+  const known=ratio.map((r,i)=>[r,i]).filter(x=>x[0]!=null);
+  const best=known.length?known.reduce((a,b)=>b[0]<a[0]?b:a)[1]:-1,worst=known.length?known.reduce((a,b)=>b[0]>a[0]?b:a)[1]:-1;
   const ec={};mine.forEach(a=>a.errors.forEach(e=>ec[e]=(ec[e]||0)+1));const topE=Object.entries(ec).sort((a,b)=>b[1]-a[1])[0];
   const first=mine[0];const imp=last.score-first.score;
   const ins=[];
-  ins.push(['قوة','أسرع من متوسط الشعبة في <b>'+SHORT[best]+'</b>.']);
-  if(ratio[worst]>1.15)ins.push(['تحتاج دعم','تأخذ وقت أطول من الشعبة في <b>'+SHORT[worst]+'</b> (×'+AR(ratio[worst].toFixed(1))+').']);
-  if(topE&&(topE[0]==='red_minus'||topE[0]==='black_plus'))ins.push(['تكرر','خطأ متكرر: <b>'+ERR[topE[0]]+'</b>، '+AR(topE[1])+' مرات. يُنصح بعرض لقطة الخطأ.']);
+  if(best>=0&&ratio[best]<0.9)ins.push(['قوة','أسرع من متوسط الشعبة في <b>'+SHORT[best]+'</b>.']);
+  if(worst>=0&&ratio[worst]>1.15)ins.push(['يحتاج دعم','يأخذ وقت أطول من الشعبة في <b>'+SHORT[worst]+'</b> (×'+AR(ratio[worst].toFixed(1))+').']);
+  if(topE&&(topE[0]==='red_minus'||topE[0]==='black_plus')&&topE[1]>1)ins.push(['تكرر','خطأ متكرر: <b>'+esc(errName(topE[0]))+'</b>، '+AR(topE[1])+' مرات. يُنصح بعرض لقطة الخطأ.']);
   if(mine.length>1)ins.push([imp>=0?'تحسّن':'تراجع','الدرجة من '+AR(first.score)+' إلى '+AR(last.score)+' خلال '+AR(mine.length)+' محاولات.']);
-  if(last.score>=85)ins.push(['جاهزة','وصلت حد الإتقان، تقدر تنتقل للمهارة التالية.']);
+  if(last.score>=85)ins.push(['جاهز','وصل حد الإتقان، ويقدر ينتقل للمهارة التالية.']);
+  if(!ins.length)ins.push(['ملاحظة','ما فيه بيانات كافية للحين لملاحظات تلقائية.']);
   el.innerHTML='<div class="row" style="justify-content:space-between"><h2>تقرير أداء '+u.name+'</h2><span class="note">من فيديو آخر محاولة · '+fmtDate(last.at)+(last.sample?' · بيانات تجريبية':'')+'</span></div>'+
    '<div class="report"><div style="display:flex;flex-direction:column;gap:8px"><h3>وقت كل خطوة</h3>'+bars+'<p class="note">العمود النحاسي وقتها، والخط الأبيض متوسط الشعبة.</p></div>'+
    '<div style="display:flex;flex-direction:column;gap:8px"><h3>تطور الدرجة</h3>'+spark+'</div>'+
-   '<div style="display:flex;flex-direction:column;gap:8px"><h3>ملاحظات تلقائية</h3>'+ins.map(x=>'<div class="insight"><span class="pill '+(x[0]==='قوة'||x[0]==='تحسّن'||x[0]==='جاهزة'?'ok':x[0]==='تكرر'?'bad':'warn')+'">'+x[0]+'</span><span>'+x[1]+'</span></div>').join('')+'</div></div>';
+   '<div style="display:flex;flex-direction:column;gap:8px"><h3>ملاحظات تلقائية</h3>'+ins.map(x=>'<div class="insight"><span class="pill '+(x[0]==='قوة'||x[0]==='تحسّن'||x[0]==='جاهز'?'ok':x[0]==='تكرر'?'bad':x[0]==='ملاحظة'?'':'warn')+'">'+x[0]+'</span><span>'+x[1]+'</span></div>').join('')+'</div></div>';
 }
 initDb();
 
 function finish(completed){
   if(!R||R.ended)return;const dur=elapsed();if(R.pending)flushClip();stopPractice();
   const steps=STEPS.map((_,i)=>R.stepT[i]==null?null:Math.round(((R.stepT[i+1]!=null?R.stepT[i+1]:dur)-R.stepT[i])*10)/10);
-  const errs=R.errors.slice();if(!completed)errs.push('assisted');
+  const errs=R.errors.slice();if(!completed)errs.push('quit');
   const score=completed?scoreOf(errs):Math.min(40,scoreOf(errs));
-  const a={id:'a'+Date.now()+Math.floor(Math.random()*1e4),uid:me.id,at:Date.now(),dur:Math.round(dur),errors:errs,score,done:completed,steps,clips:R.clips.length};
-  saveAttempt(a,R.clips);lastAttempt=a;lastClips=R.clips;$('#resClip').hidden=!R.clips.length;
+  const a={id:'a'+Date.now()+Math.floor(Math.random()*1e4),uid:me.id,at:Date.now(),dur:Math.round(dur),errors:errs,score,done:completed,steps,clips:R.clips.length,mode:R.mode};
+  const saved=me.role!=='guest'&&(completed||R.step>CAL_I);
+  if(saved)saveAttempt(a,R.clips);lastAttempt=a;lastClips=R.clips;$('#resClip').hidden=!R.clips.length;
+  $('#resSaved').textContent=saved?'تنحفظ المحاولة وتظهر للمدرب في لوحته.':me.role==='guest'?'هذا عرض تجريبي، المحاولة ما تنحفظ.':'المحاولة انتهت قبل توصيل الأسلاك، فما انحفظت.';
   $('#resTitle').textContent=completed?(score>=85?'تم إتقان المهارة 👏':'اكتملت المهارة'):'المحاولة لم تكتمل';
   $('#resScore').textContent=AR(score);
   const col=score>=85?'var(--ok)':score>=60?'var(--warn)':'var(--bad)';
@@ -788,7 +823,7 @@ function finish(completed){
   $('#resRing').firstElementChild.style.cssText='background:var(--bench);width:120px;height:120px;border-radius:50%;display:grid;place-content:center';
   const pol=errs.filter(e=>e==='red_minus'||e==='black_plus').length;
   $('#resPills').innerHTML='<span class="pill">⏱ '+fmtDur(dur)+'</span><span class="pill '+(pol?'bad':'ok')+'">أخطاء القطبية: '+AR(pol)+'</span><span class="pill warn">تنبيهات: '+AR(errs.length-pol)+'</span>';
-  $('#resLog').innerHTML=R.log.map(l=>'<li><span class="dot" style="background:'+(l.ok?'var(--ok)':'var(--bad)')+';color:#000">'+(l.ok?'✓':'!')+'</span><span>'+l.t+'<br><span class="note">'+fmtDur(l.at)+'</span></span></li>').join('')||'<li>لا توجد خطوات.</li>';
+  $('#resLog').innerHTML=R.log.map(l=>'<li><span class="dot" style="background:'+(l.ok?'var(--ok)':'var(--bad)')+';color:#000">'+(l.ok?'✓':'!')+'</span><span>'+esc(l.t)+'<br><span class="note">'+fmtDur(l.at)+'</span></span></li>').join('')||'<li>لا توجد خطوات.</li>';
   say(completed?'انتهت المحاولة. الدرجة '+score+' من مية':'تم إنهاء المحاولة');
   show('result');
 }
@@ -835,9 +870,9 @@ $('#runTest').onclick=()=>{
 };
 // OpenCV.js (loaded async; app works without it)
 let cvReady=false;
-(function(){const sc=document.createElement('script');sc.async=true;sc.src='https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js';
+function loadCv(){if(cvRequested)return;cvRequested=true;const sc=document.createElement('script');sc.async=true;sc.src='https://cdn.jsdelivr.net/npm/@techstark/opencv-js@4.10.0-release.1/dist/opencv.js';sc.integrity='sha384-XsTfGA62I8LzqS3D7IcgiSOCrJuECWLcg4s1M0AnrkDCcJ8lXX+j+qdg+o6t7KZa';sc.crossOrigin='anonymous';sc.onerror=()=>{cvRequested=false};
   sc.onload=()=>{const done=()=>{cvReady=!!(window.cv&&cv.Mat);updCv()};try{if(window.cv&&cv.Mat)done();else if(window.cv&&cv.then)cv.then(m=>{window.cv=m;done()});else if(window.cv)cv.onRuntimeInitialized=done}catch(e){}};
-  document.head.append(sc)})();
+  document.head.append(sc)}
 function updCv(){const el=document.getElementById('cvBadge');if(el){el.textContent=cvReady?'OpenCV.js ✓':'رؤية حاسوبية';}}
 function cvLapVar(img){ // Laplacian variance = classic OpenCV blur measure
   if(!cvReady)return null;let src,gray,lap,m,sd;
@@ -849,9 +884,9 @@ $('#clipClose').onclick=closeClip;$('#clipModal').onclick=e=>{if(e.target.id==='
 $('#resClip').onclick=()=>{if(lastAttempt)openClip(lastAttempt,lastClips)};
 $('#startPhoto').onclick=()=>startPractice('photo');
 $('#snapBtn').onclick=()=>$('#snapIn').click();
-$('#snapIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f||!R)return;const im=new Image();im.onload=()=>{
+$('#snapIn').onchange=e=>{const f=e.target.files&&e.target.files[0];e.target.value='';if(!f||!R||R.ended)return;const im=new Image(),u=URL.createObjectURL(f);im.onerror=()=>{URL.revokeObjectURL(u);banner('تعذر فتح الصورة، صوّر مرة ثانية','warn')};im.onload=()=>{URL.revokeObjectURL(u);if(!R||R.ended)return;
   const W=640,H=Math.round(640*im.naturalHeight/im.naturalWidth);if(!R.photo){view.width=W;view.height=H}
-  R.photo=im;R.prevLum=null;R.hist=[];if(STEPS[R.step]&&STEPS[R.step].id==='calib'&&R.calStage===0)banner('لمس خط الموجب + في الصورة');};im.src=URL.createObjectURL(f);e.target.value=''};
+  R.photo=im;R.prevLum=null;R.hist=[];if(STEPS[R.step]&&STEPS[R.step].id==='calib'&&R.calStage===0)banner('لمس خط الموجب + في الصورة');};im.src=u};
 window.__mx={analyze,locate,drawScene,demo,SC,get R(){return R}};
 // hero live demo: scripted wire placement through the real vision engine
 let heroRun=true;
@@ -861,9 +896,9 @@ let heroRun=true;
   drawScene(cx,st,{});sx.drawImage(cv,0,0,AW,AH);const base=new Uint8ClampedArray(sx.getImageData(0,0,AW,AH).data);
   const key=[[0,{...SC.trayRed},{...SC.trayBlack},false],[1600,{x:230,y:SC.minusY},{...SC.trayBlack},false],[4200,{x:230,y:SC.plusY},{...SC.trayBlack},false],[6200,{x:450,y:SC.plusY},{x:470,y:SC.minusY},false],[8000,{x:450,y:SC.plusY},{x:470,y:SC.minusY},true],[10500,null]];
   const lerp=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t});const reduce=matchMedia('(prefers-reduced-motion: reduce)').matches;
-  let t0=performance.now(),last='';
+  let t0=performance.now(),last='',lastDraw=0;
   function frame(now){
-    if(heroRun){
+    if(heroRun&&!document.hidden&&now-lastDraw>66){lastDraw=now;
       let t=(now-t0)%10500;let i=0;while(key[i+1]&&key[i+1][0]<=t)i++;const k=key[i],n=key[i+1];
       const f=n&&n[1]?Math.min(1,(t-k[0])/700):1;
       st.red=n&&n[1]?lerp(k[1],n[1],f):k[1];st.black=n&&n[1]?lerp(k[2],n[2],f):k[2];st.power=k[3];
