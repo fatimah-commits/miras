@@ -162,11 +162,11 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
   <div class="hero">
     <div style="display:flex;flex-direction:column;gap:18px">
       <span class="eyebrow">منصة تدريب عملي للكليات التقنية</span>
-      <h1>المهارة تُتقن <em>باليد</em>،<br>والذكاء الاصطناعي يراقب كل سلك.</h1>
+      <h1>المهارة تُتقن <em>باليد</em>،<br>والكاميرا تتحقق من كل سلك.</h1>
       <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدرب يركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبّه بالصوت قبل التشغيل.</p>
       <div class="row"><button class="btn" id="heroStart">ابدأ التدريب</button><button class="btn ghost" id="heroDemo">مشاهدة العرض التجريبي</button></div>
     </div>
-    <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض حي: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>LIVE · AI VISION</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
+    <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض حي: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>LIVE · CAMERA CHECK</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
   </div>
 
   <div class="feats">
@@ -206,7 +206,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
   <div class="card">
     <span class="pill warn" style="align-self:flex-start">مهارة المرحلة الأولى</span>
     <h1>توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية</h1>
-    <p class="note">تطبيق المهارة على قطع حقيقية والكاميرا شغالة. الذكاء الاصطناعي يتابع مكان كل سلك، ويوقفك فوراً لو السلك دخل في القطب الغلط.</p>
+    <p class="note">تطبيق المهارة على قطع حقيقية والكاميرا شغالة. الكاميرا تتابع مكان كل سلك، وينبّه فوراً لو السلك دخل في القطب الغلط.</p>
     <div class="row"><span class="pill ok">٤ خطوات</span><span class="pill ok">قطع حقيقية</span><span class="pill ok">تعليق صوتي</span></div>
     <div class="row"><button class="btn" id="toGuide">ابدأ: شرح الخطوات</button></div>
   </div>
@@ -301,7 +301,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="row" id="labRow"></div>
     <div class="row"><button class="btn" id="colBtn">📷 تصوير أو اختيار صور</button><input type="file" id="colIn" accept="image/*" multiple hidden><span class="note" id="colMsg"></span></div>
     <div class="row" id="colCounts"></div><div class="row" id="colThumbs"></div></div>
-  <div class="card"><h2>اختبار آلي بدون بشر (محاكاة)</h2><p class="note">هذا اختبار على صور مولّدة بالكمبيوتر، مو على كاميرا وقطع حقيقية. يثبت إن منطق الكشف صحيح، والتجربة الحقيقية خطوة لاحقة. متدربون افتراضيون يركّبون الأسلاك صح وغلط بشكل عشوائي، مع اهتزاز وتغير إضاءة وتشويش. نقارن قرار الذكاء الاصطناعي بالحقيقة المعروفة لكل حالة.</p><div class="row"><button class="btn" id="runTest">تشغيل ٣٠٠ حالة</button></div><pre class="log" id="testLog">لم يُشغّل بعد.</pre></div>
+  <div class="card"><h2>اختبار آلي بدون بشر (محاكاة)</h2><p class="note">هذا اختبار على صور مولّدة بالكمبيوتر، مو على كاميرا وقطع حقيقية. يثبت إن منطق الكشف صحيح، والتجربة الحقيقية خطوة لاحقة. متدربون افتراضيون يركّبون الأسلاك صح وغلط بشكل عشوائي، مع اهتزاز وتغير إضاءة وتشويش. نقارن قرار الكاميرا بالحقيقة المعروفة لكل حالة.</p><div class="row"><button class="btn" id="runTest">تشغيل ٣٠٠ حالة</button></div><pre class="log" id="testLog">لم يُشغّل بعد.</pre></div>
 </section>
 
 </div>
