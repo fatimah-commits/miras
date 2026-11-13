@@ -404,9 +404,16 @@ try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
 /* Recorded human voice: voice/voice.json = [{file,text}] next to the page. Missing clips fall back to the device voice. */
 const vkey=t=>String(t).replace(/[^\u0621-\u064Aa-zA-Z0-9]/g,'');let VOICE={},curAudio=null;
 fetch('voice/voice.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(list=>{(list||[]).forEach(x=>{if(x&&x.file&&x.text)VOICE[vkey(x.text)]='voice/'+x.file})}).catch(()=>{});
-function unlockSpeech(){try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
-function say(t){if(muted)return;try{if(curAudio){curAudio.pause();curAudio=null}}catch(e){}
-  const rec=VOICE[vkey(t)];if(rec){try{speechSynthesis.cancel()}catch(e){}const a=new Audio(rec);curAudio=a;a.play().catch(()=>{curAudio=null;tts(t)});return}
+/* One shared <audio>: iPad Safari only lets an element play after it was started inside a tap, so the first tap anywhere unlocks it (and speech). */
+const voiceEl=new Audio();voiceEl.preload='auto';curAudio=voiceEl;let voiceUnlocked=false;
+const SILENT='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAIA+AAACABAAZGF0YQAAAAA=';
+function unlockSpeech(){if(voiceUnlocked)return;voiceUnlocked=true;
+  try{voiceEl.src=SILENT;const pr=voiceEl.play();if(pr&&pr.catch)pr.then(()=>voiceEl.pause()).catch(()=>{voiceUnlocked=false})}catch(e){voiceUnlocked=false}
+  try{const u=new SpeechSynthesisUtterance(' ');u.volume=0;speechSynthesis.speak(u)}catch(e){}}
+['pointerdown','touchend','keydown'].forEach(ev=>document.addEventListener(ev,unlockSpeech,{capture:true,passive:true}));
+function say(t){if(muted)return;try{voiceEl.pause()}catch(e){}
+  const rec=VOICE[vkey(t)];
+  if(rec){try{speechSynthesis.cancel()}catch(e){}try{voiceEl.src=rec;voiceEl.currentTime=0;const pr=voiceEl.play();if(pr&&pr.catch)pr.catch(()=>tts(t))}catch(e){tts(t)}return}
   tts(t)}
 function tts(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ar-SA';if(arVoice)u.voice=arVoice;u.rate=0.95;speechSynthesis.speak(u)}catch(e){}}
 $('#voiceSel').onchange=e=>{store.set('mx_voice',e.target.value);pickVoice();say('هذا هو الصوت المختار')};
