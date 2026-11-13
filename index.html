@@ -276,6 +276,10 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="card"><h2>المتدربون</h2><div class="tablewrap" id="tTable"></div></div>
     <div class="card"><h2>أكثر الأخطاء تكراراً</h2><div class="bars" id="tBars"></div><h2 id="tDetailTitle" style="margin-top:8px">المحاولات</h2><div class="tablewrap" id="tDetail"></div></div>
   </div>
+  <div class="card" id="collectCard"><h2>جمع صور لتدريب النموذج</h2><p class="note">صوّر اللوحة والأردوينو من فوق، نفس زاوية التدريب، واختر الحالة قبل التصوير. الصور تنحفظ في قاعدة بيانات مراس، مو على الجهاز. نوّع الإضاءة والمكان واليد، وصوّر كل حالة أكثر من مرة.</p>
+    <div class="row" id="labRow"></div>
+    <div class="row"><button class="btn" id="colBtn">📷 تصوير أو اختيار صور</button><input type="file" id="colIn" accept="image/*" multiple hidden><span class="note" id="colMsg"></span></div>
+    <div class="row" id="colCounts"></div><div class="row" id="colThumbs"></div></div>
   <div class="card"><h2>اختبار آلي بدون بشر (محاكاة)</h2><p class="note">هذا اختبار على صور مولّدة بالكمبيوتر، مو على كاميرا وقطع حقيقية. يثبت إن منطق الكشف صحيح، والتجربة الحقيقية خطوة لاحقة. متدربون افتراضيون يركّبون الأسلاك صح وغلط بشكل عشوائي، مع اهتزاز وتغير إضاءة وتشويش. نقارن قرار الذكاء الاصطناعي بالحقيقة المعروفة لكل حالة.</p><div class="row"><button class="btn" id="runTest">تشغيل ٣٠٠ حالة</button></div><pre class="log" id="testLog">لم يُشغّل بعد.</pre></div>
 </section>
 
@@ -615,9 +619,28 @@ let db=null;
 async function initDb(){
   try{if(!window.claude||!window.claude.use)return;db=await window.claude.use('db');}catch(e){db=null}
   if(!db)return;
+  watchSamples();
   let timer=setTimeout(()=>{setSync('قاعدة البيانات ما ردّت للحين، المعروض من هذا الجهاز')},10000);
   try{db.collection('attempts').onSnapshot(snap=>{if(!snap.fromCache){clearTimeout(timer)}realDb=snap.docs.map(d=>d.data()).filter(x=>x&&x.id);mergeAttempts();setSync('متصلة بقاعدة البيانات · '+AR(realDb.length)+' محاولة حقيقية');refreshView()},e=>{clearTimeout(timer);setSync('تعذر الاتصال بقاعدة البيانات، المحاولات محفوظة على هذا الجهاز')})}catch(e){}
 }
+
+/* ---------- data collection for model training ---------- */
+const LABELS=[['ok','صحيح: الأحمر في + والأسود في −'],['red_minus','خطأ: الأحمر في السالب'],['black_plus','خطأ: الأسود في الموجب'],['none','بدون أسلاك'],['led_on','اللمبة شغالة'],['unclear','صورة غير واضحة أو اليد مغطية']];
+let colLab='ok',samples=[];
+LABELS.forEach(([k,t])=>{const b=document.createElement('button');b.className='chip';b.dataset.k=k;b.textContent=t;b.onclick=()=>{colLab=k;paintLab()};$('#labRow').append(b)});
+function paintLab(){document.querySelectorAll('#labRow .chip').forEach(b=>{const on=b.dataset.k===colLab;b.style.background=on?'var(--copper)':'';b.style.color=on?'var(--copper-ink)':''})}
+paintLab();
+function paintSamples(){const c={};samples.forEach(x=>c[x.label]=(c[x.label]||0)+1);
+  const SH={ok:'صحيح',red_minus:'أحمر في السالب',black_plus:'أسود في الموجب',none:'بدون أسلاك',led_on:'لمبة شغالة',unclear:'غير واضحة'};$('#colCounts').innerHTML=LABELS.map(([k])=>'<span class="chip">'+SH[k]+' · '+AR(c[k]||0)+'</span>').join('');
+  $('#colThumbs').innerHTML=samples.slice().sort((a,b)=>b.at-a.at).slice(0,8).map(x=>'<img src="'+x.img+'" alt="" style="width:72px;height:54px;object-fit:cover;border-radius:6px">').join('')}
+function shrink(f){return new Promise((res,rej)=>{const im=new Image(),u=URL.createObjectURL(f);im.onload=()=>{const W=320,H=Math.round(W*im.height/im.width),c=document.createElement('canvas');c.width=W;c.height=H;c.getContext('2d').drawImage(im,0,0,W,H);URL.revokeObjectURL(u);res(c.toDataURL('image/jpeg',0.72))};im.onerror=rej;im.src=u})}
+$('#colBtn').onclick=()=>{if(!db){$('#colMsg').textContent='الحفظ في قاعدة البيانات يشتغل من رابط claude.ai فقط. افتح مراس من هناك وصوّر.';return}$('#colIn').click()};
+$('#colIn').onchange=async e=>{const fs=[...(e.target.files||[])];e.target.value='';let n=0;
+  for(const f of fs){try{$('#colMsg').textContent='جاري الحفظ '+AR(n+1)+' من '+AR(fs.length);const img=await shrink(f);const id='smp_'+Date.now()+'_'+Math.random().toString(36).slice(2,7);
+    await db.collection('samples').doc(id).set({id,label:colLab,img,at:Date.now(),by:me?me.id:''});n++}catch(err){$('#colMsg').textContent='تعذر حفظ صورة، حاول مرة ثانية'}}
+  $('#colMsg').textContent='انحفظت '+AR(n)+' صورة'};
+function watchSamples(){if(!db)return;try{db.collection('samples').onSnapshot(sn=>{samples=sn.docs.map(d=>d.data()).filter(x=>x&&x.img);paintSamples()},()=>{})}catch(e){}}
+paintSamples();
 function setSync(t){const el=document.getElementById('syncNote');if(el)el.textContent=t}
 function refreshView(){if(!me)return;if(!$('#scr-trainer').hidden)openTrainer();else if(!$('#scr-home').hidden)openHome()}
 async function saveAttempt(a,clips){
