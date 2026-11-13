@@ -163,7 +163,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div style="display:flex;flex-direction:column;gap:18px">
       <span class="eyebrow">منصة تدريب عملي للكليات التقنية</span>
       <h1>المهارة تُتقن <em>باليد</em>،<br>والذكاء الاصطناعي يراقب كل سلك.</h1>
-      <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدرب يركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبّه بالصوت قبل ما تحترق القطعة.</p>
+      <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدرب يركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبّه بالصوت قبل التشغيل.</p>
       <div class="row"><button class="btn" id="heroStart">ابدأ التدريب</button><button class="btn ghost" id="heroDemo">مشاهدة العرض التجريبي</button></div>
     </div>
     <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض حي: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>LIVE · AI VISION</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
@@ -172,7 +172,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
   <div class="feats">
     <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="8" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><circle cx="17" cy="18" r="5" fill="none" stroke="#46d9e6" stroke-width="2.5"/></svg><h3>كاميرا تشوف وين السلك</h3><p class="note">رؤية حاسوبية مع OpenCV.js تتابع السلك الأحمر والأسود وتحدد أي خط دخلوا فيه، طول وقت التطبيق.</p></div>
     <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4 L31 29 H3 Z" fill="none" stroke="#ff5d5d" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 13 v7" stroke="#ff5d5d" stroke-width="2.5" stroke-linecap="round"/><circle cx="17" cy="24.5" r="1.6" fill="#ff5d5d"/></svg><h3>إيقاف فوري لخطأ القطبية</h3><p class="note">لو الأحمر دخل في السالب، تتوقف الخطوة ويطلع تنبيه صوتي عربي، ويُسجّل الخطأ في ملف المتدرب.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" بالواقع المعزز</h3><p class="note">عند الخطأ يظهر دخان وشرارة فوق الفيديو الحقيقي، ويسمع المتدرب وش كان بيصير لو تم التشغيل. يتعلم العاقبة بدون ما تتلف قطعة.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" بالواقع المعزز</h3><p class="note">عند الخطأ يظهر فوق الفيديو الحقيقي وش كان بيصير لو تم التشغيل: قطبية معكوسة أو قصر كهربائي. يتعلم المتدرب العاقبة قبل ما يجربها على قطع حقيقية.</p></div>
     <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="7" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><path d="M14 12 l8 5 -8 5z" fill="#46d9e6"/></svg><h3>لقطة الخطأ وتقرير الأداء</h3><p class="note">يحفظ التطبيق ثواني من الفيديو لحظة الخطأ، ويحسب وقت كل خطوة. المدرب يشوف وش صار، ووين يتأخر كل متدرب، ونقاط القوة والضعف.</p></div>
     
 <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 28 V18 M13 28 V10 M21 28 V15 M29 28 V6" stroke="#e2b54e" stroke-width="3" stroke-linecap="round"/></svg><h3>لوحة للمدرب</h3><p class="note">كل محاولة لها درجة ومدة وأخطاء. المدرب يعرف مين يحتاج دعم، وأي خطأ يتكرر في الشعبة.</p></div>
@@ -223,12 +223,16 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
   <ol class="steps">
     <li><span class="n">١</span><h3>تثبيت اللوحة في الإطار</h3><p class="note">الكاميرا تتأكد إن الإضاءة كافية والصورة ثابتة وواضحة.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><rect x="8" y="6" width="184" height="100" fill="none" stroke="#e2b54e" stroke-dasharray="6 4" stroke-width="2"/></svg></li>
-    <li><span class="n">٢</span><h3>تحديد خط الموجب ثم السالب</h3><p class="note">علشان التطبيق يعرف وين خط <b style="color:var(--plus)">+</b> الأحمر ووين خط <b style="color:var(--minus)">−</b> الأزرق في لوحتك.</p>
+    <li><span class="n">٢</span><h3>تركيب المقاومة واللمبة</h3><p class="note">اللمبة لها <b style="color:var(--paper)">قطبية</b>: الرجل الطويلة موجب (+) جهة المقاومة، والرجل القصيرة سالب (−) جهة الحافة المسطحة. لو انعكست ما تولّع.</p>
+      <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="80" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#ff5a4f" stroke-width="2"/><line x1="26" y1="88" x2="174" y2="88" stroke="#4f8dff" stroke-width="2"/><rect x="70" y="30" width="12" height="24" rx="4" fill="#d8b98a"/><line x1="76" y1="24" x2="76" y2="30" stroke="#888" stroke-width="2"/><line x1="76" y1="54" x2="76" y2="62" stroke="#888" stroke-width="2"/><line x1="76" y1="62" x2="112" y2="62" stroke="#888" stroke-width="2"/><line x1="112" y1="62" x2="112" y2="50" stroke="#888" stroke-width="2"/><line x1="126" y1="88" x2="126" y2="52" stroke="#888" stroke-width="2"/><path d="M108 50 v-10 a11 11 0 0 1 22 0 v10 z" fill="#ff6b5a"/><text x="96" y="76" font-size="8" fill="#333">طويلة +</text><text x="130" y="76" font-size="8" fill="#333">قصيرة −</text></svg>
+      <div class="row"><button class="btn ghost small polBtn">🔊 شرح القطبية</button></div></li>
+    <li><span class="n">٣</span><h3>تحديد خط الموجب ثم السالب</h3><p class="note">علشان التطبيق يعرف وين خط <b style="color:var(--plus)">+</b> الأحمر ووين خط <b style="color:var(--minus)">−</b> الأزرق في لوحتك.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><circle cx="120" cy="34" r="9" fill="none" stroke="#ff5a4f" stroke-width="3"/><circle cx="80" cy="24" r="9" fill="none" stroke="#4f8dff" stroke-width="3"/><text x="120" y="60" fill="#333" font-size="11" text-anchor="middle">١</text><text x="80" y="60" fill="#333" font-size="11" text-anchor="middle">٢</text></svg></li>
-    <li><span class="n">٣</span><h3>الأحمر من 5V إلى الموجب +</h3><p class="note">ثم الأسود من GND إلى السالب −. لو الأحمر دخل في السالب، يطلع لك تنبيه بالصوت.</p>
+    <li><span class="n">٤</span><h3>الأحمر من 5V إلى الموجب +</h3><p class="note">ثم الأسود من GND إلى السالب −، والأردوينو مطفي. لو دخل سلك في الخط الغلط، يطلع تنبيه بالصوت يشرح وش كان بيصير.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><path d="M88 82 Q86 55 110 34" stroke="#e53935" stroke-width="4" fill="none"/><path d="M104 82 Q120 50 140 24" stroke="#111" stroke-width="4" fill="none"/><text x="86" y="100" fill="#fff" font-size="8">5V</text><text x="100" y="100" fill="#fff" font-size="8">GND</text></svg></li>
-    <li><span class="n">٤</span><h3>التشغيل والتأكد من إضاءة اللمبة</h3><p class="note">توصيل سلك USB. الكاميرا تكتشف ضوء الـ LED وتعرض النتيجة.</p>
+    <li><span class="n">٥</span><h3>التشغيل والتأكد من إضاءة اللمبة</h3><p class="note">توصيل سلك USB. الكاميرا تكتشف ضوء الـ LED وتعرض النتيجة.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><circle cx="130" cy="52" r="14" fill="#fff59d" opacity=".5"/><circle cx="130" cy="52" r="6" fill="#ffeb3b"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/></svg></li>
+  
   </ol>
   <div class="row"><button class="btn" id="startCam">فتح الكاميرا والبدء</button><button class="btn ghost" id="startPhoto" hidden>التصوير خطوة بخطوة</button><button class="btn ghost" id="startDemo">عرض تجريبي بدون قطع</button><button class="btn ghost" id="backHome1">رجوع</button></div>
   <p class="err" id="camErr"></p>
@@ -244,10 +248,27 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
       <div class="flash" id="flash"></div>
     </div>
     <div class="card">
-      <div class="row" style="justify-content:space-between"><h2>الخطوات</h2><button class="chip" id="muteBtn" aria-pressed="false">🔊 الصوت شغال</button></div>
+      <div class="row" style="justify-content:space-between"><h2>الخطوات</h2><span class="row" style="gap:6px"><select id="voiceSel" class="chip" aria-label="اختيار الصوت" style="max-width:170px"></select><button class="chip" id="muteBtn" aria-pressed="false">🔊 الصوت شغال</button></span></div>
       <ul class="plist" id="plist"></ul>
       <div class="meter" id="meter"></div>
       <div class="row"><button class="btn small" id="snapBtn" hidden>📷 التقاط صورة</button><input type="file" id="snapIn" accept="image/*" capture="environment" hidden><button class="btn ghost small" id="hintBtn">مساعدة</button><button class="btn ghost small" id="trainerOk">تأكيد المدرب</button><button class="btn ghost small" id="recal">إعادة المعايرة</button><button class="btn ghost small" id="quitBtn">إنهاء</button></div>
+      <div id="placeBox" hidden class="card" style="padding:12px;background:var(--raise)">
+        <h3>تركيب المقاومة واللمبة</h3>
+        <svg viewBox="0 0 300 150" style="width:100%;max-width:360px;display:block;margin:6px 0" role="img" aria-label="رسم يوضح اتجاه رجلي اللمبة">
+          <rect x="10" y="10" width="280" height="130" rx="6" fill="#f3f0e7"/>
+          <line x1="20" y1="26" x2="280" y2="26" stroke="#e0443a" stroke-width="3"/><text x="270" y="22" font-size="13" fill="#b3261e" font-weight="700">+</text>
+          <line x1="20" y1="124" x2="280" y2="124" stroke="#3f7fe0" stroke-width="3"/><text x="270" y="142" font-size="15" fill="#1b4fae" font-weight="700">−</text>
+          <line x1="110" y1="26" x2="110" y2="52" stroke="#888" stroke-width="2"/><rect x="100" y="52" width="20" height="34" rx="6" fill="#d8b98a"/><rect x="100" y="60" width="20" height="4" fill="#8b4513"/><rect x="100" y="70" width="20" height="4" fill="#111"/><line x1="110" y1="86" x2="110" y2="96" stroke="#888" stroke-width="2"/>
+          <line x1="110" y1="96" x2="170" y2="96" stroke="#888" stroke-width="2"/>
+          <line x1="170" y1="96" x2="170" y2="72" stroke="#888" stroke-width="2.5"/><line x1="190" y1="124" x2="190" y2="76" stroke="#888" stroke-width="2.5"/>
+          <path d="M164 72 v-14 a16 16 0 0 1 32 0 v14 z" fill="#ff6b5a" opacity=".85"/><line x1="196" y1="58" x2="196" y2="72" stroke="#7a1d14" stroke-width="2"/>
+          <text x="60" y="74" font-size="10" fill="#333">مقاومة 220</text>
+          <text x="128" y="112" font-size="10" fill="#333">طويلة +</text><text x="200" y="104" font-size="10" fill="#333">قصيرة −</text>
+        </svg>
+        <p class="note">المقاومة من خط <b style="color:var(--plus)">+</b> إلى صف في وسط اللوحة. <b style="color:var(--paper)">الرجل الطويلة</b> للمبة في نفس صف المقاومة، و<b style="color:var(--paper)">الرجل القصيرة</b> (جهة الحافة المسطحة) في خط <b style="color:var(--minus)">−</b>. الأردوينو يبقى مطفي.</p>
+        <div class="row"><button class="btn small" id="placeOk">تم التركيب ✓</button><button class="btn ghost small polBtn">🔊 شرح القطبية</button></div>
+        <p class="note">ملاحظة: الكاميرا ما تتحقق من اتجاه رجلي اللمبة. التحقق يصير في الخطوة الأخيرة: لو اللمبة ما ولّعت، غالباً هي مقلوبة.</p>
+      </div>
       <div id="demoBox" hidden class="card" style="padding:12px;background:var(--raise)">
         <h3>أدوات العرض التجريبي</h3>
         <p class="note">اسحب طرف السلك الأحمر أو الأسود على الصورة إلى الخط. يمكن تجربة الأخطاء أيضاً.</p>
@@ -308,7 +329,7 @@ const USERS=[
  {id:'4410205',pw:'1234',name:'شهد المالكي',role:'trainee'},
  {id:'9001',pw:'1234',name:'م. سامي السبيعي',role:'trainer'}
 ];
-const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب'};
+const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'قصر: السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب'};
 function seed(){
   let a=null;
   const now=Date.now(),D=864e5; a=[];
@@ -321,7 +342,7 @@ function seed(){
 }
 function scoreOf(errs){let s=100;errs.forEach(e=>{s-= e==='red_minus'||e==='black_plus'?15: e==='assisted'?8: e==='hint'?3:4});return Math.max(0,s)}
 let seeds=seed().map(a=>({...a,sample:true,steps:a.steps||fakeSteps(a)}));let realLocal=store.get('mx_real',[]);let realDb=null;let attempts=[];function mergeAttempts(){const byId={};[...realLocal,...(realDb||[])].forEach(a=>byId[a.id]=a);attempts=[...seeds,...Object.values(byId)]}
-function fakeSteps(a){const r=k=>Math.round((20+((a.at/1000+k*37)%40))*10)/10;const pen=e=>a.errors.filter(x=>x===e).length*30;return [r(1),r(2),r(3)+pen('red_minus'),r(4)+pen('black_plus'),r(5)]}
+function fakeSteps(a){const r=k=>Math.round((20+((a.at/1000+k*37)%40))*10)/10;const pen=e=>a.errors.filter(x=>x===e).length*30;return [r(1),r(6),r(2),r(3)+pen('red_minus'),r(4)+pen('black_plus'),r(5)]}
 mergeAttempts();
 let me=null;
 
@@ -369,10 +390,22 @@ function openTrainer(){
 
 /* ---------- voice ---------- */
 let muted=false,arVoice=null;
-function pickVoice(){try{const v=speechSynthesis.getVoices();arVoice=v.find(x=>/^ar[-_]SA/i.test(x.lang))||v.find(x=>/^ar/i.test(x.lang))||null}catch(e){}}
+function voiceRank(x){let r=0;if(/enhanced|premium|neural|natural|online|محسن/i.test(x.name))r+=4;if(/^ar[-_]SA/i.test(x.lang))r+=2;if(/maged|majed|hamed|zariyah|ماجد/i.test(x.name))r+=1;return r}
+function pickVoice(){try{const v=speechSynthesis.getVoices().filter(x=>/^ar/i.test(x.lang)).sort((a,b)=>voiceRank(b)-voiceRank(a));const saved=store.get('mx_voice','');arVoice=v.find(x=>x.name===saved)||v[0]||null;
+  const sel=document.getElementById('voiceSel');if(sel){sel.innerHTML=v.length?v.map(x=>'<option'+(arVoice&&x.name===arVoice.name?' selected':'')+'>'+x.name.replace(/</g,'')+'</option>').join(''):'<option>لا يوجد صوت عربي في الجهاز</option>'}}catch(e){}}
 try{pickVoice();speechSynthesis.onvoiceschanged=pickVoice}catch(e){}
-function say(t){if(muted)return;try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ar-SA';if(arVoice)u.voice=arVoice;u.rate=1;speechSynthesis.speak(u)}catch(e){}}
-$('#muteBtn').onclick=()=>{muted=!muted;$('#muteBtn').textContent=muted?'🔇 الصوت مطفي':'🔊 الصوت شغال';$('#muteBtn').setAttribute('aria-pressed',muted);if(muted)try{speechSynthesis.cancel()}catch(e){}};
+/* Recorded human voice: voice/voice.json = [{file,text}] next to the page. Missing clips fall back to the device voice. */
+const vkey=t=>String(t).replace(/[^\u0621-\u064Aa-zA-Z0-9]/g,'');let VOICE={},curAudio=null;
+fetch('voice/voice.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(list=>{(list||[]).forEach(x=>{if(x&&x.file&&x.text)VOICE[vkey(x.text)]='voice/'+x.file})}).catch(()=>{});
+function say(t){if(muted)return;try{if(curAudio){curAudio.pause();curAudio=null}}catch(e){}
+  const rec=VOICE[vkey(t)];if(rec){try{speechSynthesis.cancel()}catch(e){}const a=new Audio(rec);curAudio=a;a.play().catch(()=>{curAudio=null;tts(t)});return}
+  tts(t)}
+function tts(t){try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance(t);u.lang='ar-SA';if(arVoice)u.voice=arVoice;u.rate=0.95;speechSynthesis.speak(u)}catch(e){}}
+$('#voiceSel').onchange=e=>{store.set('mx_voice',e.target.value);pickVoice();say('هذا هو الصوت المختار')};
+const POL_TEXT='القطبية يعني إن للقطعة طرف موجب وطرف سالب، والتيار يمشي من الموجب للسالب. اللمبة إل إي دي تشتغل في اتجاه واحد بس. الرجل الطويلة هي الموجب، وتكون جهة المقاومة وخط الموجب. الرجل القصيرة، وهي جهة الحافة المسطحة في رأس اللمبة، هي السالب وتروح لخط السالب. لو انعكست، اللمبة ما تولّع.';
+document.querySelectorAll('.polBtn').forEach(b=>b.onclick=()=>{const m=muted;muted=false;say(POL_TEXT);muted=m});
+$('#placeOk').onclick=()=>{if(!R||STEPS[R.step].id!=='place')return;addOk('تم تركيب المقاومة واللمبة');banner('تم التركيب','ok');enterStep(R.step+1)};
+$('#muteBtn').onclick=()=>{muted=!muted;$('#muteBtn').textContent=muted?'🔇 الصوت مطفي':'🔊 الصوت شغال';$('#muteBtn').setAttribute('aria-pressed',muted);if(muted){try{speechSynthesis.cancel()}catch(e){}try{curAudio&&curAudio.pause()}catch(e){}}};
 
 /* ================= VISION ENGINE ================= */
 // Works on a small frame (AW x AH). Calibration gives the y of the + and − rails.
@@ -385,7 +418,7 @@ function analyze(d,base,cal,prevLum){
   for(let i=0,p=0;i<AW*AH;i++,p+=4)lum[i]=lumOf(d[p],d[p+1],d[p+2]);
   for(let y=1;y<AH-1;y+=2)for(let x=1;x<AW-1;x+=2){const i=y*AW+x;const L=lum[i];sum+=L;grad+=Math.abs(L-lum[i+1])+Math.abs(L-lum[i+AW]);if(prevLum)mot+=Math.abs(L-prevLum[i]);n++}
   const q={lum:sum/n,sharp:grad/n,motion:prevLum?mot/n:0};
-  const out={q,lum,bands:{},bright:0};
+  const out={q,lum,bands:{},bright:0,ard:findArduino(d)};
   if(!base||!cal)return out;
   const hh=Math.round(AH*0.035),x0=Math.round(AW*0.03),x1=Math.round(AW*0.97);
   for(const role of ['plus','minus']){
@@ -402,6 +435,20 @@ function analyze(d,base,cal,prevLum){
   out.bright=br;
   return out;
 }
+// Arduino Uno board: a large teal/blue PCB. Returns its box (0..1) or null.
+const isArd=(r,g,b)=>b>70&&g>50&&r<100&&g+b>r*3.2&&b>=g*0.85;
+function findArduino(d){const row=new Uint16Array(AH);let n=0;
+  for(let y=0;y<AH;y++)for(let x=0;x<AW;x++){const p=(y*AW+x)*4;if(isArd(d[p],d[p+1],d[p+2])){row[y]++;n++}}
+  if(n<ARD_MIN)return null;
+  // longest run of rows that contain board colour (a thin blue rail line is only 1-2 rows tall)
+  let best=[0,-1],st=-1;for(let y=0;y<=AH;y++){const on=y<AH&&row[y]>=8;if(on&&st<0)st=y;if(!on&&st>=0){if(y-1-st>best[1]-best[0])best=[st,y-1];st=-1}}
+  const y0=best[0],y1=best[1];if(y1-y0+1<AH*0.08)return null;
+  const col=new Uint16Array(AW);let m=0;for(let y=y0;y<=y1;y++)for(let x=0;x<AW;x++){const p=(y*AW+x)*4;if(isArd(d[p],d[p+1],d[p+2])){col[x]++;m++}}
+  if(m<ARD_MIN)return null;const need=(y1-y0+1)*0.3;let x0=-1,x1=-1;for(let x=0;x<AW;x++)if(col[x]>=need){if(x0<0)x0=x;x1=x}
+  if(x0<0||(x1-x0+1)<AW*0.12)return null;
+  return {x:x0/AW,y:y0/AH,w:(x1-x0+1)/AW,h:(y1-y0+1)/AH,cy:(y0+y1)/2/AH,n:m};
+}
+const ARD_MIN=500; // pixels at 240x180; not yet tuned on real boards
 const PRESENT=12; // pixels at 240x180
 function locate(bands,kind){ // kind 'red'|'dark' ; Arduino is below the board => wire comes from bottom
   const roles=['plus','minus'].sort((a,b)=>bands[a].y-bands[b].y); // [far(top), near(bottom)]
@@ -465,8 +512,9 @@ function wire(ctx,a,b,col){
 /* ---------- practice runtime ---------- */
 const STEPS=[
  {id:'frame',t:'تثبيت اللوحة والأردوينو داخل الصورة',say:'الرجاء تثبيت الآيباد بحيث تظهر لوحة التجارب والأردوينو تحتها بوضوح'},
- {id:'calib',t:'تحديد خط الموجب + ثم خط السالب − باللمس على الشاشة',say:'الرجاء لمس خط الموجب الأحمر على الشاشة'},
- {id:'red',t:'السلك الأحمر من 5V إلى خط الموجب +',say:'ممتاز. الخطوة التالية: توصيل السلك الأحمر من منفذ فايف فولت إلى خط الموجب'},
+ {id:'place',t:'تركيب المقاومة واللمبة (انتبه للقطبية)',say:'الصورة واضحة. الخطوة التالية: تركيب المقاومة واللمبة. القطبية يعني إن للقطعة طرف موجب وطرف سالب، والتيار يمشي من الموجب للسالب. اللمبة إل إي دي تشتغل في اتجاه واحد بس. الرجل الطويلة هي الموجب، وتكون جهة المقاومة وخط الموجب. الرجل القصيرة، وهي جهة الحافة المسطحة في رأس اللمبة، هي السالب وتروح لخط السالب. لو انعكست، اللمبة ما تولّع. بعد التركيب اضغط تم التركيب.'},
+ {id:'calib',t:'تحديد خط الموجب + ثم خط السالب − باللمس على الشاشة',say:'ممتاز. الحين الرجاء لمس خط الموجب الأحمر على الشاشة'},
+ {id:'red',t:'السلك الأحمر من 5V إلى خط الموجب +',say:'ممتاز. والأردوينو مطفي، الخطوة التالية: توصيل السلك الأحمر من منفذ فايف فولت إلى خط الموجب'},
  {id:'black',t:'السلك الأسود من GND إلى خط السالب −',say:'أحسنت. الخطوة التالية: توصيل السلك الأسود من منفذ الأرضي جي إن دي إلى خط السالب'},
  {id:'led',t:'تشغيل الأردوينو والتأكد من إضاءة اللمبة',say:'ممتاز. الخطوة الأخيرة: تشغيل الأردوينو بسلك اليو إس بي، مع ظهور اللمبة في الكاميرا'}
 ];
@@ -494,7 +542,7 @@ async function startPractice(mode){
 }
 $('#startCam').onclick=()=>startPractice('camera');
 $('#startDemo').onclick=()=>startPractice('demo');
-function stopPractice(){if(R)R.ended=true;if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}try{speechSynthesis.cancel()}catch(e){}}
+function stopPractice(){if(R)R.ended=true;try{curAudio&&curAudio.pause()}catch(e){}if(stream){stream.getTracks().forEach(t=>t.stop());stream=null}try{speechSynthesis.cancel()}catch(e){}}
 $('#quitBtn').onclick=()=>finish(false);
 
 function renderSteps(){
@@ -509,6 +557,7 @@ function enterStep(i){
     if(R.mode==='demo'){banner('عرض تجريبي: المس خط الموجب + (الخط الأحمر)')}
   }
   if(s.id==='black'||s.id==='led')R.rebase=true;
+  $('#placeBox').hidden=s.id!=='place';
 }
 function addErr(code,msg){R.errors.push(code);R.log.push({ok:false,t:msg,at:elapsed()});}
 function addOk(msg){R.log.push({ok:true,t:msg,at:elapsed()})}
@@ -525,6 +574,7 @@ function grabSource(){
 }
 function overlay(){
   const W=view.width,H=view.height;
+  if(R.ard){const a=R.ard;vctx.strokeStyle='#5ce1ff';vctx.lineWidth=2;vctx.setLineDash([6,5]);vctx.strokeRect(a.x*W,a.y*H,a.w*W,a.h*H);vctx.setLineDash([]);vctx.fillStyle='#5ce1ff';vctx.font='bold 14px sans-serif';vctx.textAlign='right';vctx.fillText('أردوينو ✓',a.x*W+a.w*W-6,a.y*H+18);vctx.textAlign='start'}
   if(R.cal.plus!=null||R.cal.minus!=null){
     for(const role of ['plus','minus'])if(R.cal[role]!=null){const y=R.cal[role]*H,h=H*0.035;vctx.fillStyle=role==='plus'?'rgba(255,90,79,.18)':'rgba(79,141,255,.18)';vctx.fillRect(W*.03,y-h,W*.94,h*2);vctx.strokeStyle=role==='plus'?'#ff5a4f':'#4f8dff';vctx.lineWidth=2;vctx.setLineDash([8,6]);vctx.strokeRect(W*.03,y-h,W*.94,h*2);vctx.setLineDash([]);
       vctx.fillStyle=vctx.strokeStyle;vctx.font='bold 18px sans-serif';vctx.fillText(role==='plus'?'+':'−',W*.97-16,y+6)}
@@ -551,8 +601,16 @@ function tick(src){
   if(issue){R.qBad++;if(R.qBad===8){banner(issue,'warn');say(issue);if(!R.qWarned){addErr('unclear',issue);R.qWarned=true}}if(R.qBad>=8)banner(issue,'warn');R.hist=[];return}
   if(R.qBad>=8){banner(STEPS[R.step].t)}R.qBad=0;R.qWarned=false;
   const id=STEPS[R.step].id;
-  if(id==='frame'){if(stable('ok',12)){addOk('الصورة واضحة وثابتة');enterStep(1)}return}
-  if(id==='calib'){if(R.calStage===2&&q.motion<6){R.base=new Uint8ClampedArray(d);addOk('تمت معايرة خطي الموجب والسالب');enterStep(2)}return}
+  R.ard=A.ard;
+  if(id==='frame'){
+    if(!A.ard){R.noArd=(R.noArd||0)+1;R.hist=[];
+      if(R.noArd===15){const m='ما شفت الأردوينو. لازم يكون تحت لوحة التجارب وداخل الصورة';banner(m,'warn');say(m)}
+      if(R.noArd>=70){addOk('تعذر تحديد الأردوينو تلقائياً، تم الاستمرار');enterStep(1)}return}
+    if(A.ard.cy<0.45){R.hist=[];if(!R.ardUp){R.ardUp=true;const m='الأردوينو لازم يكون تحت اللوحة في الصورة، مو فوقها';banner(m,'warn');say(m)}return}
+    if(R.noArd>=15||R.ardUp){banner('شفت الأردوينو ✓','ok')}R.noArd=0;R.ardUp=false;
+    if(stable('ok',12)){addOk('الصورة واضحة وثابتة، والأردوينو ظاهر');enterStep(1)}return}
+  if(id==='calib'){if(R.calStage===2&&q.motion<6){R.base=new Uint8ClampedArray(d);addOk('تمت معايرة خطي الموجب والسالب');enterStep(R.step+1)}return}
+  if(id==='place')return;
   if(R.rebase){if(q.motion<6){R.base=new Uint8ClampedArray(d);R.rebase=false}return}
   const B=A.bands;
   if(Math.max(B.plus.chg,B.minus.chg)>0.45){banner('اليد تغطي الخطوط، الرجاء إبعادها قليلاً للتأكد','warn');R.hist=[];return}
@@ -563,12 +621,12 @@ function tick(src){
     if(loc==='none'){R.errLatch[id]=false;banner(STEPS[R.step].t);R.hist=[];return}
     if(stable(loc,10)){
       if(loc===target){const m=id==='red'?'السلك الأحمر في خط الموجب +، صح':'السلك الأسود في خط السالب −، صح';addOk(m);banner(m,'ok');enterStep(R.step+1)}
-      else if(loc===wrong&&!R.errLatch[id]){R.errLatch[id]=true;const m=id==='red'?'خطأ! السلك الأحمر في خط السالب. يجب نقله إلى خط الموجب':'خطأ! السلك الأسود في خط الموجب. يجب نقله إلى خط السالب';
+      else if(loc===wrong&&!R.errLatch[id]){R.errLatch[id]=true;const m=id==='red'?'خطأ! السلك الأحمر في خط السالب. يجب نقله إلى خط الموجب':'خطر! السلك الأسود في خط الموجب مع الأحمر. هذا قصر كهربائي، يجب نقله إلى خط السالب';
         addErr(id==='red'?'red_minus':'black_plus',m);banner(m,'bad');flash();
-        const bw=B[wrong];startFx((kind==='red'?bw.rx:bw.dx)*view.width,bw.y*view.height);
-        say(m+'. ماذا لو تم التشغيل هكذا؟ القطبية بتنعكس، اللمبة ما بتشتغل، والقطع الحساسة مثل المكثف والحساسات ممكن تتلف');
+        const bw=B[wrong];startFx((kind==='red'?bw.rx:bw.dx)*view.width,bw.y*view.height,id==='red'?'rev':'short');
+        say(id==='red'?m+'. لو تم التشغيل كذا، القطبية بتنعكس واللمبة ما بتولّع. في هذي الدائرة ما راح تتلف قطعة، لكن القطع اللي لها قطبية مثل المكثف الإلكتروليتي ممكن تتلف لو انعكست عليها':m+'. لو تم التشغيل، الفايف فولت يتوصل بالأرضي مباشرة بدون أي مقاومة. التيار يرتفع، الأسلاك تسخن، والأردوينو أو منفذ الكمبيوتر ممكن يتضرر. لا تشغل الأردوينو قبل ما تصلح السلك');
         R.pending={code:id==='red'?'red_minus':'black_plus',at:elapsed(),until:performance.now()+1400}}
-      else if(loc===wrong)banner(id==='red'?'السلك الأحمر للحين في السالب ✗':'السلك الأسود للحين في الموجب ✗','bad');
+      else if(loc===wrong)banner(id==='red'?'السلك الأحمر للحين في السالب ✗':'خطر: السلك الأسود للحين في الموجب (قصر) ✗','bad');
     }
     return;
   }
@@ -590,22 +648,25 @@ view.addEventListener('pointermove',e=>{if(demo.drag){const p=toCanvas(e);demo[d
 view.addEventListener('pointerup',()=>{if(demo.drag){const w=demo[demo.drag];const r=railAt(w);if(r!=='none')w.y=r==='plus'?SC.plusY:SC.minusY;demo.drag=null}});
 function tog(id,key){$('#'+id).onclick=()=>{demo[key]=!demo[key];$('#'+id).setAttribute('aria-pressed',demo[key])}}
 tog('dPower','power');tog('dDim','dim');tog('dShake','shake');tog('dBlur','blur');
-$('#recal').onclick=()=>{if(R&&R.step>=1){R.step=1;enterStep(1)}};
-$('#hintBtn').onclick=()=>{if(!R||R.step>=STEPS.length)return;const H={frame:'يوضع الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. يدخل طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. يدخل السلك الأسود في أي فتحة على خط السالب الأزرق',led:'التأكد من أن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
-$('#trainerOk').onclick=()=>{if(!R||R.step<2||R.step>=STEPS.length)return;addErr('assisted','المدرب أكد الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
+const CAL_I=STEPS.findIndex(x=>x.id==='calib');
+$('#recal').onclick=()=>{if(R&&R.step>=CAL_I){enterStep(CAL_I)}};
+$('#hintBtn').onclick=()=>{if(!R||R.step>=STEPS.length)return;const H={frame:'يوضع الآيباد فوق اللوحة على ارتفاع تقريباً ثلاثين سانتي، والأردوينو تحت اللوحة في الصورة',calib:'خط الموجب عليه خط أحمر وعلامة زائد. خط السالب عليه خط أزرق وعلامة ناقص',red:'منفذ فايف فولت في صف منافذ الطاقة في الأردوينو. يدخل طرف السلك الأحمر في أي فتحة على خط الموجب',black:'منفذ جي إن دي جنب فايف فولت. يدخل السلك الأسود في أي فتحة على خط السالب الأزرق',place:'المقاومة من خط الموجب لصف في الوسط. الرجل الطويلة للمبة في نفس صف المقاومة، والقصيرة في خط السالب',led:'التأكد من أن الرجل الطويلة للمبة جهة المقاومة والموجب، وإن سلك اليو إس بي موصل'};const t=H[STEPS[R.step].id];addErr('hint','مساعدة: '+t);banner(t,'warn');say(t)};
+$('#trainerOk').onclick=()=>{if(!R||R.step<=CAL_I||R.step>=STEPS.length)return;addErr('assisted','المدرب أكد الخطوة يدوياً: '+STEPS[R.step].t);enterStep(R.step+1)};
 
 /* ---- "ماذا لو؟": AR consequence of a polarity mistake, drawn on the live video ---- */
-function mkFx(x,y,t0){return{x,y,t0,dur:4200,p:Array.from({length:26},(_,j)=>({a:j*.73+Math.random()*.3,v:.45+((j*7)%10)/14,s:7+(j%7)*2.2,d:(j%9)*95}))}}
-function startFx(x,y){R.fx.push(mkFx(x,y,performance.now()))}
+function mkFx(x,y,t0,kind){return{kind:kind||'short',x,y,t0,dur:4200,p:Array.from({length:26},(_,j)=>({a:j*.73+Math.random()*.3,v:.45+((j*7)%10)/14,s:7+(j%7)*2.2,d:(j%9)*95}))}}
+function startFx(x,y,kind){R.fx.push(mkFx(x,y,performance.now(),kind))}
 function drawFx(now){fxPaint(vctx,R.fx,now,view.width);R.fx=R.fx.filter(f=>now-f.t0<f.dur)}
 function fxPaint(c,list,now,W){
   for(const f of list){const t=now-f.t0;if(t<0||t>f.dur)continue;const k=t/f.dur;
-    if(t<1600){c.save();c.strokeStyle='rgba(255,214,90,'+(1-t/1600)+')';c.lineWidth=2.5;for(const p of f.p.slice(0,12)){const r=8+(t/1600)*70*p.v;c.beginPath();c.moveTo(f.x+Math.cos(p.a)*r*.55,f.y+Math.sin(p.a)*r*.55);c.lineTo(f.x+Math.cos(p.a)*r,f.y+Math.sin(p.a)*r);c.stroke()}
+    const sh=f.kind!=='rev';
+    if(!sh&&t<2400){c.save();c.strokeStyle='rgba(255,90,74,'+(1-t/2400)+')';c.lineWidth=4;for(let j=0;j<3;j++){const r=((t/800+j/3)%1)*60+6;c.beginPath();c.arc(f.x,f.y,r,0,7);c.stroke()}c.restore()}
+    if(sh&&t<1600){c.save();c.strokeStyle='rgba(255,214,90,'+(1-t/1600)+')';c.lineWidth=2.5;for(const p of f.p.slice(0,12)){const r=8+(t/1600)*70*p.v;c.beginPath();c.moveTo(f.x+Math.cos(p.a)*r*.55,f.y+Math.sin(p.a)*r*.55);c.lineTo(f.x+Math.cos(p.a)*r,f.y+Math.sin(p.a)*r);c.stroke()}
       const g=c.createRadialGradient(f.x,f.y,0,f.x,f.y,40);g.addColorStop(0,'rgba(255,240,180,'+Math.max(0,.9-t/1800)+')');g.addColorStop(1,'rgba(255,120,40,0)');c.fillStyle=g;c.beginPath();c.arc(f.x,f.y,40,0,7);c.fill();c.restore()}
-    for(const p of f.p){const tt=t-p.d;if(tt<0)continue;const q=tt/(f.dur-p.d);const yy=f.y-q*140*p.v,xx=f.x+Math.sin(q*6+p.a)*18*p.v;const r=p.s*(1+q*2.4);
+    if(sh)for(const p of f.p){const tt=t-p.d;if(tt<0)continue;const q=tt/(f.dur-p.d);const yy=f.y-q*140*p.v,xx=f.x+Math.sin(q*6+p.a)*18*p.v;const r=p.s*(1+q*2.4);
       c.fillStyle='rgba(70,70,78,'+(.45*(1-q))+')';c.beginPath();c.arc(xx,yy,r,0,7);c.fill()}
     const a=Math.min(1,t/300)*(k>.85?(1-k)/.15:1);c.save();c.globalAlpha=Math.max(0,a);c.font='bold 15px "IBM Plex Sans Arabic",Tahoma,sans-serif';c.textAlign='center';
-    const txt='ماذا لو تم التشغيل؟ القطبية معكوسة ⚡';const w=c.measureText(txt).width+24;const lx=Math.min(Math.max(f.x,w/2+8),W-w/2-8),ly=Math.max(30,f.y-70);
+    const txt=sh?'ماذا لو تم التشغيل؟ قصر كهربائي ⚡':'ماذا لو تم التشغيل؟ قطبية معكوسة، اللمبة ما تولّع';const w=c.measureText(txt).width+24;const lx=Math.min(Math.max(f.x,w/2+8),W-w/2-8),ly=Math.max(30,f.y-70);
     c.fillStyle='rgba(80,16,20,.92)';c.beginPath();if(c.roundRect)c.roundRect(lx-w/2,ly-20,w,32,10);else c.rect(lx-w/2,ly-20,w,32);c.fill();c.fillStyle='#ffd2d2';c.fillText(txt,lx,ly+2);c.restore()}
 }
 /* ---- "لقطة الخطأ": the last few seconds of video kept in memory, saved when a mistake happens ---- */
@@ -790,7 +851,7 @@ $('#startPhoto').onclick=()=>startPractice('photo');
 $('#snapBtn').onclick=()=>$('#snapIn').click();
 $('#snapIn').onchange=e=>{const f=e.target.files&&e.target.files[0];if(!f||!R)return;const im=new Image();im.onload=()=>{
   const W=640,H=Math.round(640*im.naturalHeight/im.naturalWidth);if(!R.photo){view.width=W;view.height=H}
-  R.photo=im;R.prevLum=null;R.hist=[];if(R.step===1&&R.calStage===0)banner('لمس خط الموجب + في الصورة');};im.src=URL.createObjectURL(f);e.target.value=''};
+  R.photo=im;R.prevLum=null;R.hist=[];if(STEPS[R.step]&&STEPS[R.step].id==='calib'&&R.calStage===0)banner('لمس خط الموجب + في الصورة');};im.src=URL.createObjectURL(f);e.target.value=''};
 window.__mx={analyze,locate,drawScene,demo,SC,get R(){return R}};
 // hero live demo: scripted wire placement through the real vision engine
 let heroRun=true;
