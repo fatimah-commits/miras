@@ -166,14 +166,14 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
       <p class="lead">مراس يحوّل كاميرا الآيباد إلى مدرب ثاني في معمل الميكاترونكس. المتدرب يركّب الدائرة على قطع حقيقية، والنظام يكتشف خطأ القطبية لحظة حدوثه وينبّه بالصوت قبل التشغيل.</p>
       <div class="row"><button class="btn" id="heroStart">ابدأ التدريب</button><button class="btn ghost" id="heroDemo">مشاهدة العرض التجريبي</button></div>
     </div>
-    <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض حي: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>LIVE · CAMERA CHECK</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
+    <div class="live"><canvas id="heroCv" width="640" height="480" aria-label="عرض توضيحي مرسوم: السلك الأحمر يدخل خط السالب فيظهر تنبيه، ثم ينتقل إلى الموجب"></canvas><span class="tag"><i></i>عرض توضيحي مرسوم · مو كاميرا</span><div class="say" id="heroSay">جاري المراقبة…</div></div>
   </div>
 
   <div class="feats">
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="8" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><circle cx="17" cy="18" r="5" fill="none" stroke="#46d9e6" stroke-width="2.5"/></svg><h3>كاميرا تشوف وين السلك</h3><p class="note">رؤية حاسوبية مع OpenCV.js تتابع السلك الأحمر والأسود وتحدد أي خط دخلوا فيه، طول وقت التطبيق.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4 L31 29 H3 Z" fill="none" stroke="#ff5d5d" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 13 v7" stroke="#ff5d5d" stroke-width="2.5" stroke-linecap="round"/><circle cx="17" cy="24.5" r="1.6" fill="#ff5d5d"/></svg><h3>إيقاف فوري لخطأ القطبية</h3><p class="note">لو الأحمر دخل في السالب، تتوقف الخطوة ويطلع تنبيه صوتي عربي، ويُسجّل الخطأ في ملف المتدرب.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" بالواقع المعزز</h3><p class="note">عند الخطأ يظهر فوق الفيديو الحقيقي وش كان بيصير لو تم التشغيل: قطبية معكوسة أو قصر كهربائي. يتعلم المتدرب العاقبة قبل ما يجربها على قطع حقيقية.</p></div>
-    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="7" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><path d="M14 12 l8 5 -8 5z" fill="#46d9e6"/></svg><h3>لقطة الخطأ وتقرير الأداء</h3><p class="note">يحفظ التطبيق ثواني من الفيديو لحظة الخطأ، ويحسب وقت كل خطوة. المدرب يشوف وش صار، ووين يتأخر كل متدرب، ونقاط القوة والضعف.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="8" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><circle cx="17" cy="18" r="5" fill="none" stroke="#46d9e6" stroke-width="2.5"/></svg><h3>كاميرا تشوف وين السلك</h3><p class="note">قواعد ألوان مكتوبة داخل التطبيق تقارن صورة الكاميرا بصورة اللوحة الفاضية، وتحدد أي خط دخل فيه السلك الأحمر والأسود. هذي رؤية حاسوبية بقواعد ثابتة، مو نموذج ذكاء اصطناعي مدرّب. وOpenCV.js يستخدم لقياس وضوح الصورة بس. ما جربناها على قطع حقيقية للحين.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M17 4 L31 29 H3 Z" fill="none" stroke="#ff5d5d" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 13 v7" stroke="#ff5d5d" stroke-width="2.5" stroke-linecap="round"/><circle cx="17" cy="24.5" r="1.6" fill="#ff5d5d"/></svg><h3>تنبيه فوري لخطأ القطبية</h3><p class="note">لو الأحمر دخل في السالب، ما تنتقل الخطوة ويطلع تنبيه صوتي عربي، ويُسجّل الخطأ في ملف المتدرب.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><circle cx="12" cy="20" r="7" fill="none" stroke="#ffc75a" stroke-width="2.5"/><circle cx="22" cy="12" r="5" fill="none" stroke="#ffc75a" stroke-width="2.5"/><path d="M8 30 l3-4" stroke="#ffc75a" stroke-width="2.5" stroke-linecap="round"/></svg><h3>"ماذا لو؟" مرسوم فوق صورة الكاميرا</h3><p class="note">عند الخطأ يرسم التطبيق فوق صورة الكاميرا، في مكان السلك، وش كان بيصير لو تم التشغيل: قطبية معكوسة أو قصر كهربائي. يتعلم المتدرب العاقبة قبل ما يجربها على قطع حقيقية.</p></div>
+    <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><rect x="3" y="7" width="28" height="20" rx="4" fill="none" stroke="#46d9e6" stroke-width="2.5"/><path d="M14 12 l8 5 -8 5z" fill="#46d9e6"/></svg><h3>لقطة الخطأ وتقرير الأداء</h3><p class="note">يحفظ التطبيق صور متتابعة من الكاميرا (مو فيديو) لثواني حول لحظة الخطأ، ويحسب وقت كل خطوة. المدرب يشوف وش صار، ووين يتأخر كل متدرب، ونقاط القوة والضعف.</p></div>
     
 <div class="feat"><svg viewBox="0 0 34 34" aria-hidden="true"><path d="M5 28 V18 M13 28 V10 M21 28 V15 M29 28 V6" stroke="#e2b54e" stroke-width="3" stroke-linecap="round"/></svg><h3>لوحة للمدرب</h3><p class="note">كل محاولة لها درجة ومدة وأخطاء. المدرب يعرف مين يحتاج دعم، وأي خطأ يتكرر في الشعبة.</p></div>
   </div>
@@ -197,17 +197,17 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
   <label>كلمة المرور<input id="liPw" type="password" autocomplete="current-password"></label>
   <div class="err" id="liErr"></div>
   <button class="btn" id="liBtn">دخول</button>
-  <div class="note">حسابات تجريبية (اضغط للتعبئة):</div>
+  <div class="note">حسابات تجريبية للعرض فقط (اضغط للتعبئة). كلمات المرور مكتوبة في الصفحة، فهذا الدخول ما فيه حماية حقيقية ولا يصلح لبيانات متدربين حقيقيين:</div>
   <div class="row" id="demoAccounts"></div>
 </section>
 
 <!-- HOME -->
 <section id="scr-home" hidden>
   <div class="card">
-    <span class="pill warn" style="align-self:flex-start">مهارة المرحلة الأولى</span>
+    <span class="pill warn" style="align-self:flex-start">المهارة</span>
     <h1>توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية</h1>
     <p class="note">تطبيق المهارة على قطع حقيقية والكاميرا شغالة. الكاميرا تتابع مكان كل سلك، وينبّه فوراً لو السلك دخل في القطب الغلط.</p>
-    <div class="row"><span class="pill ok">٤ خطوات</span><span class="pill ok">قطع حقيقية</span><span class="pill ok">تعليق صوتي</span></div>
+    <div class="row"><span class="pill ok">٦ خطوات</span><span class="pill ok">قطع حقيقية</span><span class="pill ok">تعليق صوتي</span></div>
     <div class="row"><button class="btn" id="toGuide">ابدأ: شرح الخطوات</button></div>
   </div>
   <div class="card" style="margin-top:16px">
@@ -228,9 +228,11 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
       <div class="row"><button class="btn ghost small polBtn">🔊 شرح القطبية</button></div></li>
     <li><span class="n">٣</span><h3>تحديد خط الموجب ثم السالب</h3><p class="note">علشان التطبيق يعرف وين خط <b style="color:var(--plus)">+</b> الأحمر ووين خط <b style="color:var(--minus)">−</b> الأزرق في لوحتك.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><circle cx="120" cy="34" r="9" fill="none" stroke="#ff5a4f" stroke-width="3"/><circle cx="80" cy="24" r="9" fill="none" stroke="#4f8dff" stroke-width="3"/><text x="120" y="60" fill="#333" font-size="11" text-anchor="middle">١</text><text x="80" y="60" fill="#333" font-size="11" text-anchor="middle">٢</text></svg></li>
-    <li><span class="n">٤</span><h3>الأحمر من 5V إلى الموجب +</h3><p class="note">ثم الأسود من GND إلى السالب −، والأردوينو مطفي. لو دخل سلك في الخط الغلط، يطلع تنبيه بالصوت يشرح وش كان بيصير.</p>
+    <li><span class="n">٤</span><h3>الأحمر من 5V إلى الموجب +</h3><p class="note">والأردوينو مطفي. لو دخل في خط السالب، يطلع تنبيه بالصوت: القطبية معكوسة.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><path d="M88 82 Q86 55 110 34" stroke="#e53935" stroke-width="4" fill="none"/><path d="M104 82 Q120 50 140 24" stroke="#111" stroke-width="4" fill="none"/><text x="86" y="100" fill="#fff" font-size="8">5V</text><text x="100" y="100" fill="#fff" font-size="8">GND</text></svg></li>
-    <li><span class="n">٥</span><h3>التشغيل والتأكد من إضاءة اللمبة</h3><p class="note">توصيل سلك USB. الكاميرا تكتشف ضوء الـ LED وتعرض النتيجة.</p>
+    <li><span class="n">٥</span><h3>الأسود من GND إلى السالب −</h3><p class="note">لو دخل الأسود في خط الموجب مع الأحمر، يطلع تنبيه خطر: هذا قصر كهربائي.</p>
+      <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><line x1="26" y1="24" x2="174" y2="24" stroke="#4f8dff" stroke-width="2"/><line x1="26" y1="34" x2="174" y2="34" stroke="#ff5a4f" stroke-width="2"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/><path d="M88 82 Q86 55 110 34" stroke="#e53935" stroke-width="4" fill="none" opacity=".45"/><path d="M104 82 Q120 50 140 24" stroke="#111" stroke-width="4" fill="none"/><text x="86" y="100" fill="#fff" font-size="8">5V</text><text x="100" y="100" fill="#fff" font-size="8">GND</text></svg></li>
+    <li><span class="n">٦</span><h3>التشغيل والتأكد من إضاءة اللمبة</h3><p class="note">توصيل سلك USB. الكاميرا تكتشف ضوء الـ LED وتعرض النتيجة.</p>
       <svg viewBox="0 0 200 110"><rect x="20" y="15" width="160" height="55" rx="4" fill="#f2efe6"/><circle cx="130" cy="52" r="14" fill="#fff59d" opacity=".5"/><circle cx="130" cy="52" r="6" fill="#ffeb3b"/><rect x="70" y="80" width="60" height="24" rx="3" fill="#0a7e8c"/></svg></li>
   
   </ol>
@@ -291,13 +293,13 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
 
 <!-- TRAINER -->
 <section id="scr-trainer" hidden style="display:flex;flex-direction:column;gap:16px">
-  <div class="card"><div class="row" style="justify-content:space-between"><h1>لوحة المدرب</h1><span class="sync" id="syncNote">المحاولات محفوظة على هذا الجهاز</span></div><p class="note">مهارة: توصيل تغذية لوحة التجارب مع فحص القطبية · شعبة ميكاترونكس ١</p><div class="kpis" id="kpis"></div></div>
+  <div class="card"><div class="row" style="justify-content:space-between"><h1>لوحة المدرب</h1><span class="sync" id="syncNote">المحاولات محفوظة على هذا الجهاز فقط</span></div><p class="note">مهارة: توصيل تغذية لوحة التجارب مع فحص القطبية · شعبة ميكاترونكس ١</p><div class="kpis" id="kpis"></div></div>
   <div class="card" id="reportCard"></div>
   <div class="grid2">
     <div class="card"><h2>المتدربون</h2><div class="tablewrap" id="tTable"></div></div>
     <div class="card"><h2>أكثر الأخطاء تكراراً</h2><div class="bars" id="tBars"></div><h2 id="tDetailTitle" style="margin-top:8px">المحاولات</h2><div class="tablewrap" id="tDetail"></div></div>
   </div>
-  <div class="card" id="collectCard"><h2>جمع صور لتدريب النموذج</h2><p class="note">صوّر اللوحة والأردوينو من فوق، نفس زاوية التدريب، واختر الحالة قبل التصوير. الصور تنحفظ في قاعدة بيانات مراس، مو على الجهاز. نوّع الإضاءة والمكان واليد، وصوّر كل حالة أكثر من مرة.</p>
+  <div class="card" id="collectCard"><h2>جمع صور لتدريب النموذج</h2><p class="note">صوّر اللوحة والأردوينو من فوق، نفس زاوية التدريب، واختر الحالة قبل التصوير. الصور تنحفظ في قاعدة البيانات، وهذا يشتغل من رابط claude.ai فقط. في رابط GitHub ما فيه قاعدة بيانات مشتركة للحين. نوّع الإضاءة والمكان واليد، وصوّر كل حالة أكثر من مرة.</p>
     <div class="row" id="labRow"></div>
     <div class="row"><button class="btn" id="colBtn">📷 تصوير أو اختيار صور</button><input type="file" id="colIn" accept="image/*" multiple hidden><span class="note" id="colMsg"></span></div>
     <div class="row" id="colCounts"></div><div class="row" id="colThumbs"></div></div>
@@ -310,7 +312,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <div class="row" style="justify-content:space-between"><h2 id="clipTitle">لقطة الخطأ</h2><button class="btn ghost small" id="clipClose">إغلاق</button></div>
     <img id="clipImg" alt="لقطة فيديو لحظة خطأ القطبية" style="width:100%;border-radius:12px;background:#000;aspect-ratio:4/3;object-fit:cover">
     <p class="note" id="clipMeta"></p>
-    <p class="note">يحفظ التطبيق آخر ثانيتين قبل الخطأ وثانية بعده، علشان المدرب يشوف وش صار بالضبط.</p>
+    <p class="note">صور متتابعة (مو فيديو) لآخر ثانيتين قبل الخطأ وثانية بعده، علشان المدرب يشوف وش صار بالضبط. في رابط GitHub تنعرض اللقطة في نفس الجلسة فقط، لأن ما فيه قاعدة بيانات مشتركة.</p>
   </div>
 </div>
 <script>
@@ -346,7 +348,10 @@ const nameOf=uid=>{const u=USERS.find(x=>x.id===uid);return u?u.name:'غير م�
 const errName=e=>ERR[e]||'خطأ غير معروف';
 // keep only well-formed attempts (data may come from localStorage or the shared db)
 const validAttempt=a=>a&&typeof a.id==='string'&&typeof a.uid==='string'&&Number.isFinite(a.at)&&Number.isFinite(a.score)&&Number.isFinite(a.dur)&&Array.isArray(a.errors);
-function scoreOf(errs){let s=100;errs.forEach(e=>{s-= e==='red_minus'||e==='black_plus'?15: e==='assisted'||e==='quit'?8: e==='hint'?3:4});return Math.max(0,s)}
+// Points taken off per event. A short circuit is the most dangerous mistake; asking for help costs little;
+// a hard-to-see picture is mostly the setup, not the trainee. Quitting caps the score at 40 (see finish()).
+const WEIGHT={black_plus:20,red_minus:15,assisted:8,hint:2,unclear:2,quit:0};
+function scoreOf(errs){let s=100;errs.forEach(e=>{s-=WEIGHT[e]!=null?WEIGHT[e]:2});return Math.max(0,s)}
 let seeds=seed().map(a=>({...a,sample:true,steps:a.steps||fakeSteps(a)}));let realLocal=store.get('mx_real',[]);let realDb=null;let attempts=[];function mergeAttempts(){const byId={};[...realLocal,...(realDb||[])].filter(validAttempt).forEach(a=>byId[a.id]=a);attempts=[...seeds,...Object.values(byId)]}
 function fakeSteps(a){const r=k=>Math.round((20+((a.at/1000+k*37)%40))*10)/10;const pen=e=>a.errors.filter(x=>x===e).length*30;return [r(1),r(6),r(2),r(3)+pen('red_minus'),r(4)+pen('black_plus'),r(5)]}
 mergeAttempts();
@@ -773,7 +778,7 @@ async function openClip(a,given){
   const m=$('#clipModal'),img=$('#clipImg');m.hidden=false;$('#clipTitle').textContent='جاري تحميل اللقطة…';$('#clipMeta').textContent='';img.removeAttribute('src');clearInterval(playT);
   const clips=given&&given.length?given:await clipsFor(a);
   if(my!==clipSeq||m.hidden)return; // closed or another clip opened while loading
-  if(!clips.length){$('#clipTitle').textContent='اللقطة غير متوفرة';$('#clipMeta').textContent='انحفظت هذه المحاولة على جهاز ثاني، واللقطة ما ارتفعت لقاعدة البيانات.';return}
+  if(!clips.length){$('#clipTitle').textContent='اللقطة غير متوفرة';$('#clipMeta').textContent=db?'اللقطة ما ارتفعت لقاعدة البيانات.':'اللقطات تنعرض في نفس الجلسة فقط في هذا الرابط، لأن ما فيه قاعدة بيانات مشتركة.';return}
   const u=USERS.find(x=>x.id===a.uid);let ci=0,fi=0;
   const showC=()=>{const c=clips[ci];$('#clipTitle').textContent='لقطة الخطأ · '+(u?u.name:'')+' · '+errName(c.code);$('#clipMeta').textContent=(c.sample?'لقطة من بيانات تجريبية':'عند الدقيقة '+fmtDur(c.at))+(clips.length>1?' · خطأ '+AR(ci+1)+' من '+AR(clips.length):'');fi=0};
   showC();
@@ -822,14 +827,17 @@ function finish(completed){
   const a={id:'a'+Date.now()+Math.floor(Math.random()*1e4),uid:me.id,at:Date.now(),dur:Math.round(dur),errors:errs,score,done:completed,steps,clips:R.clips.length,mode:R.mode};
   const saved=me.role!=='guest'&&(completed||R.step>CAL_I);
   if(saved)saveAttempt(a,R.clips);lastAttempt=a;lastClips=R.clips;$('#resClip').hidden=!R.clips.length;
-  $('#resSaved').textContent=saved?'تنحفظ المحاولة وتظهر للمدرب في لوحته.':me.role==='guest'?'هذا عرض تجريبي، المحاولة ما تنحفظ.':'المحاولة انتهت قبل توصيل الأسلاك، فما انحفظت.';
+  $('#resSaved').textContent=saved?(db?'انحفظت المحاولة في قاعدة البيانات وتظهر للمدرب في لوحته.':'انحفظت المحاولة على هذا الجهاز فقط، وتظهر في لوحة المدرب على نفس الجهاز.'):me.role==='guest'?'هذا عرض تجريبي، المحاولة ما تنحفظ.':'المحاولة انتهت قبل توصيل الأسلاك، فما انحفظت.';
   $('#resTitle').textContent=completed?(score>=85?'تم إتقان المهارة 👏':'اكتملت المهارة'):'المحاولة لم تكتمل';
   $('#resScore').textContent=AR(score);
   const col=score>=85?'var(--ok)':score>=60?'var(--warn)':'var(--bad)';
   $('#resRing').style.background='conic-gradient('+col+' '+score*3.6+'deg, var(--raise) 0)';
   $('#resRing').firstElementChild.style.cssText='background:var(--bench);width:120px;height:120px;border-radius:50%;display:grid;place-content:center';
   const pol=errs.filter(e=>e==='red_minus'||e==='black_plus').length;
-  $('#resPills').innerHTML='<span class="pill">⏱ '+fmtDur(dur)+'</span><span class="pill '+(pol?'bad':'ok')+'">أخطاء القطبية: '+AR(pol)+'</span><span class="pill warn">تنبيهات: '+AR(errs.length-pol)+'</span>';
+  $('#resPills').innerHTML='<span class="pill">⏱ '+fmtDur(dur)+'</span><span class="pill '+(pol?'bad':'ok')+'">أخطاء التوصيل: '+AR(pol)+'</span><span class="pill warn">تنبيهات: '+AR(errs.length-pol)+'</span>';
+  {const c={};errs.forEach(e=>c[e]=(c[e]||0)+1);const NM={black_plus:'قصر كهربائي',red_minus:'قطبية معكوسة',assisted:'تأكيد المدرب',hint:'طلب مساعدة',unclear:'صورة غير واضحة',quit:'إنهاء قبل الاكتمال'};
+   const parts=Object.keys(c).filter(k=>WEIGHT[k]).map(k=>NM[k]+' −'+AR(WEIGHT[k]*c[k]));
+   $('#resPills').insertAdjacentHTML('beforeend','<p class="note" style="width:100%;margin:6px 0 0">كيف انحسبت الدرجة: ١٠٠'+(parts.length?' · '+parts.join(' · '):' بدون خصم')+(completed?'':' · المحاولة لم تكتمل فالحد الأعلى ٤٠')+'</p>')}
   $('#resLog').innerHTML=R.log.map(l=>'<li><span class="dot" style="background:'+(l.ok?'var(--ok)':'var(--bad)')+';color:#000">'+(l.ok?'✓':'!')+'</span><span>'+esc(l.t)+'<br><span class="note">'+fmtDur(l.at)+'</span></span></li>').join('')||'<li>لا توجد خطوات.</li>';
   say(completed?'انتهت المحاولة. الدرجة '+score+' من مية':'تم إنهاء المحاولة');
   show('result');
