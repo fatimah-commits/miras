@@ -76,8 +76,8 @@ export async function simView(el, app, modeArg){
           <button class="btn" id="check">تحقق</button>
           <button class="btn ghost small" id="replay" aria-label="إعادة الاستماع">إعادة الاستماع</button>
         </div>
-        <p class="dim" id="rot" hidden>للتحكم الأسهل: تدوير الجهاز أفقياً.</p>
-        <p class="dim" id="tip">طرف السلك أو رجل القطعة: سحب ثم إفلات فوق الفتحة.</p>
+        <p class="dim" id="rot" hidden>للتحكم الأسهل أدر الجهاز أفقياً.</p>
+        <p class="dim" id="tip">اسحب طرف السلك أو رجل القطعة وأفلته فوق الفتحة.</p>
       </aside>
     </div>`;
   const svg = el.querySelector('#board');
@@ -91,7 +91,7 @@ export async function simView(el, app, modeArg){
     $('#stepNo').textContent = `الخطوة ${i+1} من ${steps.length}`;
     $('#title').textContent = title;
     $('#check').textContent = code==='power' ? 'توصيل USB' : 'تحقق';
-    setState('', code==='power' ? 'سيُفحص التوصيل كاملاً قبل تشغيل الكهرباء.' : 'عند الانتهاء: زر تحقق.');
+    setState('', code==='power' ? 'سيُفحص التوصيل كاملاً قبل تشغيل الكهرباء.' : 'عند الانتهاء اضغط تحقق.');
     app.voice.say(key);
     draw();
   }
@@ -105,7 +105,7 @@ export async function simView(el, app, modeArg){
       if(code==='power'){ lit = true; draw(); setState('ok', REASONS.lit); app.voice.say('lit'); return finish(true); }
       const note = mode==='train' && r.color ? colorNote(code==='red'?'5V':'GND', r.color) : null;
       setState('ok', REASONS.ok + (note ? ' ' + REASONS[note] : ''));
-      app.voice.say('ok');
+      app.voice.say(note || 'ok');
       setTimeout(()=>{ if(!ended) enter(idx+1); }, note ? 2200 : 900);
       return;
     }
@@ -116,7 +116,7 @@ export async function simView(el, app, modeArg){
       setState(r.danger||r.code==='short' ? 'bad' : 'warn', REASONS[r.code] || r.code);
       app.voice.say(r.code in app.voice.PHRASES ? r.code : 'test_wrong');
     } else {
-      setState('bad', 'غير صحيح. يلزم مراجعة التوصيل.');
+      setState('bad', 'غير صحيح. حاول مرة أخرى.');
       app.voice.say('test_wrong');
     }
     draw();
@@ -135,7 +135,7 @@ export async function simView(el, app, modeArg){
       <p class="state ${res.saved?'ok':'warn'}">${res.saved ? 'حُفظت النتيجة في حسابك.' : 'لم تُحفظ بعد (لا اتصال). محفوظة على هذا الجهاز وستُرسل تلقائياً.'}</p>
       <div class="row"><a class="btn" href="#/home">تدريبي</a><button class="btn ghost" id="again">محاولة جديدة</button></div>`;
     panel.querySelector('#again').onclick = () => simView(el, app, modeArg);
-    if(completed) app.voice.say('done');
+    if(!completed) app.voice.say('incomplete');   // عند الإكمال نُبقي جملة "أضاءت اللمبة" دون قطعها
   }
 
   // ---------- الرسم ----------
