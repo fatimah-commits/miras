@@ -338,7 +338,13 @@ function trackStep(img, k){
 async function startCam(){
   try{
     const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
-    const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.srcObject=st; await v.play();
+    const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.autoplay=true; v.setAttribute('playsinline',''); v.setAttribute('muted','');
+    // سفاري في الآيباد يرسم إطارات سوداء إذا كان الفيديو خارج الصفحة: نضعه فيها صغيراً وشبه مخفي
+    v.style.cssText='position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1';
+    document.body.appendChild(v);
+    v.srcObject=st;
+    await new Promise(r=>{ if(v.readyState>=1 && v.videoWidth) r(); else v.onloadedmetadata=()=>r(); });
+    await v.play();
     useSource(v,'cam');
   }catch(e){ $('loadState').textContent='ما قدرت أفتح الكاميرا: '+e.message+'. يمكن التجربة على فيديو مسجّل.'; }
 }
@@ -548,7 +554,8 @@ function finish(lit){
     `<tr><th>أخطاء اكتُشفت</th><td>${errs.length? errs.map(e=>msg(e.code)[0]).join('، ') : 'لا شيء'}</td></tr><tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr><tr><th>تأكيدات يدوية</th><td>${man}</td></tr><tr><th>تجاوزات المدرب</th><td>${ovr}</td></tr></table>`+
     `<p class="mut">إضاءة اللمبة سجّلها المتدرب بنفسه، ولم تتحقق منها الكاميرا.</p>`;
   S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
-  try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){} S.src=null; S.loop=false; trackFree();
+  try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
+  try{ S.src && S.src.parentNode && S.src.remove(); }catch(e){} S.src=null; S.loop=false; trackFree();
 }
 $('againBtn').onclick=()=>{ $('result').hidden=true; $('start').hidden=false; };
 
