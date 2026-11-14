@@ -86,7 +86,7 @@ const camOk={view:'ok',railEnds:{red:'+',black:'-'},resistor:{seen:true,near:tru
   t('7 short -> allow refused with the short reason', /قصر/.test(await p.textContent('#banner')) && !(await p.isVisible('#powerBox')));
   // 3 low confidence shown as a reason
   await gate({...camOk, resistor:{seen:true,near:true,conf:0.4}});
-  t('3 low-confidence resistor shown as not confirmed', /لست متأكداً أنها المقاومة/.test(await p.textContent('#gateList')));
+  t('3 low-confidence resistor shown as not confirmed', /لم أتمكن من التعرف على المقاومة/.test(await p.textContent('#gateList')));
   // full path: trainer confirms an uncertain resistor too, steady view, allowed
   await gate({...camOk, resistor:{seen:true,near:true,conf:0.4}});
   await p.click('#trainerBtn'); await p.locator('#tLines input').evaluateAll(xs=>xs.forEach(x=>x.checked=true));
