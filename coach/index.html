@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>مراس · المدرب المباشر</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Readex+Pro:wght@400;500;600;700&family=IBM+Plex+Sans+Arabic:wght@400;500;700&display=swap">
+<style>
+:root{
+  --ink:#0b3b29; --bench:#0f4a34; --raise:#165a41; --edge:#2b6b50;
+  --paper:#f1f4ec; --dim:#b9cbbe; --gold:#e2b54e; --gold-ink:#2a1e00;
+  --ok:#47d78f; --ok-bg:rgba(71,215,143,.14); --bad:#ff5a4a; --bad-bg:rgba(255,93,93,.16); --warn:#ffc75a; --warn-bg:rgba(255,199,90,.15);
+  --plus:#ff5d5d; --minus:#5a93ff;
+  --f-display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,sans-serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--ink);margin:0}
+body{color:var(--paper);font-family:var(--f-body);font-size:16px;line-height:1.6;padding:0 max(16px,env(safe-area-inset-left,0px)) 40px max(16px,env(safe-area-inset-right,0px))}
+.app{max-width:1280px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+.bar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:14px 0 10px;border-bottom:3px solid var(--gold)}
+.bar b{font-family:var(--f-display);font-size:1.2rem}
+.bar .sub{color:var(--dim);font-size:.9rem}
+.bar nav{margin-inline-start:auto;display:flex;gap:8px;flex-wrap:wrap}
+.bar nav a{color:var(--paper);text-decoration:none;border:1px solid var(--edge);padding:5px 12px;font-size:.88rem}
+.tag{background:var(--gold);color:var(--gold-ink);font-weight:700;font-size:.75rem;padding:2px 8px}
+.card{background:var(--bench);border:1px solid var(--edge);padding:16px}
+h2{font-family:var(--f-display);margin:0 0 8px;font-size:1.25rem}
+h3{font-family:var(--f-display);margin:0 0 6px;font-size:1.02rem;color:var(--gold)}
+p{margin:6px 0}
+.mut{color:var(--dim);font-size:.88rem}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{font:inherit;font-weight:600;border:0;background:var(--gold);color:var(--gold-ink);padding:11px 16px;cursor:pointer;min-height:46px}
+.btn.ghost{background:transparent;color:var(--paper);border:1px solid var(--edge);font-weight:500}
+.btn.danger{background:var(--bad);color:#fff}
+.btn.okb{background:var(--ok);color:#06210f}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.small{min-height:38px;padding:7px 12px;font-size:.9rem}
+.file{display:inline-flex;align-items:center}
+.file input{display:none}
+.seg{display:inline-flex;border:1px solid var(--edge)}
+.seg button{font:inherit;background:transparent;color:var(--paper);border:0;padding:9px 14px;cursor:pointer;min-height:44px}
+.seg button[aria-pressed="true"]{background:var(--gold);color:var(--gold-ink);font-weight:700}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 340px;gap:14px;align-items:start}
+@media (max-width:900px){.grid{grid-template-columns:1fr}}
+.stage{position:relative;background:#000;border:2px solid var(--edge);min-height:200px}
+.stage canvas{display:block;width:100%;height:auto;touch-action:none}
+.chip{position:absolute;top:8px;inset-inline-start:8px;padding:5px 12px;font-weight:700;font-size:.95rem;background:rgba(0,0,0,.7);border-inline-start:5px solid var(--dim);pointer-events:none}
+.chip.ok{border-color:var(--ok);color:var(--ok)}.chip.bad{border-color:var(--bad);color:var(--bad)}.chip.warn{border-color:var(--warn);color:var(--warn)}
+.banner{position:absolute;inset-inline:8px;bottom:8px;padding:10px 14px;font-weight:700;background:rgba(5,25,17,.88);pointer-events:none;border-inline-start:6px solid var(--gold)}
+.banner.ok{border-color:var(--ok)}.banner.bad{border-color:var(--bad);background:rgba(60,8,6,.9)}.banner.warn{border-color:var(--warn)}
+.ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--dim)}
+.side{display:flex;flex-direction:column;gap:12px}
+.state{padding:10px 12px;font-weight:700;border-inline-start:6px solid var(--dim);background:rgba(0,0,0,.18);margin:8px 0}
+.state.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}.state.bad{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}.state.warn,.state.unknown{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}
+.state small{display:block;font-weight:500;color:var(--paper);opacity:.9;margin-top:2px}
+.steps{display:flex;gap:4px;margin:6px 0 8px}
+.steps i{flex:1;height:6px;background:var(--edge)}.steps i.done{background:var(--ok)}.steps i.cur{background:var(--gold)}
+ul.gate{list-style:none;margin:6px 0;padding:0}
+ul.gate li{display:flex;gap:8px;align-items:flex-start;padding:7px 0;border-bottom:1px solid var(--edge);font-size:.92rem}
+ul.gate li b{min-width:22px;text-align:center}
+.ok-t{color:var(--ok)}.bad-t{color:var(--bad)}.warn-t{color:var(--warn)}
+label.chk{display:flex;gap:10px;align-items:flex-start;padding:8px;border:1px solid var(--edge);margin:6px 0;cursor:pointer;font-size:.92rem}
+label.chk input{width:22px;height:22px;flex:none;margin-top:2px}
+.src{font-size:.75rem;color:var(--dim);border:1px solid var(--edge);padding:0 6px;margin-inline-start:auto;white-space:nowrap}
+table{width:100%;border-collapse:collapse;font-size:.92rem}
+td,th{padding:7px 6px;border-bottom:1px solid var(--edge);text-align:start;vertical-align:top}
+th{color:var(--dim);font-weight:500}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:8px;margin:8px 0}
+.kpi{border:1px solid var(--edge);padding:10px}.kpi b{display:block;font-size:1.6rem;font-family:var(--f-display);font-variant-numeric:tabular-nums}.kpi span{color:var(--dim);font-size:.85rem}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--dim)}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-inline-end:6px;vertical-align:middle}
+.legend .g::before{background:var(--ok)}.legend .y::before{background:var(--warn)}.legend .r::before{background:var(--bad)}.legend .t::before{background:var(--gold)}
+.diag{background:#f3efe4;display:block;width:100%;max-width:300px;margin:6px 0}
+.tech{font-size:.78rem;color:var(--dim);font-variant-numeric:tabular-nums}
+</style>
+</head>
+<body>
+<div class="app">
+ <header class="bar">
+  <b>مراس · المدرب المباشر</b><span class="sub">إرشاد فوق اللوحة الحقيقية وفحص قبل التشغيل</span><span class="tag">نسخة تجريبية</span>
+  <nav><a href="../">الصفحة الرئيسية</a><a href="../lab/">مختبر النموذج</a><a href="#report" id="toReport">تقرير حماية الأدوات</a></nav>
+ </header>
+
+ <!-- start -->
+ <section class="card" id="start">
+  <h2>قبل البدء</h2>
+  <p>المدرب المباشر يرسم الإرشادات فوق لوحة التجارب نفسها في الكاميرا، ويفحص الدائرة قبل أن يُسمح بتوصيل كيبل USB.</p>
+  <div class="row" style="margin:10px 0">
+   <span class="mut">الوضع:</span>
+   <div class="seg" id="modeSeg"><button data-v="train" aria-pressed="true">وضع التدريب</button><button data-v="test" aria-pressed="false">وضع الاختبار</button></div>
+  </div>
+  <p class="mut" id="modeHelp">التدريب: أسهم وأماكن صحيحة وشرح للأخطاء.</p>
+  <div class="row" style="margin:10px 0">
+   <span class="mut">حجم لوحة التجارب:</span>
+   <div class="seg" id="colsSeg"><button data-v="30" aria-pressed="true">صغيرة · 30 عموداً</button><button data-v="63" aria-pressed="false">كبيرة · 63 عموداً</button></div>
+  </div>
+  <div class="row" style="margin:10px 0">
+   <span class="mut">اسم المتدرب (اختياري):</span>
+   <input id="trainee" style="font:inherit;background:var(--ink);border:1px solid var(--edge);color:var(--paper);padding:9px 12px;min-height:44px;width:220px" maxlength="40">
+  </div>
+  <div class="row" style="margin-top:14px">
+   <button class="btn" id="camBtn">تشغيل الكاميرا الخلفية</button>
+   <label class="btn ghost file">تجربة على فيديو مسجّل<input type="file" id="vidPick" accept="video/*"></label>
+   <label class="btn ghost file">تجربة على صورة<input type="file" id="imgPick" accept="image/*"></label>
+  </div>
+  <p class="tech" id="loadState">جاري تحميل النموذج والرؤية الحاسوبية…</p>
+  <p class="mut">التجهيز: الآيباد ثابت فوق اللوحة على حامل، الأردوينو <b>تحت</b> اللوحة في الصورة، وكيبل USB <b>مفصول</b>. تُستخدم خطوط الطاقة القريبة من الأردوينو. الصور تُحلَّل داخل الجهاز ولا تُرسل لأي خادم.</p>
+ </section>
+
+ <!-- work -->
+ <section id="work" hidden>
+  <div class="grid">
+   <div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip">…</div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div></div>
+    <div class="legend" style="margin-top:8px"><span class="t">المكان المطلوب</span><span class="g">تم التأكد</span><span class="y">اشتباه أو لا أرى بوضوح</span><span class="r">خطأ مؤكد</span></div>
+    <p class="tech" id="tech"></p>
+   </div>
+   <aside class="side">
+    <div class="card">
+     <div class="row"><b id="modeName">وضع التدريب</b><span class="mut" id="timer" style="margin-inline-start:auto;font-variant-numeric:tabular-nums">00:00</span></div>
+     <div class="steps" id="stepBar"></div>
+
+     <!-- setup -->
+     <div id="setupBox">
+      <h3>ضبط اللوحة (مرة واحدة)</h3>
+      <p id="setupText"></p>
+      <svg class="diag" id="setupDiag" viewBox="0 0 300 120" aria-hidden="true"></svg>
+      <div class="row"><button class="btn ghost small" id="setupUndo">تراجع</button><button class="btn small" id="setupDone" disabled>الشبكة فوق الفتحات، ابدأ</button></div>
+      <p class="mut">بعد اللمسات تظهر نقاط فوق كل فتحة. إن لم تنطبق، اسحب أي زاوية بإصبعك حتى تنطبق.</p>
+     </div>
+
+     <!-- step -->
+     <div id="stepBox" hidden>
+      <h3 id="stepTitle"></h3>
+      <p id="stepText"></p>
+      <svg class="diag" id="ledDiag" viewBox="0 0 300 110" hidden aria-hidden="true">
+       <rect x="0" y="0" width="300" height="110" fill="#f3efe4"/>
+       <path d="M120 14 a18 18 0 0 1 36 0 v26 h-36z" fill="#d93025"/><rect x="152" y="14" width="4" height="26" fill="#a11"/>
+       <line x1="128" y1="40" x2="128" y2="98" stroke="#555" stroke-width="3"/><line x1="148" y1="40" x2="148" y2="80" stroke="#555" stroke-width="3"/>
+       <text x="122" y="106" font-size="11" text-anchor="end" fill="#111">الطويلة (+) مع المقاومة</text>
+       <text x="156" y="94" font-size="11" fill="#111">القصيرة (−) جهة الحافة المسطحة</text>
+      </svg>
+      <div class="state" id="stepState">…</div>
+      <div class="row">
+       <button class="btn ghost small" id="repeatBtn">🔊 أعد الشرح</button>
+       <button class="btn ghost small" id="muteBtn">الصوت: يعمل</button>
+       <button class="btn small" id="nextBtn" hidden>التالي</button>
+       <button class="btn small" id="finishBuild" hidden>انتهيت من التركيب، افحص</button>
+      </div>
+      <div id="manualBox" hidden>
+       <p class="mut" id="manualWhy"></p>
+       <button class="btn ghost small" id="manualBtn">تأكيد يدوي من المدرب</button>
+      </div>
+      <label class="chk" id="usbChk" hidden><input type="checkbox" id="usbOff"> <span>كيبل USB مفصول عن الأردوينو الآن.</span></label>
+     </div>
+
+     <!-- gate -->
+     <div id="gateBox" hidden>
+      <h3>فحص ما قبل التشغيل</h3>
+      <p class="mut">لا يُسمح بتوصيل الكيبل حتى يصبح كل سطر أخضر. السطر الأصفر يمنع أيضاً: النظام لا يخمّن.</p>
+      <ul class="gate" id="gateList"></ul>
+      <label class="chk"><input type="checkbox" id="mResistor"> <span>قيمة المقاومة 220 أوم (أحمر، أحمر، بني). <em class="mut">الكاميرا لا تقرأ ألوان المقاومة.</em></span></label>
+      <label class="chk"><input type="checkbox" id="mLed"> <span>الرجل الطويلة للمبة في عمود المقاومة، والقصيرة في خط السالب. <em class="mut">الكاميرا لا تميّز طول الأرجل.</em></span></label>
+      <div class="row"><button class="btn" id="allowBtn">اسمح بالتشغيل</button><button class="btn ghost small" id="overrideBtn">تجاوز المدرب</button></div>
+     </div>
+
+     <!-- power -->
+     <div id="powerBox" hidden>
+      <h3>التشغيل</h3>
+      <p>اجتازت الدائرة الفحص. وصّل كيبل USB بالأردوينو الآن.</p>
+      <p><b>هل أضاءت اللمبة؟</b> <span class="mut">(الكاميرا لا تتحقق من الإضاءة بعد)</span></p>
+      <div class="row"><button class="btn okb" id="litYes">نعم، أضاءت</button><button class="btn ghost" id="litNo">لا</button></div>
+      <p class="mut" id="litHelp" hidden>افصل الكيبل أولاً. أكثر سبب شائع: اللمبة مقلوبة (الرجل الطويلة في المكان الخطأ). اقلبها ثم أعد الفحص.</p>
+     </div>
+
+     <div class="row" style="margin-top:10px">
+      <button class="btn ghost small" id="recalBtn">إعادة ضبط اللوحة</button>
+      <button class="btn ghost small" id="endBtn">إنهاء الجلسة</button>
+     </div>
+    </div>
+    <div class="card">
+     <h3>ما الذي يتحقق منه النظام فعلاً؟</h3>
+     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة، والقصر بينهما، ووجود المقاومة واللمبة قرب مكانهما (نموذج ذكاء اصطناعي مدرَّب).<br><b>تأكيد يدوي:</b> قيمة المقاومة، واتجاه أرجل اللمبة.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ورؤية الفتحة الدقيقة لكل رجل.</p>
+    </div>
+   </aside>
+  </div>
+ </section>
+
+ <!-- result -->
+ <section class="card" id="result" hidden>
+  <h2 id="resTitle"></h2>
+  <div id="resBody"></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="againBtn">جلسة جديدة</button><a class="btn ghost" href="#report" id="toReport2" style="text-decoration:none">تقرير حماية الأدوات</a></div>
+ </section>
+
+ <!-- report -->
+ <section class="card" id="report">
+  <h2>تقرير حماية الأدوات</h2>
+  <p class="mut">من جلسات حقيقية على هذا الجهاز فقط. لا توجد أرقام مضافة أو تجريبية.</p>
+  <div id="repBody"></div>
+  <div class="row" style="margin-top:10px"><button class="btn ghost small" id="repExport">تنزيل البيانات (JSON)</button><button class="btn ghost small" id="repClear">مسح البيانات</button></div>
+ </section>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.wasm.min.js"></script>
+<script src="board.js"></script>
+<script src="coach.js"></script>
+</body>
+</html>
