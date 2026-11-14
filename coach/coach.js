@@ -357,6 +357,25 @@ $('imgPick').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const im=ne
 function seg(id, key, cb){ $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{ $(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); S[key]= key==='cols'?+b.dataset.v:b.dataset.v; cb&&cb(); }); }
 seg('modeSeg','mode',()=>{ $('modeHelp').textContent = S.mode==='train' ? 'التدريب: أسهم وأماكن صحيحة وشرح للأخطاء.' : 'الاختبار: لا تظهر الأماكن مسبقاً. يركّب المتدرب الدائرة وحده، ثم يُقيَّم ويُسجَّل الوقت والأخطاء وعدد المحاولات. فحص الأمان قبل التشغيل يبقى إلزامياً.'; });
 seg('colsSeg','cols');
+/* one platform: who is signed in on the main page (same tab), and which mode they chose there */
+let ME=null; try{ ME=JSON.parse(sessionStorage.getItem('miras_me')||'null'); }catch(e){}
+(function fromMain(){
+  const m=new URLSearchParams(location.search).get('mode');
+  if(m==='train'||m==='test'){ const b=$('modeSeg').querySelector(`button[data-v="${m}"]`); b&&b.click(); }
+  if(ME&&ME.name){ $('nameRow').hidden=true; $('trainee').value=ME.name; $('whoTop').hidden=false; $('whoTop').textContent=(ME.role==='trainer'?'المدرب: ':'المتدرب: ')+ME.name; }
+})();
+/* the attempt also goes to the main page's list (mx_real), so it shows in "المحاولات السابقة" and the trainer dashboard.
+   Same point weights as index.html WEIGHT. */
+const MAIN_W={black_plus:20,red_minus:15,assisted:8,hint:2,unclear:2,quit:0};
+function toMainAttempt(sess){
+  if(!ME || ME.role!=='trainee') return;
+  const map={red_in_minus:'red_minus', short:'black_plus', black_in_plus:'black_plus', led_reversed:'led_reversed'};
+  const errs=[]; sess.events.forEach(e=>{ if(e.type==='error' && map[e.code]) errs.push(map[e.code]); if(e.type==='manual'&&e.why) errs.push('assisted'); if(e.type==='override') errs.push('override'); });
+  if(!sess.passed) errs.push('quit');
+  let sc=100; errs.forEach(e=>{ sc-=MAIN_W[e]!=null?MAIN_W[e]:2; }); sc=Math.max(0,sc); if(!sess.passed) sc=Math.min(40,sc);
+  const a={id:'c'+Date.now()+Math.floor(Math.random()*1e4), uid:ME.id, at:Date.now(), dur:sess.seconds, errors:errs, score:sc, done:!!sess.passed, steps:null, clips:0, mode:sess.mode==='test'?'coach-test':'coach'};
+  try{ const k='mx_real', L=JSON.parse(localStorage.getItem(k)||'[]'); L.push(a); localStorage.setItem(k, JSON.stringify(L.slice(-60))); }catch(e){}
+}
 
 /* ---------------- setup (calibration) ---------------- */
 const SETUP_TXT = [
@@ -515,12 +534,12 @@ $('endBtn').onclick=()=>finish(false);
 /* ---------------- session log (real data only) ---------------- */
 function loadAll(){ try{ return JSON.parse(localStorage.getItem(STORE)||'[]'); }catch(e){ return []; } }
 function saveAll(a){ try{ localStorage.setItem(STORE, JSON.stringify(a.slice(-300))); }catch(e){} }
-function newSession(){ S.trainee=($('trainee').value||'').trim(); S.session={id:Date.now().toString(36), mode:S.mode, trainee:S.trainee, cols:S.cols, src:S.kind, start:new Date().toISOString(), events:[]}; S.t0=performance.now(); S.attempts=0; S.manual={resistorValue:false,ledPolarity:false}; S.manualStep={}; $('modeName').textContent = S.mode==='train'?'وضع التدريب':'وضع الاختبار'; }
+function newSession(){ S.trainee=($('trainee').value||'').trim(); S.session={id:Date.now().toString(36), mode:S.mode, trainee:S.trainee, uid:ME&&ME.id||null, cols:S.cols, src:S.kind, start:new Date().toISOString(), events:[]}; S.t0=performance.now(); S.attempts=0; S.manual={resistorValue:false,ledPolarity:false}; S.manualStep={}; $('modeName').textContent = S.mode==='train'?'وضع التدريب':'وضع الاختبار'; }
 function log(type, data){ if(!S.session) return; const afterPower = S.step && S.step.id==='power'; S.session.events.push(Object.assign({type, t:Math.round((performance.now()-S.t0)/1000), afterPower}, data)); }
 function finish(lit){
   if(!S.session) return;
   S.session.end=new Date().toISOString(); S.session.seconds=Math.round((performance.now()-S.t0)/1000); S.session.attempts=S.attempts; S.session.passed=!!lit;
-  const all=loadAll(); all.push(S.session); saveAll(all);
+  const all=loadAll(); all.push(S.session); saveAll(all); toMainAttempt(S.session);
   const ev=S.session.events, errs=ev.filter(e=>e.type==='error'), blocked=ev.filter(e=>e.type==='blocked').length, man=ev.filter(e=>e.type==='manual'&&e.why).length, ovr=ev.filter(e=>e.type==='override').length;
   $('resTitle').textContent = lit ? 'اكتملت المهارة: أضاءت اللمبة' : 'انتهت الجلسة';
   const mm=Math.floor(S.session.seconds/60), ss=S.session.seconds%60;

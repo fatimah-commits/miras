@@ -81,7 +81,7 @@ th{color:var(--dim);font-weight:500}
 <div class="app">
  <header class="bar">
   <b>مراس · المدرب المباشر</b><span class="sub">إرشاد فوق اللوحة الحقيقية وفحص قبل التشغيل</span><span class="tag">نسخة تجريبية</span>
-  <nav><a href="../">الصفحة الرئيسية</a><a href="../lab/">مختبر النموذج</a><a href="#report" id="toReport">تقرير حماية الأدوات</a></nav>
+  <nav><span class="sub" id="whoTop" hidden></span><a href="../">العودة إلى مراس</a><a href="../lab/">مختبر النموذج</a><a href="#report" id="toReport">تقرير حماية الأدوات</a></nav>
  </header>
 
  <!-- start -->
@@ -97,7 +97,7 @@ th{color:var(--dim);font-weight:500}
    <span class="mut">حجم لوحة التجارب:</span>
    <div class="seg" id="colsSeg"><button data-v="30" aria-pressed="true">صغيرة · 30 عموداً</button><button data-v="63" aria-pressed="false">كبيرة · 63 عموداً</button></div>
   </div>
-  <div class="row" style="margin:10px 0">
+  <div class="row" style="margin:10px 0" id="nameRow">
    <span class="mut">اسم المتدرب (اختياري):</span>
    <input id="trainee" style="font:inherit;background:var(--ink);border:1px solid var(--edge);color:var(--paper);padding:9px 12px;min-height:44px;width:220px" maxlength="40">
   </div>
@@ -193,7 +193,7 @@ th{color:var(--dim);font-weight:500}
  <section class="card" id="result" hidden>
   <h2 id="resTitle"></h2>
   <div id="resBody"></div>
-  <div class="row" style="margin-top:12px"><button class="btn" id="againBtn">جلسة جديدة</button><a class="btn ghost" href="#report" id="toReport2" style="text-decoration:none">تقرير حماية الأدوات</a></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="againBtn">جلسة جديدة</button><a class="btn ghost" href="../" style="text-decoration:none">العودة إلى مراس</a><a class="btn ghost" href="#report" id="toReport2" style="text-decoration:none">تقرير حماية الأدوات</a></div>
  </section>
 
  <!-- report -->

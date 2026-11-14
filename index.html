@@ -212,7 +212,8 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <h1>توصيل تغذية لوحة التجارب من الأردوينو مع فحص القطبية</h1>
     <p class="note">تطبيق المهارة على قطع حقيقية والكاميرا شغالة. الكاميرا تتابع مكان كل سلك، وينبّه فوراً لو السلك دخل في القطب الغلط.</p>
     <div class="row"><span class="pill ok">٦ خطوات</span><span class="pill ok">قطع حقيقية</span><span class="pill ok">تعليق صوتي</span></div>
-    <div class="row"><button class="btn" id="toGuide">ابدأ: شرح الخطوات</button></div>
+    <div class="row"><button class="btn" id="toCoachTrain">ابدأ التطبيق مع المدرب المباشر</button><button class="btn ghost" id="toCoachTest">اختبار المهارة</button><button class="btn ghost" id="toGuide">شرح الخطوات (الطريقة السابقة)</button></div>
+    <p class="note">المدرب المباشر يرسم الإرشادات فوق لوحتك في الكاميرا، ولا يسمح بتوصيل كيبل USB قبل فحص الدائرة.</p>
   </div>
   <div class="card" style="margin-top:16px">
     <h2>المحاولات السابقة</h2>
@@ -299,6 +300,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
 <section id="scr-trainer" hidden style="display:flex;flex-direction:column;gap:16px">
   <div class="card"><div class="row" style="justify-content:space-between"><h1>لوحة المدرب</h1><span class="sync" id="syncNote">المحاولات محفوظة على هذا الجهاز فقط</span></div><p class="note">مهارة: توصيل تغذية لوحة التجارب مع فحص القطبية · شعبة ميكاترونكس ١</p><div class="kpis" id="kpis"></div></div>
   <div class="card" id="reportCard"></div>
+  <div class="card" id="coachCard"></div>
   <div class="grid2">
     <div class="card"><h2>المتدربون</h2><div class="tablewrap" id="tTable"></div></div>
     <div class="card"><h2>أكثر الأخطاء تكراراً</h2><div class="bars" id="tBars"></div><h2 id="tDetailTitle" style="margin-top:8px">المحاولات</h2><div class="tablewrap" id="tDetail"></div></div>
@@ -319,6 +321,7 @@ pre.log{white-space:pre-wrap;font-family:var(--f-data);font-size:13px;background
     <p class="note">صور متتابعة (مو فيديو) لآخر ثانيتين قبل الخطأ وثانية بعده، علشان المدرب يشوف وش صار بالضبط. في رابط GitHub تنعرض اللقطة في نفس الجلسة فقط، لأن ما فيه قاعدة بيانات مشتركة.</p>
   </div>
 </div>
+<script src="coach/board.js"></script>
 <script>
 (()=>{
 'use strict';
@@ -336,7 +339,7 @@ const USERS=[
  {id:'4410205',pw:'1234',name:'شهد المالكي',role:'trainee'},
  {id:'9001',pw:'1234',name:'م. سامي السبيعي',role:'trainer'}
 ];
-const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'قصر: السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب',quit:'إنهاء قبل الاكتمال'};
+const ERR={red_minus:'السلك الأحمر في خط السالب',black_plus:'قصر: السلك الأسود في خط الموجب',unclear:'الصورة غير واضحة',hint:'طلب مساعدة',assisted:'تأكيد يدوي من المدرب',quit:'إنهاء قبل الاكتمال',led_reversed:'اللمبة مقلوبة',blocked:'منع تشغيل دائرة غير آمنة',override:'تجاوز المدرب للفحص'};
 function seed(){
   let a=null;
   const now=Date.now(),D=864e5; a=[];
@@ -364,7 +367,7 @@ let me=null;
 /* ---------- navigation ---------- */
 const screens=['landing','login','home','guide','practice','result','trainer'];
 function show(n){if(n!=='practice'&&R&&!R.ended)stopPractice();screens.forEach(s=>$('#scr-'+s).hidden=s!==n);$('#landingNav').hidden=!!me||n==='login';window.scrollTo(0,0);heroRun=n==='landing'}
-function setUser(u){me=u;$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدرب':u.role==='guest'?'عرض تجريبي · لا يُحفظ':'متدرب · '+AR(u.id)}
+function setUser(u){me=u;try{u&&u.role!=='guest'?sessionStorage.setItem('miras_me',JSON.stringify({id:u.id,name:u.name,role:u.role})):sessionStorage.removeItem('miras_me')}catch(e){}$('#userBox').hidden=!u;if(!u)return;$('#userAv').textContent=u.name.replace('م. ','')[0];$('#userName').textContent=u.name;$('#userRole').textContent=u.role==='trainer'?'مدرب':u.role==='guest'?'عرض تجريبي · لا يُحفظ':'متدرب · '+AR(u.id)}
 USERS.forEach(u=>{const b=document.createElement('button');b.className='chip';b.textContent=(u.role==='trainer'?'🧑‍🏫 ':'')+u.name;b.onclick=()=>{$('#liId').value=u.id;$('#liPw').value=u.pw};$('#demoAccounts').append(b)});
 function login(){const id=$('#liId').value.trim().replace(/[٠-٩]/g,d=>'٠١٢٣٤٥٦٧٨٩'.indexOf(d)),pw=$('#liPw').value;const u=USERS.find(x=>x.id===id&&x.pw===pw);if(!u){$('#liErr').textContent='الرقم أو كلمة المرور غير صحيحة';return}$('#liErr').textContent='';setUser(u);u.role==='trainer'?openTrainer():openHome()}
 $('#liBtn').onclick=login;$('#liPw').onkeydown=e=>{if(e.key==='Enter')login()};
@@ -379,7 +382,7 @@ function errSummary(errs){const c={};errs.forEach(e=>c[e]=(c[e]||0)+1);const k=O
 function attemptsTable(list,showName){
   if(!list.length)return '<p class="note">ما فيه محاولات للحين.</p>';
   return '<table><thead><tr>'+(showName?'<th>المتدرب</th>':'')+'<th>التاريخ</th><th>الدرجة</th><th>المدة</th><th>الأخطاء</th><th>لقطة</th></tr></thead><tbody>'+
-  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+esc(nameOf(a.uid))+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+esc(errSummary(a.errors))+(a.mode==='demo'?' <span class="pill">عرض تجريبي</span>':'')+(a.sample?' <span class="pill">عيّنة</span>':'')+'</td><td>'+(a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+esc(aid(a))+'">▶ مشاهدة</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
+  list.slice().sort((a,b)=>b.at-a.at).map(a=>'<tr>'+(showName?'<td>'+esc(nameOf(a.uid))+'</td>':'')+'<td>'+fmtDate(a.at)+'</td><td><span class="pill '+(a.score>=85?'ok':a.score>=60?'warn':'bad')+'">'+AR(a.score)+'</span></td><td>'+fmtDur(a.dur)+'</td><td>'+esc(errSummary(a.errors))+(a.mode==='demo'?' <span class="pill">عرض تجريبي</span>':a.mode==='coach'?' <span class="pill">المدرب المباشر</span>':a.mode==='coach-test'?' <span class="pill">اختبار · المدرب المباشر</span>':'')+(a.sample?' <span class="pill">عيّنة</span>':'')+'</td><td>'+(a.clips!==0&&a.errors.some(e=>e==='red_minus'||e==='black_plus')?'<button class="chip" data-clip="'+esc(aid(a))+'">▶ مشاهدة</button>':'—')+'</td></tr>').join('')+'</tbody></table>';
 }
 function openHome(){if(!me||me.role==='guest'){show('guide');return}$('#myAttempts').innerHTML=attemptsTable(attempts.filter(a=>a.uid===me.id),false);show('home')}
 $('#toGuide').onclick=()=>show('guide');$('#backHome1').onclick=goHome;$('#resHome').onclick=goHome;$('#again').onclick=()=>show('guide');
@@ -387,6 +390,7 @@ $('#toGuide').onclick=()=>show('guide');$('#backHome1').onclick=goHome;$('#resHo
 /* ---------- trainer ---------- */
 let selTrainee=null;
 function openTrainer(){
+  try{coachCard()}catch(e){}
   const tr=USERS.filter(u=>u.role==='trainee');
   const all=attempts;const avg=all.length?Math.round(all.reduce((s,a)=>s+a.score,0)/all.length):0;
   const pol=all.reduce((s,a)=>s+a.errors.filter(e=>e==='red_minus'||e==='black_plus').length,0);
@@ -936,7 +940,16 @@ let heroRun=true;
   }
   requestAnimationFrame(frame);
 })();
-show('landing');
+/* ---------- one platform: live coach ---------- */
+$('#toCoachTrain').onclick=()=>{location.href='coach/?mode=train'};
+$('#toCoachTest').onclick=()=>{location.href='coach/?mode=test'};
+function coachCard(){ // protection report from real live-coach sessions on this device (coach/board.js)
+  const el=$('#coachCard');if(!el||!window.MirasBoard)return;let all=[];try{all=JSON.parse(localStorage.getItem('miras_coach_v1')||'[]')}catch(e){}
+  if(!all.length){el.innerHTML='<h2>حماية الأدوات (المدرب المباشر)</h2><p class="note">لا توجد جلسات بعد على هذا الجهاز.</p><a class="btn ghost small" href="coach/#report">فتح التقرير</a>';return}
+  const r=MirasBoard.report(all);
+  el.innerHTML='<h2>حماية الأدوات (المدرب المباشر)</h2><div class="row"><span class="pill">'+AR(r.sessions)+' جلسة</span><span class="pill bad">'+AR(r.beforePower)+' خطأ اكتُشف قبل التشغيل</span><span class="pill warn">'+AR(r.blocked)+' منع تشغيل</span><span class="pill">'+AR(r.manualConfirms)+' تأكيد يدوي</span><span class="pill">'+AR(r.overrides)+' تجاوز مدرب</span></div><p class="note">من جلسات حقيقية على هذا الجهاز فقط.</p><a class="btn ghost small" href="coach/#report">التقرير الكامل</a>'}
+(function restore(){let u=null;try{const v=JSON.parse(sessionStorage.getItem('miras_me')||'null');u=v&&USERS.find(x=>x.id===v.id)}catch(e){}
+  if(u){setUser(u);u.role==='trainer'?openTrainer():openHome()}else show('landing')})();
 })();
 </script>
 </body>
