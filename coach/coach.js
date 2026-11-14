@@ -89,16 +89,29 @@ function pickVoice(){ try{ const v=speechSynthesis.getVoices().filter(x=>/^ar/i.
   arVoice=v[0]||null; }catch(e){} }
 try{ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }catch(e){}
 fetch('../voice/voice.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(l=>(l||[]).forEach(x=>{ if(x&&x.file&&x.text) VOICE[vkey(x.text)]='../voice/'+x.file; })).catch(()=>{});
+/* The recorded clips of the platform (app/voice). A line is played from a clip only when the clip says the same thing;
+   every other line falls back to the device voice. */
+let REC={};
+fetch('../app/voice/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).then(m=>{ REC=m||{}; }).catch(()=>{});
+const REC_FOR = { // message code or step id -> clip
+  resistor_ok:'ok', resistor_ok_hole:'ok', led_ok:'ok', red_ok:'red_seen', black_ok:'black_seen',
+  red_in_minus:'wrong_rail', short:'short', lost:'board_lost', hand:'hand_in_view', moving:'cam_moving', early_red_minus:'wrong_rail',
+  'step:prep':'usb_unplug', 'step:resistor':'resistor_missing', 'step:led':'led_missing', 'step:gate':'usb_locked', 'step:power':'usb_ok',
+  calib_ok:'calib_ok', cam_aim:'cam_aim', led_reversed:'led_reversed', mode_test:'mode_test', power_short:'short' };
 const voiceEl = new Audio();
 let unlocked=false;
-function unlock(){ if(unlocked) return; unlocked=true; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);}catch(e){} }
+function unlock(){ if(unlocked) return; unlocked=true; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);}catch(e){}
+  // iPad only lets an <audio> element play later if it was started once inside a touch
+  try{ voiceEl.muted=true; voiceEl.src='../app/voice/ok.mp3'; const p=voiceEl.play(); const done=()=>{ try{voiceEl.pause(); voiceEl.currentTime=0;}catch(e){} voiceEl.muted=false; }; if(p&&p.then) p.then(done,()=>{voiceEl.muted=false;}); else done(); }catch(e){ voiceEl.muted=false; } }
 ['pointerdown','touchend'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
-function say(t, force){
+function say(t, force, key){
   if(!t || S.muted) return;
   const now=performance.now();
   if(!force && t===S.lastSay && now-S.lastSayAt<6000) return;
   S.lastSay=t; S.lastSayAt=now;
-  const rec=VOICE[vkey(t)];
+  const clip=key && REC_FOR[key] && REC[REC_FOR[key]];
+  const rec=clip ? '../app/voice/'+clip : VOICE[vkey(t)];
+  voiceEl.muted=false;
   try{ speechSynthesis.cancel(); }catch(e){}
   if(rec){ try{ voiceEl.src=rec; const p=voiceEl.play(); if(p&&p.catch) p.catch(()=>tts(t)); }catch(e){ tts(t); } return; }
   tts(t);
@@ -390,6 +403,30 @@ function toMainAttempt(sess){
 }
 
 /* ---------------- setup (calibration) ---------------- */
+const AUTO_TXT='وجّه الكاميرا إلى اللوحة كاملة وثبّتها. أتعرّف على الفتحات وخطي الطاقة تلقائياً…';
+const AUTO_WHY={few_holes:'لا أرى فتحات اللوحة بوضوح. قرّب الكاميرا أو زد الإضاءة.', no_lattice:'لا أرى فتحات اللوحة بوضوح. قرّب الكاميرا أو زد الإضاءة.', rows_not_found:'أرى فتحات لكن لا أميّز صفوف اللوحة. اجعل اللوحة كلها داخل الصورة.', cols_partial:'جزء من اللوحة خارج الصورة أو مغطّى. أظهر اللوحة كاملة.'};
+const ac=document.createElement('canvas'), actx=ac.getContext('2d',{willReadFrequently:true});
+function autoTry(){
+  if(S.autoOff || S.autoDone || !window.MirasAutoCal) return;
+  const now=performance.now(); if(now-(S.autoAt||0)<700) return; S.autoAt=now;
+  if(S.ortReady && now-S.detAt>DET_EVERY) detect();
+  const fresh=now-S.detAt<3000 ? S.dets : [], bs=fresh.filter(d=>d.cls==='board' && d.s>=0.35);
+  const box = bs.length ? [Math.min(...bs.map(d=>d.x1)),Math.min(...bs.map(d=>d.y1)),Math.max(...bs.map(d=>d.x2)),Math.max(...bs.map(d=>d.y2))] : [0,0,S.srcW,S.srcH];
+  const ard=fresh.filter(d=>d.cls==='arduino').sort((a,b)=>b.s-a.s)[0], near=ard?[(ard.x1+ard.x2)/2,(ard.y1+ard.y2)/2]:null;
+  let im; try{ ac.width=S.srcW; ac.height=S.srcH; actx.drawImage(S.src,0,0,ac.width,ac.height); im=actx.getImageData(0,0,ac.width,ac.height); }catch(e){ return; }
+  let r=MirasAutoCal.autoCalibrate(im.data,ac.width,ac.height,box,{near});
+  if(!r.ok && bs.length) r=MirasAutoCal.autoCalibrate(im.data,ac.width,ac.height,[0,0,S.srcW,S.srcH],{near});
+  if(!r.ok){ S.autoPrev=null; const w=String(r.why||''); S.autoWhy=AUTO_WHY[w.startsWith('cols_partial')?'cols_partial':w]||''; S.autoFails=(S.autoFails||0)+1; renderSetup(); return; }
+  const p=S.autoPrev; S.autoPrev=r;
+  // two frames in a row must agree (same size, same corners, same polarity) before the result is used
+  if(!p || p.cols!==r.cols || !!p.rails!==!!r.rails || (r.rails && Math.sign(p.rails.plus-p.rails.minus)!==Math.sign(r.rails.plus-r.rails.minus))) return;
+  for(let i=0;i<4;i++) if(Math.hypot(p.taps[i][0]-r.taps[i][0],p.taps[i][1]-r.taps[i][1])>0.6*r.pitchPx) return;
+  S.cols=r.cols; S.taps=r.taps.map(t=>t.slice()); S.H=B.boardFromTaps(S.cols,S.taps);
+  S.rails = r.rails ? {plus:r.rails.plus, minus:r.rails.minus} : {plus:null, minus:null};
+  S.autoDone=true; S.autoWhy=''; log('auto_calib',{cols:r.cols,inliers:r.inliers,rails:!!r.rails});
+  $('colsSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===S.cols));
+  say('تعرّفت على اللوحة. تأكد أن النقاط فوق الفتحات ثم اضغط ابدأ.',true,'calib_ok'); renderSetup();
+}
 const SETUP_TXT = [
   'المس الفتحة رقم 1 في الصف الملاصق لخطي الطاقة القريبين من الأردوينو.',
   'المس آخر فتحة في الصف نفسه (العمود الأخير).',
@@ -401,11 +438,16 @@ const SETUP_TXT = [
 ];
 function enterSetup(){
   S.phase='setup'; S.taps=[]; S.rails=null; S.H=null; S.ref=null; S.track.ok=false; trackFree();
+  S.autoOff=false; S.autoDone=false; S.autoPrev=null; S.autoWhy=''; S.autoFails=0; say('وجّه الكاميرا نحو اللوحة كاملة.',true,'cam_aim');
   $('setupBox').hidden=false; $('stepBox').hidden=true; $('gateBox').hidden=true; $('powerBox').hidden=true; renderSetup();
 }
 function renderSetup(){
   const k = S.taps.length + (S.rails ? (S.rails.minus!=null?2:S.rails.plus!=null?1:0) : 0);
-  $('setupText').textContent = (k<6?`(${k+1} من 6) `:'') + SETUP_TXT[Math.min(k,6)];
+  const auto = k===0 && !S.autoOff && !!window.MirasAutoCal;
+  $('setupText').textContent = auto ? AUTO_TXT+(S.autoWhy?' '+S.autoWhy:'')+(S.autoFails>=6?' إن لم ينجح، المس الفتحات الأربع في زوايا اللوحة بأي ترتيب.':'')
+    : k<4 ? `المس الفتحات الأربع في زوايا اللوحة، بأي ترتيب (${k+1} من 4).`
+    : k<6 ? SETUP_TXT[k]
+    : (S.autoDone ? 'تعرّفت على اللوحة تلقائياً. ' : '')+'تأكد أن النقاط فوق الفتحات، وأن النقاط الحمراء على خط الموجب (+) والزرقاء على السالب (−). اسحب أي زاوية لتعديلها، ثم اضغط «ابدأ».';
   $('setupDone').disabled = k<6;
   // mini diagram: board with the hole to tap highlighted
   const W=300,H=120,cx=i=>20+i*(260/(S.cols-1)), ry=r=>36+B.rowY(r)*6.4;
@@ -414,7 +456,7 @@ function renderSetup(){
   for(let r=0;r<10;r++) for(let c=0;c<S.cols;c+=Math.ceil(S.cols/30)) s+=`<rect x="${cx(c)-1}" y="${ry(r)-1}" width="2" height="2" fill="#777"/>`;
   for(let c=0;c<S.cols;c+=Math.ceil(S.cols/30)){ s+=`<rect x="${cx(c)-1}" y="15" width="2" height="2" fill="#777"/><rect x="${cx(c)-1}" y="23" width="2" height="2" fill="#777"/>`; }
   const P=[[0,0],[S.cols-1,0],[S.cols-1,9],[0,9]];
-  if(k<4){ const [c,r]=P[k]; s+=`<circle cx="${cx(c)}" cy="${ry(r)}" r="7" fill="none" stroke="#e2b54e" stroke-width="3"/>`; }
+  if(k<4){ P.forEach(([c,r],i)=>{ s+=`<circle cx="${cx(c)}" cy="${ry(r)}" r="7" fill="none" stroke="#e2b54e" stroke-width="${i>=k?3:1}"/>`; }); }
   else if(k<6){ s+=`<rect x="14" y="${k===4?11:19}" width="272" height="9" fill="none" stroke="#e2b54e" stroke-width="2.5"/>`; }
   s+=`<text x="${cx(0)}" y="113" font-size="9" text-anchor="middle" fill="#333">1</text><text x="${cx(S.cols-1)}" y="113" font-size="9" text-anchor="middle" fill="#333">${S.cols}</text>`;
   $('setupDiag').innerHTML=s;
@@ -426,8 +468,14 @@ cvs.addEventListener('pointerdown', e=>{
   if(S.taps.length===4 && S.rails && S.rails.minus!=null){ // adjust mode: grab nearest corner
     const tol=cvs.width/25; let bi=-1, bd=1e9; S.taps.forEach((t,i)=>{ const d=Math.hypot(t[0]-p[0],t[1]-p[1]); if(d<bd){bd=d;bi=i;} });
     if(bd<tol){ S.drag=bi; cvs.setPointerCapture(e.pointerId); } return; }
-  if(S.taps.length<4){ S.taps.push(p); if(S.taps.length===4){ S.H=B.boardFromTaps(S.cols,S.taps); S.rails={plus:null,minus:null}; } }
-  else if(S.rails){ const y=toBoard(p[0],p[1])[1];
+  if(S.taps.length<4){ S.autoOff=true; S.taps.push(p);
+    if(S.taps.length===4){ const o=B.orderTaps(S.taps);
+      if(!o){ S.taps=[]; banner('النقاط الأربع لا تشكّل زوايا لوحة. المسها من جديد.','warn'); renderSetup(); return; }
+      S.taps=o; const gc=B.guessCols(o); if(gc){ S.cols=gc; $('colsSeg').querySelectorAll('button').forEach(b=>b.setAttribute('aria-pressed',+b.dataset.v===S.cols)); }
+      S.H=B.boardFromTaps(S.cols,S.taps); S.rails={plus:null,minus:null}; } }
+  else if(S.rails){ let y=toBoard(p[0],p[1])[1];
+    if(S.rails.plus==null && y>11.4 && y<18){ // the rails on the other long side were touched: turn the board frame round
+      S.taps=[S.taps[2],S.taps[3],S.taps[0],S.taps[1]]; S.H=B.boardFromTaps(S.cols,S.taps); y=toBoard(p[0],p[1])[1]; }
     if(!(y<-0.4 && y>-7)){ banner('هذه ليست خطوط الطاقة الملاصقة للصف الذي لمسته أولاً. حاول مرة أخرى.','warn'); return; }
     if(S.rails.plus==null) S.rails.plus=y; else if(S.rails.minus==null){ if(Math.abs(y-S.rails.plus)<0.5||Math.abs(y-S.rails.plus)>3){ banner('خط السالب يجب أن يكون الصف المجاور لخط الموجب.','warn'); return; } S.rails.minus=y; } }
   renderSetup();
@@ -440,7 +488,7 @@ $('setupDone').onclick=()=>{
   S.rect=makeRect(); sampleRect(S.rect,img,k); S.ref=captureRef(S.rect); S.prevGray=S.rect.gray.slice();
   S.Hcal=S.H.slice(); S.needRecal=false; trackInit(img,k); S.lastMove=0;
   if(S.cvReady){ refFree(); const g=grayMat(img); S.orbRef=orbOf(g,quad(1.0).map(p=>[p[0]*k,p[1]*k])); g.delete(); }
-  log('setup',{cols:S.cols});
+  log('setup',{cols:S.cols, auto:!!S.autoDone});
   $('setupBox').hidden=true; S.stepIdx=0; enterStep(0);
 };
 $('recalBtn').onclick=()=>{ log('recalibrate',{}); enterSetup(); };
@@ -458,19 +506,19 @@ function enterStep(i){
   if(testBuild){ // test mode: one build phase, no targets shown
     $('stepTitle').textContent='ركّب الدائرة كاملة'; $('stepText').textContent='المقاومة، واللمبة، والسلك الأحمر، والسلك الأسود، بدون إرشاد. اضغط «انتهيت» للفحص.';
     $('finishBuild').hidden=false; $('ledDiag').hidden=true; setState('unknown','وضع الاختبار','النظام لا يعرض الإجابة. يقيّم بعد الضغط على «انتهيت».');
-    say('وضع الاختبار. ركّب الدائرة كاملة ثم اضغط انتهيت.',true);
+    say('وضع الاختبار. ركّب الدائرة كاملة ثم اضغط انتهيت.',true,'mode_test');
   } else if(S.step.id!=='gate' && S.step.id!=='power'){
-    $('stepTitle').textContent=`${i+1}. ${S.step.t}`; $('stepText').textContent=S.step.text; setState('unknown','بانتظار التركيب',''); say(S.step.say,true);
-  } else if(S.step.id==='gate'){ voidConfirm(null); S.gatePassSince=0; closeTrainer(); say(S.step.say,true); }
-  else { $('litHelp').hidden=true; say(S.step.say,true); }
+    $('stepTitle').textContent=`${i+1}. ${S.step.t}`; $('stepText').textContent=S.step.text; setState('unknown','بانتظار التركيب',''); say(S.step.say,true,'step:'+S.step.id);
+  } else if(S.step.id==='gate'){ voidConfirm(null); S.gatePassSince=0; closeTrainer(); say(S.step.say,true,'step:'+S.step.id); }
+  else { $('litHelp').hidden=true; say(S.step.say,true,'step:'+S.step.id); }
   renderBar();
 }
 function renderBar(){ $('stepBar').innerHTML = STEPS.map((s,i)=>`<i class="${i<S.stepIdx?'done':i===S.stepIdx?'cur':''}" title="${s.t}"></i>`).join(''); }
 function setState(st,title,why){ const e=$('stepState'); e.className='state '+st; e.innerHTML=`${title}${why?`<small>${why}</small>`:''}`; }
 $('usbOff').onchange=()=>{ $('nextBtn').disabled=!$('usbOff').checked; };
 $('nextBtn').onclick=()=>{ if(S.step.id==='prep'){ log('manual',{what:'usb_off'}); enterStep(1); return; } advance(); };
-$('repeatBtn').onclick=()=>{ const c=S.committed; say(c && msg(c.code)[2] ? msg(c.code)[2] : S.step.say, true); };
-$('muteBtn').onclick=()=>{ S.muted=!S.muted; $('muteBtn').textContent=S.muted?'الصوت: مطفأ':'الصوت: يعمل'; if(S.muted) try{speechSynthesis.cancel()}catch(e){} };
+$('repeatBtn').onclick=()=>{ const c=S.committed; say(c && msg(c.code)[2] ? msg(c.code)[2] : S.step.say, true, c && msg(c.code)[2] ? c.code : 'step:'+S.step.id); };
+$('muteBtn').onclick=()=>{ S.muted=!S.muted; $('muteBtn').textContent=S.muted?'الصوت: مطفأ':'الصوت: يعمل'; if(S.muted){ try{speechSynthesis.cancel()}catch(e){} try{voiceEl.pause()}catch(e){} } };
 $('manualBtn').onclick=()=>{ log('skipped',{what:S.step.id, why:'camera_unsure'}); banner('تابعنا. هذه القطعة لم تتأكد بالكاميرا، وسيراجعها المدرب في فحص ما قبل التشغيل.','warn'); advance(); };
 function advance(){ if(S.stepIdx<STEPS.length-1) enterStep(S.stepIdx+1); }
 $('finishBuild').onclick=()=>{ S.attempts++; log('attempt',{n:S.attempts}); enterStep(STEPS.findIndex(s=>s.id==='gate')); };
@@ -483,7 +531,7 @@ function evalStep(ev){
   if(ev.view!=='ok'){
     const w = B.earlyWarning(id, ev.rawEnds);
     S.earlyN = w ? S.earlyN+1 : 0;
-    if(w && S.earlyN>=3 && S.early!==w){ S.early=w; log('early',{code:w}); const m=msg(w); setState('warn',m[0],m[1]); banner(m[0],'warn'); say(m[2]); }
+    if(w && S.earlyN>=3 && S.early!==w){ S.early=w; log('early',{code:w}); const m=msg(w); setState('warn',m[0],m[1]); banner(m[0],'warn'); say(m[2],false,w); }
     else if(!S.early){ const v=msg(ev.view); setState('unknown',v[0],v[1]); }
     S.cand=null; return;
   }
@@ -494,9 +542,9 @@ function evalStep(ev){
   if(S.committed && S.committed.key===key) { maybeManual(j,now); return; }
   S.committed={key, code:j.code, state:j.state};
   const m=msg(j.code); setState(j.state==='unknown'?'unknown':j.state, m[0], m[1]);
-  if(j.state==='bad'){ log('error',{code:j.code, step:id}); banner(m[0],'bad'); say(m[2]); }
-  else if(j.state==='warn'){ log('suspect',{code:j.code, step:id}); say(m[2]); }
-  else if(j.state==='ok'){ log('ok',{code:j.code, step:id}); banner(m[0],'ok'); say(m[2]); $('manualBox').hidden=true; setTimeout(()=>{ if(S.step && S.step.id===id && S.committed && S.committed.state==='ok') advance(); },1600); }
+  if(j.state==='bad'){ log('error',{code:j.code, step:id}); banner(m[0],'bad'); say(m[2],false,j.code); }
+  else if(j.state==='warn'){ log('suspect',{code:j.code, step:id}); say(m[2],false,j.code); }
+  else if(j.state==='ok'){ log('ok',{code:j.code, step:id}); banner(m[0],'ok'); say(m[2],false,j.code); $('manualBox').hidden=true; setTimeout(()=>{ if(S.step && S.step.id===id && S.committed && S.committed.state==='ok') advance(); },1600); }
   if(j.state==='ok'||j.state==='bad') S.unknownSince=now;
   maybeManual(j,now);
 }
@@ -588,7 +636,7 @@ $('tSend').onclick=async()=>{
   finally{ trainerBusy=false; $('tSend').disabled=false; $('tPass').value=''; try{ sb && await sb.auth.signOut({scope:'local'}); }catch(e){} }
 };
 $('litYes').onclick=()=>{ log('lit',{yes:true}); finish(true); };
-$('litNo').onclick=()=>{ log('lit',{yes:false}); log('error',{code:'led_reversed', step:'power', afterPower:true}); $('litHelp').hidden=false; say('افصل الكيبل أولاً. غالباً اللمبة مقلوبة. اقلبها ثم أعد الفحص.',true);
+$('litNo').onclick=()=>{ log('lit',{yes:false}); log('error',{code:'led_reversed', step:'power', afterPower:true}); $('litHelp').hidden=false; say('افصل الكيبل أولاً. غالباً اللمبة مقلوبة. اقلبها ثم أعد الفحص.',true,'led_reversed');
   setTimeout(()=>{ voidConfirm(null); enterStep(STEPS.findIndex(s=>s.id==='gate')); },3500); };
 $('endBtn').onclick=()=>finish(false);
 
@@ -646,7 +694,7 @@ function frame(ts){
   if(S.src.tagName==='VIDEO' && S.src.readyState<2) return;
   if(S.kind==='cam') ctx.clearRect(0,0,cvs.width,cvs.height); else ctx.drawImage(S.src,0,0,cvs.width,cvs.height);
   S._fpsN++; if(ts-S._fpsT>1000){ S.fps=S._fpsN; S._fpsN=0; S._fpsT=ts; }
-  if(S.phase==='setup'){ drawSetup(); chip('ضبط اللوحة','warn'); return; }
+  if(S.phase==='setup'){ autoTry(); drawSetup(); chip('ضبط اللوحة','warn'); return; }
   if(!S.H || !S.ref) return;
   pctx.drawImage(S.src,0,0,pc.width,pc.height);
   const img=pctx.getImageData(0,0,pc.width,pc.height), k=pc.width/S.srcW;
@@ -665,7 +713,7 @@ function frame(ts){
   ev.rawEnds=ev.railEnds; S.ev=ev;
   if(S.phase!=='done'){
     if(S.step && S.step.id==='gate') gateEval(ev); else if(S.step) evalStep(ev);
-    if(S.step && S.step.id==='power' && ev.view==='ok'){ const R2=ev.railEnds; if(R2.red&&R2.black&&R2.red===R2.black&&R2.red!=='unclear'){ if(!S.powerAlarm){ S.powerAlarm=true; log('error',{code:'short',step:'power'}); banner('افصل الكيبل فوراً: قصر كهربائي','bad'); say('افصل الكيبل فوراً. يوجد قصر كهربائي.',true); } } else S.powerAlarm=false; }
+    if(S.step && S.step.id==='power' && ev.view==='ok'){ const R2=ev.railEnds; if(R2.red&&R2.black&&R2.red===R2.black&&R2.red!=='unclear'){ if(!S.powerAlarm){ S.powerAlarm=true; log('error',{code:'short',step:'power'}); banner('افصل الكيبل فوراً: قصر كهربائي','bad'); say('افصل الكيبل فوراً. يوجد قصر كهربائي.',true,'power_short'); } } else S.powerAlarm=false; }
   }
   drawOverlay(ev, ts);
   const t=Math.round((performance.now()-S.t0)/1000); $('timer').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
