@@ -17,7 +17,7 @@ function form(el, html, onSubmit){
     e.preventDefault(); msg.className='msg'; msg.textContent=''; btn.disabled = true;
     const fd = Object.fromEntries(new FormData(f));
     try{ const r = await onSubmit(fd); if(r?.error){ msg.className='msg bad'; msg.textContent = r.error; } else if(r?.ok){ msg.className='msg ok'; msg.textContent = r.ok; } }
-    catch(err){ msg.className='msg bad'; msg.textContent = 'حدث خطأ: ' + (err.message||err); }
+    catch(err){ console.warn(err); msg.className='msg bad'; msg.textContent = navigator.onLine ? 'تعذّر إكمال العملية. حاول مرة أخرى بعد قليل.' : 'لا يوجد اتصال بالإنترنت. اتصل ثم حاول مرة أخرى.'; }
     btn.disabled = false;
   };
 }
@@ -29,8 +29,10 @@ export const views = {
       <label>كلمة المرور<input name="password" type="password" autocomplete="current-password" required dir="ltr"></label>
       <p class="msg" role="alert"></p>
       <button class="btn" type="submit">دخول</button>
-      <div class="row"><a class="link" href="#/forgot">نسيت كلمة المرور</a><span class="dim">·</span><a class="link" href="#/signup">حساب جديد</a></div></form>`,
+      <div class="row"><a class="link" href="#/forgot">نسيت كلمة المرور</a><span class="dim">·</span><a class="link" href="#/signup">حساب جديد</a></div>
+      ${app.me ? '' : `<p class="dim or">أو <button type="button" class="link" id="tryNow">جرّب بدون حساب</button></p>`}</form>`,
       async v => { const r = await app.auth.signIn(v); if(!r.ok) return r; await app.refresh(); });
+    const t = el.querySelector('#tryNow'); if(t) t.onclick = () => { app.guest.start(); app.go('#/home'); };
   },
 
   signup(el, app){
@@ -42,7 +44,7 @@ export const views = {
       <p class="msg" role="alert"></p>
       <button class="btn" type="submit">إنشاء الحساب</button>
       <p class="dim">حسابات المدربين يفعّلها مدير المنصة.</p>
-      <a class="link" href="#/login">لدي حساب</a></form>`,
+      <a class="link" href="#/login">لدي حساب، سجّل دخولي</a></form>`,
       async v => {
         const r = await app.auth.signUp({ ...v, redirectTo: redirect() });
         if(!r.ok) return r;
@@ -69,27 +71,56 @@ export const views = {
       async v => { const r = await app.auth.setNewPassword(v.password); if(!r.ok) return r; setTimeout(()=>app.go('#/'), 900); return { ok:'تم تغيير كلمة المرور.' }; });
   },
 
-  async home(el, app){
-    const list = await app.data.myAttempts();
-    const done = list.filter(a=>a.completed), best = done.length ? Math.max(...done.map(a=>a.score)) : null;
-    const pend = app.data.pending();
+  welcome(el, app){
     el.innerHTML = `
-      <h1>${esc(app.me.full_name || 'تدريبي')}</h1>
-      <section class="card"><h2>تغذية لوحة التجارب من الأردوينو</h2>
-        <p class="dim">أربع خطوات: 5V إلى خط +، GND إلى خط −، المقاومة واللمبة، ثم الكهرباء.</p>
-        <div class="row"><a class="btn" href="#/sim/train">بدء التدريب</a><a class="btn ghost" href="#/sim/test">اختبار بلا تلميحات</a></div>
+      <section class="hero">
+        <p class="eyebrow">منصة تدريب عملي للكليات التقنية</p>
+        <h1 class="display">المهارة تُتقن <em>باليد</em>،<br>ومراس يتحقق من كل سلك.</h1>
+        <p class="lead">تركّب دائرة تغذية لوحة التجارب من الأردوينو، على الشاشة أو على القطع الحقيقية أمام الكاميرا. مراس يفحص كل توصيلة، وينبّهك بالصوت قبل أن تُخطئ القطبية.</p>
+        <div class="row"><button class="btn big" id="tryNow">جرّب الآن</button><a class="btn ghost big" href="#/login">تسجيل الدخول</a></div>
+        <p class="dim">التجربة لا تحتاج حساباً، ونتائجها لا تُحفظ. للحفظ ومتابعة المدرب سجّل الدخول.</p>
       </section>
-      <section class="card"><h2>التدريب بالكاميرا على القطع الحقيقية</h2>
-        <p class="dim">وجّه الكاميرا الخلفية إلى لوحة التجارب، والمنصة تتابع توصيلك خطوة بخطوة.</p>
-        <div class="row"><a class="btn" href="../coach/?mode=train">تدريب بالكاميرا</a><a class="btn ghost" href="../coach/?mode=test">اختبار بالكاميرا</a></div>
+      <ol class="how">
+        <li><b>ركّب الدائرة</b><span>اسحب الأسلاك على الشاشة، أو ركّب القطع الحقيقية أمام كاميرا الآيباد.</span></li>
+        <li><b>مراس يفحص كل خطوة</b><span>يحكم من مكان الأطراف في الفتحات، لا من لون السلك، ويشرح الخطأ بالصوت.</span></li>
+        <li><b>المدرب يتابع</b><span>الدرجات والأخطاء المتكررة لكل متدرب في لوحة المدرب.</span></li>
+      </ol>`;
+    el.querySelector('#tryNow').onclick = () => { app.guest.start(); app.go('#/home'); };
+  },
+
+  async home(el, app){
+    const isGuest = !app.me;
+    const list = isGuest ? [] : await app.data.myAttempts();
+    const done = list.filter(a=>a.completed), best = done.length ? Math.max(...done.map(a=>a.score)) : null;
+    const pend = isGuest ? 0 : app.data.pending();
+    let kind = app.store.get('practiceKind') === 'cam' ? 'cam' : 'sim';
+    const href = (k, m) => k==='cam' ? `../coach/?mode=${m}` : `#/sim/${m}`;
+    el.innerHTML = `
+      ${isGuest ? `<p class="state warn">أنت في وضع التجربة: النتائج لا تُحفظ. <a class="link" href="#/signup">أنشئ حساباً</a> لحفظ تقدمك.</p>` : ''}
+      <h1>${isGuest ? 'تجربة مراس' : 'أهلاً، ' + esc((app.me.full_name||'').split(' ')[0] || 'بك')}</h1>
+      <section class="card primary">
+        <h2>تغذية لوحة التجارب من الأردوينو</h2>
+        <p class="dim">أربع خطوات: سلك 5V إلى خط +، ثم سلك GND إلى خط −، ثم المقاومة واللمبة، ثم التشغيل. يرشدك مراس بالصوت في كل خطوة.</p>
+        <div class="choice" role="radiogroup" aria-label="أين تتدرب؟">
+          <button role="radio" data-k="sim" aria-checked="${kind==='sim'}"><b>على الشاشة</b><span>محاكاة، لا تحتاج أي قطع</span></button>
+          <button role="radio" data-k="cam" aria-checked="${kind==='cam'}"><b>بالكاميرا</b><span>على القطع الحقيقية، والآيباد على حامل فوق اللوحة</span></button>
+        </div>
+        <div class="row"><a class="btn big" id="go" href="${href(kind,'train')}">بدء التدريب</a><a class="link" id="goTest" href="${href(kind,'test')}">جاهز؟ ادخل الاختبار بلا تلميحات</a></div>
       </section>
       ${pend ? `<p class="state warn">${num(pend)} محاولة محفوظة على هذا الجهاز ولم تُرسل بعد. تُرسل تلقائياً عند الاتصال.</p>` : ''}
+      ${isGuest ? '' : list.length ? `
       <div class="grid">
         <div class="card stat"><b>${num(list.length)}</b><span>محاولة</span></div>
         <div class="card stat"><b>${num(done.length)}</b><span>مكتملة</span></div>
         <div class="card stat"><b>${best==null?'—':num(best)}</b><span>أفضل درجة</span></div>
       </div>
-      <section class="card"><h2>سجل محاولاتي</h2>${attemptsTable(list)}</section>`;
+      <section class="card"><h2>سجل محاولاتي</h2><p class="dim">اضغط أي محاولة لترى أخطاءها بالترتيب.</p>${attemptsTable(list)}</section>`
+      : `<section class="card"><h2>سجل محاولاتي</h2><div class="empty">لا محاولات بعد. بعد أول تدريب تظهر هنا درجتك ووقتك وأخطاؤك.</div></section>`}`;
+    el.querySelectorAll('.choice button').forEach(b => b.onclick = () => {
+      kind = b.dataset.k; app.store.set('practiceKind', kind);
+      el.querySelectorAll('.choice button').forEach(x => x.setAttribute('aria-checked', x===b));
+      el.querySelector('#go').href = href(kind,'train'); el.querySelector('#goTest').href = href(kind,'test');
+    });
     bindAttemptRows(el, app);
   },
 
@@ -104,16 +135,20 @@ export const views = {
         <label>مستوى الصوت <input type="range" id="vVol" min="0" max="1" step="0.05" value="${s.volume}"></label>
         <div class="row"><button class="btn ghost small" id="vTest">تجربة الصوت</button><button class="btn ghost small" id="vStop">إيقاف</button></div>
       </section>
-      <section class="card"><h2>الحساب</h2>
+      ${app.me ? `<section class="card"><h2>الحساب</h2>
         <p>${esc(app.me.full_name)} <span class="dim" dir="ltr">${esc(app.me.email)}</span></p>
         <p class="dim">الدور: ${{trainee:'متدرب',trainer:'مدرب',admin:'مدير'}[app.me.role]||'—'}</p>
         <div class="row"><button class="btn ghost" id="out">تسجيل الخروج</button></div>
-      </section>`;
+      </section>` : `<section class="card"><h2>الحساب</h2>
+        <p class="dim">أنت في وضع التجربة، ولا يُحفظ شيء.</p>
+        <div class="row"><a class="btn" href="#/login">تسجيل الدخول</a><button class="btn ghost" id="endGuest">إنهاء التجربة</button></div>
+      </section>`}`;
     const save = () => app.settings.set({ on: el.querySelector('#vOn').checked, rate:+el.querySelector('#vRate').value, volume:+el.querySelector('#vVol').value });
     el.querySelectorAll('#vOn,#vRate,#vVol').forEach(i => i.onchange = save);
     el.querySelector('#vTest').onclick = () => { save(); app.voice.say('step_red'); };
     el.querySelector('#vStop').onclick = () => app.voice.stop();
-    el.querySelector('#out').onclick = async () => { await app.auth.signOut(); };
+    const out = el.querySelector('#out'); if(out) out.onclick = async () => { await app.auth.signOut(); };
+    const eg = el.querySelector('#endGuest'); if(eg) eg.onclick = () => { app.guest.end(); app.go('#/welcome'); };
   },
 
   async trainer(el, app, userId){
@@ -122,7 +157,7 @@ export const views = {
     const tally = {}; errs.forEach(e => tally[e.code] = (tally[e.code]||0) + Number(e.n));
     const top = Object.entries(tally).sort((a,b)=>b[1]-a[1]).slice(0,5);
     el.innerHTML = `<div class="row" style="justify-content:space-between"><h1>المتدربون</h1>
-        <button class="btn ghost small" id="csv" ${rows.length?'':'disabled'}>تصدير CSV</button></div>
+        <button class="btn ghost small" id="csv" ${rows.length?'':'disabled'}>تنزيل الجدول (Excel)</button></div>
       <section class="card"><div class="scroll">${rows.length ? `<table><thead><tr><th>الاسم</th><th>الرقم</th><th class="num">المحاولات</th><th class="num">المكتملة</th><th class="num">أفضل</th><th class="num">المتوسط</th><th class="num">متوسط الوقت</th><th class="num">الأخطاء</th><th>آخر محاولة</th></tr></thead><tbody>
         ${rows.map(r=>`<tr class="click" data-u="${esc(r.user_id)}"><td>${esc(r.full_name)}</td><td dir="ltr">${esc(r.trainee_no||'—')}</td><td class="num">${num(r.attempts)}</td><td class="num">${num(r.completed)}</td><td class="num">${num(r.best_score)}</td><td class="num">${num(r.avg_score)}</td><td class="num">${dur(r.avg_duration_s)}</td><td class="num">${num(r.errors)}</td><td>${date(r.last_at)}</td></tr>`).join('')}
         </tbody></table>` : `<div class="empty">لا يوجد متدربون في شعبتك بعد. يضيفهم مدير المنصة.</div>`}</div></section>
@@ -183,7 +218,7 @@ async function trainee(el, app, userId){
   const p = rows.find(r=>r.user_id===userId);
   if(!p){ el.innerHTML = '<div class="empty">المتدرب غير موجود أو ليس في شعبتك.</div>'; return; }
   el.innerHTML = `<div class="row"><a class="link" href="#/trainer">المتدربون</a></div>
-    <div class="row" style="justify-content:space-between"><h1>${esc(p.full_name)}</h1><button class="btn ghost small" id="csv" ${list.length?'':'disabled'}>تصدير السجل</button></div>
+    <div class="row" style="justify-content:space-between"><h1>${esc(p.full_name)}</h1><button class="btn ghost small" id="csv" ${list.length?'':'disabled'}>تنزيل السجل (Excel)</button></div>
     <div class="grid"><div class="card stat"><b>${num(p.attempts)}</b><span>محاولة</span></div><div class="card stat"><b>${num(p.best_score)}</b><span>أفضل درجة</span></div><div class="card stat"><b>${dur(p.avg_duration_s)}</b><span>متوسط وقت الإكمال</span></div><div class="card stat"><b>${num(p.errors)}</b><span>خطأ</span></div></div>
     <section class="card"><h2>سجل المحاولات</h2>${attemptsTable(list)}</section>`;
   bindAttemptRows(el, app);

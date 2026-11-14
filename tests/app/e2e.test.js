@@ -42,7 +42,11 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
   // 1 تسجيل حساب جديد من الواجهة
   const A = await ctx(browser);
   await A.p.goto(APP);
-  await A.p.waitForSelector('text=تسجيل الدخول');
+  await A.p.waitForSelector('#tryNow');
+  t('W signed-out visitor lands on the welcome screen', await A.p.locator('h1.display').count()===1);
+  await A.p.screenshot({ path:`${SHOTS}/00-welcome.png` });
+  await A.p.click('a[href="#/login"]');
+  await A.p.waitForSelector('h1:has-text("تسجيل الدخول")');
   await A.p.screenshot({ path:`${SHOTS}/01-login.png` });
   await A.p.click('text=حساب جديد');
   await A.p.fill('[name=full_name]', NAME);
@@ -111,7 +115,7 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
 
   // 5 جهاز آخر: نفس البيانات
   const B = await ctx(browser, { ...devices['iPad (gen 7) landscape'] });
-  await B.p.goto(APP);
+  await B.p.goto(APP+'#/login');
   await B.p.fill('[name=email]', mail('sara')); await B.p.fill('[name=password]', PW); await B.p.click('button[type=submit]');
   await B.p.waitForSelector('text=سجل محاولاتي');
   t('5 another device (iPad profile) shows the same attempt', await B.p.locator('tr[data-a]').count()===1);
@@ -123,6 +127,8 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
   await A.p.goto(APP+'#/sim/test'); await A.p.waitForSelector('#board');
   await A.c.setOffline(true);
   await A.p.click('#quit');
+  t('13 ending asks for confirmation first', await A.p.locator('#quitYes').count()===1 && await A.p.locator('#check').isEnabled());
+  await A.p.click('#quitYes');
   await A.p.waitForSelector('text=لم تُحفظ بعد');
   t('15 offline save reported honestly (not fake success)', true);
   await A.c.setOffline(false);
@@ -164,7 +170,7 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
 
   // 4 المدرب: يرى شعبته فقط، والبيانات من القاعدة، والتصدير يعمل
   const T = await ctx(browser);
-  await T.p.goto(APP); await T.p.click('text=حساب جديد');
+  await T.p.goto(APP+'#/login'); await T.p.click('text=حساب جديد');
   await T.p.fill('[name=full_name]', 'مدرب واجهة'); await T.p.fill('[name=email]', mail('coach')); await T.p.fill('[name=password]', PW);
   await T.p.click('button[type=submit]'); await T.p.waitForSelector('text=بدء التدريب');
   psql(`update profiles set role='admin' where id=(select id from auth.users where email='${mail('coach')}')`);
@@ -188,7 +194,7 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
   // 14 أحجام الشاشات: لا تمرير أفقي
   for(const [name, dev] of [['iphone', devices['iPhone 13']], ['android', devices['Pixel 7']], ['ipad', devices['iPad (gen 7)']], ['desktop', { viewport:{ width:1366, height:800 } }]]){
     const D = await ctx(browser, dev);
-    await D.p.goto(APP); await D.p.fill('[name=email]', mail('sara')); await D.p.fill('[name=password]', 'Brand-new-2026!'); await D.p.click('button[type=submit]');
+    await D.p.goto(APP+'#/login'); await D.p.fill('[name=email]', mail('sara')); await D.p.fill('[name=password]', 'Brand-new-2026!'); await D.p.click('button[type=submit]');
     await D.p.waitForSelector('text=بدء التدريب'); await D.p.click('text=بدء التدريب'); await D.p.waitForSelector('#board');
     await dragEnd(D.p, 'w1', 0, 'pin:5V'); await dragEnd(D.p, 'w1', 1, 'rail:+:6');
     const st = await D.p.evaluate(() => document.querySelector('#view').__sim.state().wires[0]);
@@ -199,7 +205,28 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
     await D.c.close();
   }
 
-  const errs = [...A.p.errors, ...B.p.errors, ...T.p.errors];
+  // G وضع التجربة: زائر بلا حساب يتدرب، ولا يُحفظ شيء
+  const G = await ctx(browser, { ...devices['iPad (gen 7)'] });
+  const before = psql('select count(*) from attempts');
+  await G.p.goto(APP); await G.p.click('#tryNow');
+  await G.p.waitForSelector('text=وضع التجربة');
+  t('G guest reaches practice home without an account', await G.p.locator('text=بدء التدريب').count()===1);
+  await G.p.screenshot({ path:`${SHOTS}/20-guest-home-ipad.png` });
+  await G.p.click('text=بدء التدريب'); await G.p.waitForSelector('#board');
+  const vis = await G.p.evaluate(() => { const r=document.querySelector('#check').getBoundingClientRect(); return r.top>=0 && r.bottom<=innerHeight; });
+  t('9 iPad portrait: Check button visible without scrolling', vis);
+  await G.p.screenshot({ path:`${SHOTS}/21-guest-sim-ipad-portrait.png` });
+  await place(G.p,'w1',0,'pin:5V'); await place(G.p,'w1',1,'rail:-:4');
+  t('G guest gets the same error feedback', /معكوسة/.test(await check(G.p)));
+  await G.p.click('#quit'); await G.p.click('#quitYes');
+  await G.p.waitForSelector('text=لم تُحفظ النتيجة');
+  t('G guest result is not saved to the database', psql('select count(*) from attempts')===before);
+  await G.p.goto(APP+'#/trainer'); await G.p.waitForTimeout(400);
+  t('G guest cannot open trainer pages', !G.p.url().includes('#/trainer'));
+  await G.p.goto(APP+'#/settings'); await G.p.click('#endGuest'); await G.p.waitForSelector('#tryNow');
+  t('G ending the trial returns to welcome', true);
+
+  const errs = [...A.p.errors, ...B.p.errors, ...T.p.errors, ...G.p.errors];
   t('no JavaScript errors in pages', errs.length===0, errs.join(' | '));
   await browser.close();
   console.log(`\n${pass} نجح، ${fail} فشل`);
