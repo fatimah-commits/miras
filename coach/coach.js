@@ -340,8 +340,8 @@ async function startCam(){
     const st=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'},width:{ideal:1280},height:{ideal:720}},audio:false});
     const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.autoplay=true; v.setAttribute('playsinline',''); v.setAttribute('muted','');
     // سفاري في الآيباد يرسم إطارات سوداء إذا كان الفيديو خارج الصفحة: نضعه فيها صغيراً وشبه مخفي
-    v.style.cssText='position:fixed;left:0;bottom:0;width:2px;height:2px;opacity:0.01;pointer-events:none;z-index:-1';
-    document.body.appendChild(v);
+    v.style.cssText='position:absolute;inset:0;width:100%;height:100%;object-fit:fill;pointer-events:none;z-index:0';
+    $('stage').insertBefore(v, $('stage').firstChild);   // الفيديو ظاهر خلف الرسم: سفاري لا يعطي إطارات لفيديو مخفي
     v.srcObject=st;
     await new Promise(r=>{ if(v.readyState>=1 && v.videoWidth) r(); else v.onloadedmetadata=()=>r(); });
     await v.play();
@@ -589,7 +589,7 @@ function frame(ts){
   requestAnimationFrame(frame);
   if(!S.src) return;
   if(S.src.tagName==='VIDEO' && S.src.readyState<2) return;
-  ctx.drawImage(S.src,0,0,cvs.width,cvs.height);
+  if(S.kind==='cam') ctx.clearRect(0,0,cvs.width,cvs.height); else ctx.drawImage(S.src,0,0,cvs.width,cvs.height);
   S._fpsN++; if(ts-S._fpsT>1000){ S.fps=S._fpsN; S._fpsN=0; S._fpsT=ts; }
   if(S.phase==='setup'){ drawSetup(); chip('ضبط اللوحة','warn'); return; }
   if(!S.H || !S.ref) return;
