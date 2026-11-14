@@ -73,6 +73,7 @@ label.row{display:flex;gap:8px;align-items:center;font-size:.9rem}
 <script>
 const MODEL_URL = (window.MIRAS_MODEL_URL || 'miras-parts.onnx');
 const NAMES = ['board','led','arduino','resistor','wire'];
+const SURE = 0.6;  // same threshold as the coach safety gate (GATE_MIN_CONF)
 const AR = {board:'لوحة التجارب',led:'اللمبة',arduino:'الأردوينو',resistor:'المقاومة',wire:'سلك'};
 const COL = {board:'#E2B54E',led:'#ff4fd8',arduino:'#3fa9f5',resistor:'#7CFC00',wire:'#ffffff'};
 const SZ = 640;
@@ -169,16 +170,17 @@ function draw(src, W, H, dets){
     ctx.fillRect(0, rails[r]*H - H*0.03, W, H*0.06);
   }
   for(const d of dets){
-    const c = d.cls==='wire' && d.colour ? (d.colour==='red'?'#ff3b30':'#111') : COL[d.cls];
+    const sure = d.s >= SURE;   // uncertainty mode: below this confidence the part is not named
+    const c = !sure ? '#ffc75a' : d.cls==='wire' && d.colour ? (d.colour==='red'?'#ff3b30':'#111') : COL[d.cls];
     ctx.strokeStyle = c; ctx.lineWidth = lw; ctx.strokeRect(d.x1,d.y1,d.x2-d.x1,d.y2-d.y1);
-    if(d.cls==='wire') continue;
-    const t = `${AR[d.cls]} ${Math.round(d.s*100)}%`, tw = ctx.measureText(t).width;
-    ctx.fillStyle = COL[d.cls]; ctx.fillRect(d.x1, Math.max(0,d.y1-fs-6), tw+10, fs+6);
+    if(d.cls==='wire' && sure) continue;
+    const t = sure ? `${AR[d.cls]} ${Math.round(d.s*100)}%` : 'لم أتمكن من التعرف عليها', tw = ctx.measureText(t).width;
+    ctx.fillStyle = c; ctx.fillRect(d.x1, Math.max(0,d.y1-fs-6), tw+10, fs+6);
     ctx.fillStyle = '#0b3a29'; ctx.fillText(t, d.x1+5, Math.max(0,d.y1-fs-3));
   }
   $('verdict').className = cls; $('verdict').textContent = title; $('why').textContent = why;
-  const cnt = {}; dets.forEach(d=>cnt[d.cls]=(cnt[d.cls]||0)+1);
-  $('parts').innerHTML = Object.keys(cnt).length ? NAMES.filter(n=>cnt[n]).map(n=>`<li>${AR[n]}: ${cnt[n]}</li>`).join('') : '<li class="mut">لا شيء</li>';
+  const cnt = {}; let unk = 0; dets.forEach(d=>{ if(d.s>=SURE) cnt[d.cls]=(cnt[d.cls]||0)+1; else unk++; });
+  $('parts').innerHTML = (Object.keys(cnt).length ? NAMES.filter(n=>cnt[n]).map(n=>`<li>${AR[n]}: ${cnt[n]}</li>`).join('') : '') + (unk ? `<li class="mut">لم أتمكن من التعرف عليها: ${unk}</li>` : '') || '<li class="mut">لا شيء</li>';
 }
 
 async function runOn(src, W, H){
