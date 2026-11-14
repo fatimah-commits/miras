@@ -62,8 +62,8 @@ const MSG = {
   early_black_plus:['تحذير مبكر (تجريبي): الأسود يتجه إلى الموجب','رأيت لون السلك الأسود في خط الموجب قبل أن تثبت الصورة.','انتبه، هذا الخط غير صحيح. الأسود مكانه خط السالب.'],
   wires_unclear:['لا أرى السلكين بوضوح','',''], no_short:['لا يوجد قصر','',''], wires_ok:['الأسلاك في مكانها','',''],
   manual_ok:['تم التأكيد يدوياً','',''], manual_needed:['يحتاج تأكيدك','',''],
-  resistor_low_conf:['لست متأكداً أنها المقاومة','النموذج يرى شيئاً هنا لكن ثقته منخفضة. لا أعدّها مؤكدة.',''],
-  led_low_conf:['لست متأكداً أنها اللمبة','النموذج يرى شيئاً هنا لكن ثقته منخفضة. لا أعدّها مؤكدة.',''],
+  resistor_low_conf:['لم أتمكن من التعرف على هذه القطعة','أرى شيئاً في مكان المقاومة لكني لست متأكداً ما هو. لا أخمّن، ولا أعدّها مؤكدة. قرّب الكاميرا أو زد الإضاءة، أو يؤكدها المدرب.','لم أتمكن من التعرف على هذه القطعة.'],
+  led_low_conf:['لم أتمكن من التعرف على هذه القطعة','أرى شيئاً في مكان اللمبة لكني لست متأكداً ما هو. لا أخمّن، ولا أعدّها مؤكدة. قرّب الكاميرا أو زد الإضاءة، أو يؤكدها المدرب.','لم أتمكن من التعرف على هذه القطعة.'],
   trainer_ok:['أكّده المدرب','',''], trainer_needed:['يحتاج تأكيد المدرب','الكاميرا لا ترى هذا. يتحقق منه المدرب بعينه ثم يؤكّد بحسابه.',''],
   nocv:['التتبع غير متاح','',''],
   not_trainer:['هذا الحساب ليس حساب مدرب','',''], bad_login:['البريد أو كلمة المرور غير صحيحة','',''],
@@ -770,7 +770,11 @@ function drawOverlay(ev, ts){
   if(E.red==='-' ) railSeg(S.rails.minus,-0.5,S.cols-0.5,COL.bad);
   if(E.black==='+') railSeg(S.rails.plus,-0.5,S.cols-0.5,COL.bad);
   // model detections (thin)
-  for(const d of (performance.now()-S.detAt<DET_MAX_AGE?S.dets:[])) if(d.cls==='resistor'||d.cls==='led'){ ctx.strokeStyle=d.cls==='led'?'#ff4fd8':'#7CFC00'; ctx.lineWidth=L*0.8; ctx.strokeRect(d.x1,d.y1,d.x2-d.x1,d.y2-d.y1); }
+  for(const d of (performance.now()-S.detAt<DET_MAX_AGE?S.dets:[])) if(d.cls==='resistor'||d.cls==='led'){
+    // uncertainty mode: below the gate confidence the part is not named, it is shown as not recognised
+    const sure=d.s>=B.GATE_MIN_CONF; ctx.strokeStyle=!sure?COL.warn:d.cls==='led'?'#ff4fd8':'#7CFC00'; ctx.lineWidth=L*0.8; ctx.setLineDash(sure?[]:[L*3,L*2]); ctx.strokeRect(d.x1,d.y1,d.x2-d.x1,d.y2-d.y1); ctx.setLineDash([]);
+    const t=sure?(d.cls==='led'?'اللمبة':'المقاومة'):'لم أتمكن من التعرف عليها', fs=Math.max(13,L*6.5); ctx.save(); ctx.font=`600 ${fs}px "Readex Pro",sans-serif`; ctx.textBaseline='top'; ctx.direction='rtl'; ctx.textAlign='left';
+    const tw=ctx.measureText(t).width, ty=Math.max(0,d.y1-fs-6); ctx.fillStyle=ctx.strokeStyle; ctx.fillRect(d.x1,ty,tw+10,fs+6); ctx.fillStyle='#0b2a1f'; ctx.fillText(t,d.x1+5,ty+3); ctx.restore(); }
   // chip
   if(S.view==='hand') chip('اليد فوق اللوحة: أنتظر','warn');
   else if(S.view==='moving') chip(S.early?msg(S.early)[0]:'الصورة تتحرك: أنتظر','warn');
