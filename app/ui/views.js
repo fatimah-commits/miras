@@ -79,6 +79,10 @@ export const views = {
         <p class="dim">أربع خطوات: 5V إلى خط +، GND إلى خط −، المقاومة واللمبة، ثم الكهرباء.</p>
         <div class="row"><a class="btn" href="#/sim/train">بدء التدريب</a><a class="btn ghost" href="#/sim/test">اختبار بلا تلميحات</a></div>
       </section>
+      <section class="card"><h2>التدريب بالكاميرا على القطع الحقيقية</h2>
+        <p class="dim">وجّه الكاميرا الخلفية إلى لوحة التجارب، والمنصة تتابع توصيلك خطوة بخطوة.</p>
+        <div class="row"><a class="btn" href="../coach/?mode=train">تدريب بالكاميرا</a><a class="btn ghost" href="../coach/?mode=test">اختبار بالكاميرا</a></div>
+      </section>
       ${pend ? `<p class="state warn">${num(pend)} محاولة محفوظة على هذا الجهاز ولم تُرسل بعد. تُرسل تلقائياً عند الاتصال.</p>` : ''}
       <div class="grid">
         <div class="card stat"><b>${num(list.length)}</b><span>محاولة</span></div>
