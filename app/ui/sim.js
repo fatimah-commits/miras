@@ -58,13 +58,14 @@ export async function simView(el, app, modeArg){
   const mode = modeArg==='test' ? 'test' : 'train';
   const att = startAttempt({ mode: 'sim-'+mode });
   let steps;
-  try{ steps = (await app.data.lessonSteps()).map(s=>s.code); }catch(e){ steps = STEPS.map(s=>s.code); }
+  try{ steps = app.me ? (await app.data.lessonSteps()).map(s=>s.code) : []; }catch(e){ steps = []; }
   steps = steps.filter(c => STEPS.some(s=>s.code===c));
+  if(!steps.length) steps = STEPS.map(s=>s.code);   // الزائر أو تعذّر التحميل: خطوات الدرس الافتراضية
   let idx = 0, items = initialItems(), lit = false, flagged = null, ended = false;
 
   el.innerHTML = `
     <div class="row" style="justify-content:space-between"><h1>${mode==='train'?'تدريب':'اختبار'} · تغذية لوحة التجارب</h1>
-      <button class="btn ghost small" id="quit">إنهاء</button></div>
+      <div class="row" id="quitBox"><button class="btn ghost small" id="quit">إنهاء</button></div></div>
     <div class="sim">
       <svg class="board" id="board" viewBox="0 0 ${W} ${H}" role="img" aria-label="لوحة تجارب وأردوينو"></svg>
       <aside class="card" id="panel">
@@ -74,7 +75,7 @@ export async function simView(el, app, modeArg){
         <div class="state" id="state" role="status"></div>
         <div class="row">
           <button class="btn" id="check">تحقق</button>
-          <button class="btn ghost small" id="replay" aria-label="إعادة الاستماع">إعادة الاستماع</button>
+          <button class="btn ghost small" id="replay" aria-label="إعادة الاستماع للتعليمات">🔊 أعد التعليمات</button>
         </div>
         <p class="dim" id="rot" hidden>للتحكم الأسهل أدر الجهاز أفقياً.</p>
         <p class="dim" id="tip">اسحب طرف السلك أو رجل القطعة وأفلته فوق الفتحة.</p>
@@ -125,15 +126,16 @@ export async function simView(el, app, modeArg){
   async function finish(completed){
     if(ended) return; ended = true;
     const a = att.finish(completed);
-    const res = await app.data.save(a);
+    const res = app.me ? await app.data.save(a) : { guest:true };
     const errs = a.events.filter(e=>e.kind==='error');
     const panel = $('#panel');
     panel.innerHTML = `<h2>${completed ? 'اكتمل التدريب' : 'انتهت المحاولة دون إكمال'}</h2>
       ${completed ? `<div class="stat"><b>${a.score}</b><span>الدرجة من 100</span></div>` : ''}
       <p class="dim">الوقت: ${Math.round(a.duration_s)} ثانية · الأخطاء: ${errs.length}</p>
       ${errs.length ? `<div>${errs.map(e=>`<div class="dim">✗ ${esc(errName(e.code))}</div>`).join('')}</div>` : ''}
-      <p class="state ${res.saved?'ok':'warn'}">${res.saved ? 'حُفظت النتيجة في حسابك.' : 'لم تُحفظ بعد (لا اتصال). محفوظة على هذا الجهاز وستُرسل تلقائياً.'}</p>
-      <div class="row"><a class="btn" href="#/home">تدريبي</a><button class="btn ghost" id="again">محاولة جديدة</button></div>`;
+      <p class="state ${res.saved?'ok':'warn'}">${res.guest ? 'هذه تجربة بدون حساب، لذلك لم تُحفظ النتيجة.' : res.saved ? 'حُفظت النتيجة في حسابك.' : 'لم تُحفظ بعد (لا اتصال). محفوظة على هذا الجهاز وستُرسل تلقائياً.'}</p>
+      <div class="row"><button class="btn" id="again">محاولة جديدة</button>${res.guest ? '<a class="btn ghost" href="#/signup">أنشئ حساباً لحفظ نتائجك</a>' : ''}<a class="link" href="#/home">العودة إلى التدريب</a></div>`;
+    const qb = $('#quitBox'); if(qb) qb.hidden = true;
     panel.querySelector('#again').onclick = () => simView(el, app, modeArg);
     if(!completed) app.voice.say('incomplete');   // عند الإكمال نُبقي جملة "أضاءت اللمبة" دون قطعها
   }
@@ -227,7 +229,14 @@ export async function simView(el, app, modeArg){
 
   $('#check').onclick = check;
   $('#replay').onclick = () => app.voice.replay();
-  $('#quit').onclick = () => { if(!ended) finish(false); };
+  // الإنهاء يحتاج تأكيداً: ضغطة خاطئة لا تسجّل محاولة فاشلة
+  function askQuit(){
+    if(ended) return;
+    $('#quitBox').innerHTML = `<span class="dim">${app.me ? 'إنهاء المحاولة؟ ستُسجَّل غير مكتملة.' : 'إنهاء المحاولة؟'}</span><button class="btn small danger" id="quitYes">نعم، إنهاء</button><button class="btn ghost small" id="quitNo">متابعة</button>`;
+    $('#quitYes').onclick = () => finish(false);
+    $('#quitNo').onclick = () => { $('#quitBox').innerHTML = '<button class="btn ghost small" id="quit">إنهاء</button>'; $('#quit').onclick = askQuit; };
+  }
+  $('#quit').onclick = askQuit;
 
   // للاختبار الآلي فقط: وضع طرف في عقدة كما لو سُحب
   el.__sim = { place:(id,k,node)=>{ const e=items.find(i=>i.id===id).ends[k]; e.node=node; lit=false; draw(); }, state:()=>toState(items), check, nodeXY };

@@ -19,7 +19,13 @@ const settings = {
 };
 const voice = makeVoice({ settings });
 
-const app = { me:null, voice, settings, store, go:h=>{ location.hash = h; } };
+// وضع التجربة: زائر بلا حساب يجرّب التدريب، ولا يُحفظ شيء في قاعدة البيانات
+const guest = {
+  get on(){ try{ return sessionStorage.getItem('miras_guest')==='1'; }catch(e){ return false; } },
+  start(){ try{ sessionStorage.setItem('miras_guest','1'); }catch(e){} },
+  end(){ try{ sessionStorage.removeItem('miras_guest'); }catch(e){} },
+};
+const app = { me:null, guest, voice, settings, store, go:h=>{ location.hash = h; } };
 
 if(!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.supabase){
   view.innerHTML = `<div class="card form"><h1>المنصة غير مربوطة بقاعدة البيانات</h1>
@@ -32,11 +38,12 @@ if(!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.supabase){
 
 async function loadMe(){
   try{ app.me = await app.auth.me(); }catch(e){ app.me = null; }
+  if(app.me) guest.end();
 }
 
 function nav(){
   const r = app.me?.role;
-  const links = !app.me ? [] :
+  const links = !app.me ? (guest.on ? [['#/home','التدريب'],['#/settings','الإعدادات'],['#/login','تسجيل الدخول']] : []) :
     r==='admin'   ? [['#/trainer','المتدربون'],['#/admin','الحسابات'],['#/settings','الإعدادات']] :
     r==='trainer' ? [['#/trainer','المتدربون'],['#/settings','الإعدادات']] :
                     [['#/home','تدريبي'],['#/settings','الإعدادات']];
@@ -52,14 +59,17 @@ async function route(){
   voice.stop();
   const [, page='', arg] = h.split('/');
   const role = app.me?.role;
-  const home = !app.me ? 'login' : (role==='trainee' ? 'home' : 'trainer');
-  const open = ['login','signup','forgot','reset'];
+  const asGuest = !app.me && guest.on;
+  const home = !app.me ? (asGuest ? 'home' : 'welcome') : (role==='trainee' ? 'home' : 'trainer');
+  const open = ['welcome','login','signup','forgot','reset'];
+  const guestPages = ['home','sim','settings'];
   let p = page || home;
-  if(!app.me && !open.includes(p)) p = 'login';
+  if(!app.me && !open.includes(p) && !(asGuest && guestPages.includes(p))) p = 'login';
+  if(app.me && p==='welcome') p = home;
   if(app.me && ['login','signup'].includes(p)) p = home;
   if(p==='trainer' && !['trainer','admin'].includes(role)) p = home;
   if(p==='admin' && role!=='admin') p = home;
-  if(p==='sim' && role!=='trainee') p = home;
+  if(p==='sim' && role!=='trainee' && !asGuest) p = home;
   if(p!==page) history.replaceState(null, '', '#/'+p);
   const a = p===page ? arg : undefined;
   nav();
@@ -69,7 +79,7 @@ async function route(){
     else if(views[p]) cleanup = await views[p](view, app, a);
     else view.innerHTML = '<div class="empty">الصفحة غير موجودة.</div>';
   }catch(e){
-    view.innerHTML = `<div class="card"><h2>تعذّر التحميل</h2><p class="msg bad">${String(e.message||e).replace(/</g,'&lt;')}</p><div class="row"><button class="btn ghost" onclick="location.reload()">إعادة المحاولة</button></div></div>`;
+    view.innerHTML = `<div class="card"><h2>تعذّر فتح الصفحة</h2><p>${navigator.onLine ? 'حدث خلل أثناء التحميل. أعد المحاولة، وإن تكرر أبلغ المدرب.' : 'لا يوجد اتصال بالإنترنت. اتصل ثم أعد المحاولة.'}</p><details class="dim"><summary>تفاصيل للمدرب</summary>${String(e.message||e).replace(/</g,'&lt;')}</details><div class="row"><button class="btn" onclick="location.reload()">إعادة المحاولة</button></div></div>`;
   }
   view.focus?.();
 }
@@ -78,7 +88,7 @@ app.refresh = async () => { await loadMe(); route(); };
 async function boot(){
   app.auth.onChange(async (event) => {
     if(event==='PASSWORD_RECOVERY'){ await loadMe(); location.hash = '#/reset'; return; }
-    if(event==='SIGNED_OUT'){ app.me = null; location.hash = '#/login'; route(); }
+    if(event==='SIGNED_OUT'){ app.me = null; guest.end(); location.hash = '#/login'; route(); }
   });
   await loadMe();
   if(recovering && app.me) history.replaceState(null, '', location.pathname + '#/reset');

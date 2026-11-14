@@ -38,9 +38,12 @@ p{margin:0}
 .btn:hover{background:var(--gold-2)}
 .btn.ghost{background:transparent;border:1px solid var(--edge);color:var(--paper);font-weight:500}
 .btn.ghost:hover{border-color:var(--gold)}
-.btn.small{min-height:36px;padding:6px 12px;font-size:14px}
+.btn.small{min-height:44px;padding:8px 14px;font-size:14px}
+.btn.big{min-height:54px;padding:12px 28px;font-size:18px}
+.btn.danger{background:var(--bad);color:#2b0703}
+a.btn{text-decoration:none;display:inline-flex;align-items:center;justify-content:center}
 .btn:disabled{opacity:.45;cursor:not-allowed}
-.link{background:none;border:0;color:var(--gold-2);cursor:pointer;padding:0;text-decoration:underline;font-size:14px}
+.link{background:none;border:0;color:var(--gold-2);cursor:pointer;padding:8px 0;text-decoration:underline;font-size:15px;font-family:inherit}
 label{display:flex;flex-direction:column;gap:6px;font-size:14px;color:var(--dim)}
 input,select{background:var(--ink);border:1px solid var(--edge);border-radius:var(--r);padding:10px 12px;min-height:46px;width:100%}
 .form{max-width:420px;width:100%;margin:4vh auto 0}
@@ -72,3 +75,33 @@ tr.click{cursor:pointer} tr.click:hover{background:var(--raise)}
 .danger{animation:flash .9s 2}
 @keyframes flash{50%{background:rgba(255,90,74,.35)}}
 .end{cursor:grab} .end:active{cursor:grabbing}
+
+/* الترحيب */
+.hero{display:flex;flex-direction:column;gap:16px;padding:4vh 0 8px;max-width:760px}
+.eyebrow{color:var(--gold);font-size:15px}
+.display{font-size:clamp(30px,5.4vw,52px);line-height:1.25}
+.display em{font-style:normal;color:var(--gold)}
+.lead{font-size:clamp(16px,2vw,19px);color:var(--dim);max-width:640px}
+.how{list-style:none;margin:8px 0 0;padding:0;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px;counter-reset:how}
+.how li{counter-increment:how;border-top:2px solid var(--edge);padding-top:12px;display:flex;flex-direction:column;gap:4px}
+.how li::before{content:counter(how);font-family:var(--f-display);color:var(--gold);font-size:22px;font-weight:700}
+.how span{color:var(--dim);font-size:14px}
+.or{text-align:center}
+
+/* بطاقة الإجراء الرئيسي */
+.card.primary{border-color:var(--gold);border-width:2px}
+.choice{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.choice button{display:flex;flex-direction:column;gap:2px;text-align:start;background:var(--ink);border:2px solid var(--edge);border-radius:var(--r);padding:12px 14px;cursor:pointer;min-height:64px}
+.choice button b{font-family:var(--f-display);font-size:17px}
+.choice button span{color:var(--dim);font-size:13px}
+.choice button[aria-checked="true"]{border-color:var(--gold);background:var(--raise)}
+.choice button[aria-checked="true"] b::before{content:'✓ ';color:var(--gold)}
+@media (max-width:520px){.choice{grid-template-columns:1fr}}
+
+/* في الشاشات الضيقة (آيباد عمودي وجوال) تبقى الخطوة وزرّها ظاهرين أسفل الشاشة */
+@media (max-width:900px){
+  #panel{position:sticky;bottom:0;z-index:4;padding:12px 14px;gap:8px;box-shadow:0 -8px 24px rgba(0,0,0,.35)}
+  #panel #tip,#panel #stepNo{display:none}
+  #panel h2{font-size:16px}
+}
+details summary{cursor:pointer}

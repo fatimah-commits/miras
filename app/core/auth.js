@@ -14,7 +14,8 @@ const ar = e => {
   if(/rate limit/i.test(m)) return 'محاولات كثيرة. يُرجى الانتظار قليلاً ثم الإعادة.';
   if(/fetch|network|Failed to fetch/i.test(m)) return 'لا يوجد اتصال بالإنترنت.';
   if(/weak|pwned/i.test(m)) return 'كلمة المرور ضعيفة. المطلوب كلمة أطول وأصعب.';
-  return 'حدث خطأ: ' + m;
+  console.warn('auth error:', m);
+  return 'تعذّر إكمال العملية. حاول مرة أخرى بعد قليل، وإن تكرر أبلغ المدرب.';
 };
 
 export const PW_MIN = 8;
