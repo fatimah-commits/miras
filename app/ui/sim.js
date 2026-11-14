@@ -76,8 +76,8 @@ export async function simView(el, app, modeArg){
           <button class="btn" id="check">تحقق</button>
           <button class="btn ghost small" id="replay" aria-label="إعادة الاستماع">إعادة الاستماع</button>
         </div>
-        <p class="dim" id="rot" hidden>للتحكم الأسهل أديروا الجهاز أفقياً.</p>
-        <p class="dim" id="tip">اسحبوا طرف السلك أو رجل القطعة وأفلتوه فوق الفتحة.</p>
+        <p class="dim" id="rot" hidden>للتحكم الأسهل أدر الجهاز أفقياً.</p>
+        <p class="dim" id="tip">اسحب طرف السلك أو رجل القطعة وأفلته فوق الفتحة.</p>
       </aside>
     </div>`;
   const svg = el.querySelector('#board');
@@ -91,7 +91,7 @@ export async function simView(el, app, modeArg){
     $('#stepNo').textContent = `الخطوة ${i+1} من ${steps.length}`;
     $('#title').textContent = title;
     $('#check').textContent = code==='power' ? 'توصيل USB' : 'تحقق';
-    setState('', code==='power' ? 'سيُفحص التوصيل كاملاً قبل تشغيل الكهرباء.' : 'عند الانتهاء اضغطوا تحقق.');
+    setState('', code==='power' ? 'سيُفحص التوصيل كاملاً قبل تشغيل الكهرباء.' : 'عند الانتهاء اضغط تحقق.');
     app.voice.say(key);
     draw();
   }
@@ -116,7 +116,7 @@ export async function simView(el, app, modeArg){
       setState(r.danger||r.code==='short' ? 'bad' : 'warn', REASONS[r.code] || r.code);
       app.voice.say(r.code in app.voice.PHRASES ? r.code : 'test_wrong');
     } else {
-      setState('bad', 'غير صحيح. حاولوا مرة أخرى.');
+      setState('bad', 'غير صحيح. حاول مرة أخرى.');
       app.voice.say('test_wrong');
     }
     draw();
