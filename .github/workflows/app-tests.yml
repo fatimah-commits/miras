@@ -1,0 +1,37 @@
+name: app-tests
+on:
+  pull_request:
+    paths: ['app/**', 'supabase/**', 'tests/app/**', '.github/workflows/app-tests.yml']
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22 }
+      - name: Circuit engine
+        run: node tests/app/circuit.test.mjs
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - name: Local Supabase
+        run: |
+          supabase init --yes >/dev/null
+          sed -i 's#site_url = .*#site_url = "http://127.0.0.1:8099/app/"#; s#additional_redirect_urls = .*#additional_redirect_urls = ["http://127.0.0.1:8099/app/"]#; s/^email_sent = .*/email_sent = 100/' supabase/config.toml
+          supabase start -x studio,imgproxy,vector,logflare,edge-runtime,realtime,storage-api,supavisor,postgres-meta
+          supabase status -o env 2>/dev/null | grep = | sed 's/^/SB_/; s/"//g' >> "$GITHUB_ENV"
+      - name: Install test tools
+        run: |
+          mkdir -p /tmp/t && cd /tmp/t && npm i @supabase/supabase-js@2.119.0 playwright@1 >/dev/null && npx playwright install --with-deps chromium >/dev/null
+          sudo apt-get install -y postgresql-client >/dev/null
+      - name: Backend (accounts, RLS, sync)
+        run: SB_JS=/tmp/t/x.js SB_URL=$SB_API_URL SB_ANON=$SB_ANON_KEY DB_URL=$SB_DB_URL MAIL_URL=$SB_INBUCKET_URL node tests/app/backend.test.mjs
+      - name: Browser end-to-end
+        run: |
+          python3 -m http.server 8099 --bind 127.0.0.1 &
+          sleep 1
+          NODE_PATH=/tmp/t/node_modules APP=http://127.0.0.1:8099/app/ SB_URL=$SB_API_URL SB_ANON=$SB_ANON_KEY DB_URL=$SB_DB_URL MAIL_URL=$SB_INBUCKET_URL SHOTS=shots node tests/app/e2e.test.js
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: screenshots, path: shots }
