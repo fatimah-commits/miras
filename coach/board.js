@@ -79,12 +79,12 @@ function holeXY(h, rails){ // hole -> board units
   return [h.col-1, rowY(h.row)];
 }
 
-/* Circuit check from a placement (used in tests and in the "why" explanations). */
+/* Circuit check from a placement (used in tests and in the "why" explanations).
+   Must agree with app/core/circuit.js (tests/coach-gate.test.js compares both on every placement). */
 function checkCircuit(p){
   // p: {red:'+'|'-'|null, black:'+'|'-'|null, resistor:[holeA,holeB]|null, ledLong:hole|null, ledShort:hole|null}
   const out=[];
   const n = h => h ? netOf(h) : null;
-  const nets = {}; const link=(a,b)=>{ if(!a||!b) return; (nets[a]=nets[a]||new Set()).add(b); (nets[b]=nets[b]||new Set()).add(a); };
   if(p.red && p.black && p.red===p.black) out.push({code:'short', sev:'bad'});
   else {
     if(p.red==='-') out.push({code:'red_in_minus', sev:'bad'});
@@ -92,18 +92,19 @@ function checkCircuit(p){
   }
   if(p.ledLong && p.ledShort){
     const L=n(p.ledLong), S=n(p.ledShort);
-    if(L===S) out.push({code:'led_shorted', sev:'bad'});
     const R = p.resistor ? [n(p.resistor[0]), n(p.resistor[1])] : null;
-    if(!R || R[0]===R[1]){
-      // LED touches the rails directly with no resistor in the path
-      if((L==='R+'&&S==='R-')||(L==='R-'&&S==='R+')) out.push({code:'no_resistor', sev:'bad'});
-      else if(!R) out.push({code:'resistor_missing', sev:'warn'});
-    } else {
-      const inSeries = (R.includes('R+') && R.includes(L) && S==='R-') ;
-      const reversed = (R.includes('R+') && R.includes(S) && L==='R-');
-      if(reversed) out.push({code:'led_reversed', sev:'warn'});
-      else if(!inSeries) out.push({code:'not_series', sev:'warn'});
-    }
+    if(L===S){ out.push({code:'led_shorted', sev:'bad'}); return out; }
+    // LED legs straight in + and − : no resistor in its path, whatever else is on the board (fixed Nov 14, audit bug 1)
+    if(L==='R+' && S==='R-'){ out.push({code:'no_resistor', sev:'bad'}); return out; }
+    if(L==='R-' && S==='R+'){ out.push({code:'led_reversed', sev:'warn'}); return out; }
+    if(!R){ out.push({code:'resistor_missing', sev:'warn'}); return out; }
+    if(R[0]===R[1]){ out.push({code:'resistor_shorted', sev:'warn'}); return out; }
+    const other = R[0]==='R+' ? R[1] : R[1]==='R+' ? R[0] : null;    // resistor end that is NOT in +
+    const otherG = R[0]==='R-' ? R[1] : R[1]==='R-' ? R[0] : null;   // resistor on the ground side
+    const inSeries = (other && L===other && S==='R-') || (otherG && L==='R+' && S===otherG);
+    const reversed = (other && S===other && L==='R-') || (otherG && S==='R+' && L===otherG);
+    if(reversed) out.push({code:'led_reversed', sev:'warn'});
+    else if(!inSeries) out.push({code:'not_series', sev:'warn'});
   }
   return out;
 }
@@ -129,6 +130,12 @@ function wireEnd(b){
          resistor:{seen:bool, near:bool, conf}, led:{seen,near,conf}, targetChanged:{resistor:bool, led:bool}}
    returns {state:'ok'|'bad'|'warn'|'unknown', code}
    'unknown' = cannot see clearly (yellow) ; 'warn' = suspicion (yellow) ; 'bad' = confirmed error (red) ; 'ok' = confirmed (green) */
+/* Minimum model confidence for the camera to CONFIRM a part. 0.6 is a cautious starting value chosen on Nov 14,
+   NOT measured: replace it with a value from the frozen evaluation set (roadmap item 8). Below it the part is
+   'unknown (low confidence)', never ok. The model's display threshold (0.35, coach.js) is separate. */
+const GATE_MIN_CONF = 0.6;
+function confident(p, min){ return !!p && typeof p.conf==='number' && Number.isFinite(p.conf) && p.conf >= (min==null?GATE_MIN_CONF:min); }
+
 function viewState(ev){
   if(ev.view==='lost') return {state:'unknown', code:'lost'};
   if(ev.view==='hand') return {state:'unknown', code:'hand'};
@@ -142,12 +149,14 @@ function judgeStep(step, ev){
   switch(step){
     case 'resistor': {
       const r = ev.resistor||{};
+      if(r.seen && !confident(r)) return {state:'unknown', code:'resistor_low_conf'};
       if(r.seen && r.near) return {state:'ok', code: ev.targetChanged&&ev.targetChanged.resistor ? 'resistor_ok_hole' : 'resistor_ok'};
       if(r.seen && !r.near) return {state:'warn', code:'resistor_far'};
       return {state:'unknown', code:'resistor_unseen'};
     }
     case 'led': {
       const l = ev.led||{};
+      if(l.seen && !confident(l)) return {state:'unknown', code:'led_low_conf'};
       if(l.seen && l.near) return {state:'ok', code:'led_ok'};
       if(l.seen && !l.near) return {state:'warn', code:'led_far'};
       return {state:'unknown', code:'led_unseen'};
@@ -175,13 +184,52 @@ function earlyWarning(step, rawEnds){
   return null;
 }
 
-/* ---------- pre-power safety gate ----------
-   Every line must be 'ok' to allow plugging the USB cable. 'unknown' blocks too: no guessing. */
-function safetyGate(ev, manual){
-  const v = viewState(ev);
+/* ---------- pre-power safety gate (fail-safe, Nov 14) ----------
+   USB is allowed only when EVERY line is 'ok'. Anything missing, unclear, low-confidence or not yet checked blocks.
+   Lines come from two sources only:
+     camera  : what the camera really sees, on a still view, above GATE_MIN_CONF
+     trainer : a confirmation created on the server by a signed-in trainer/admin (see confirm_safety() in
+               supabase/migrations/20261115000001_safety_confirmations.sql). A trainee's own tick is never accepted.
+   A trainer can confirm a camera line only while it is 'unknown'/'warn' and the view is still. A 'bad' line
+   (confirmed danger: short, wire in the wrong rail) can NEVER be confirmed away: it must be fixed.
+   Lines the camera cannot see at all (TRAINER_LINES) always need the trainer. */
+const CAMERA_LINES = ['short','wires','resistor','led'];
+const TRAINER_LINES = ['resistor_value','led_polarity','no_extra'];
+const GATE_LINES = CAMERA_LINES.concat(TRAINER_LINES);
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/* A confirmation is usable only if it carries the server record (uuid), the trainer, the server time and line ids. */
+function validConfirmation(c){
+  return !!c && typeof c==='object' && typeof c.id==='string' && UUID_RE.test(c.id)
+    && typeof c.by==='string' && c.by.trim().length>0 && typeof c.at==='string' && !isNaN(Date.parse(c.at))
+    && Array.isArray(c.lines) && c.lines.length>0 && c.lines.every(x=>GATE_LINES.includes(x));
+}
+function confirmedLines(c){ return validConfirmation(c) ? new Set(c.lines) : new Set(); }
+
+function partLine(p, id, min){
+  p = p||{};
+  if(!p.seen) return {state:'unknown', code:id+'_unseen'};
+  if(!confident(p, min)) return {state:'unknown', code:id+'_low_conf'};
+  if(!p.near) return {state:'warn', code:id+'_far'};
+  return {state:'ok', code:id+'_ok'};
+}
+
+function safetyGate(ev, confirmation, opts){
+  ev = ev||{}; opts = opts||{};
+  const min = opts.minConf==null ? GATE_MIN_CONF : opts.minConf;
+  const v = viewState(ev) || (ev.view==='ok' ? null : {state:'unknown', code: ev.view ? String(ev.view) : 'lost'});
   const R = ev.railEnds||{};
+  const byTrainer = confirmedLines(confirmation);
   const L = [];
-  const cam = (id, fn) => { if(v) L.push({id, state:'unknown', code:v.code, src:'camera'}); else L.push(Object.assign({id, src:'camera'}, fn())); };
+  const cam = (id, fn) => {
+    if(v){ L.push({id, state:'unknown', code:v.code, src:'camera', fix:'wait'}); return; }
+    const r = Object.assign({id, src:'camera'}, fn());
+    if(r.state==='bad') r.fix='trainee';
+    else if(r.state!=='ok'){
+      if(byTrainer.has(id)){ r.state='ok'; r.camCode=r.code; r.code='trainer_ok'; r.src='trainer'; }
+      else r.fix='trainee_or_trainer';
+    }
+    L.push(r);
+  };
   cam('short', () => {
     if(R.red && R.black && R.red===R.black && R.red!=='unclear') return {state:'bad', code:'short'};
     if(R.red==='+' && R.black==='-') return {state:'ok', code:'no_short'};
@@ -193,19 +241,26 @@ function safetyGate(ev, manual){
     if(R.red==='+' && R.black==='-') return {state:'ok', code:'wires_ok'};
     return {state:'unknown', code:'wires_unclear'};
   });
-  cam('resistor', () => {
-    const r=ev.resistor||{}, l=ev.led||{};
-    if(r.seen && r.near) return {state:'ok', code:'resistor_ok'};
-    if(l.seen && !r.seen) return {state:'unknown', code:'resistor_unseen'};
-    if(r.seen && !r.near) return {state:'warn', code:'resistor_far'};
-    return {state:'unknown', code:'resistor_unseen'};
-  });
-  cam('led', () => { const l=ev.led||{}; return l.seen&&l.near ? {state:'ok', code:'led_ok'} : (l.seen ? {state:'warn', code:'led_far'} : {state:'unknown', code:'led_unseen'}); });
-  L.push({id:'resistor_value', src:'manual', state: manual.resistorValue ? 'ok' : 'unknown', code: manual.resistorValue ? 'manual_ok' : 'manual_needed'});
-  L.push({id:'led_polarity', src:'manual', state: manual.ledPolarity ? 'ok' : 'unknown', code: manual.ledPolarity ? 'manual_ok' : 'manual_needed'});
-  const pass = L.every(x=>x.state==='ok');
+  cam('resistor', () => partLine(ev.resistor, 'resistor', min));
+  cam('led', () => partLine(ev.led, 'led', min));
+  for(const id of TRAINER_LINES){
+    if(v) L.push({id, src:'trainer', state:'unknown', code:v.code, fix:'wait'});
+    else if(byTrainer.has(id)) L.push({id, src:'trainer', state:'ok', code:'trainer_ok'});
+    else L.push({id, src:'trainer', state:'unknown', code:'trainer_needed', fix:'trainer'});
+  }
   const danger = L.some(x=>x.state==='bad');
-  return {pass, danger, lines:L};
+  const pass = !danger && L.length===GATE_LINES.length && L.every(x=>x.state==='ok');
+  return {pass, danger, lines:L,
+    mustFix: L.filter(x=>x.state==='bad').map(x=>x.id),
+    trainerCan: L.filter(x=>x.state!=='ok' && x.state!=='bad' && x.fix!=='wait').map(x=>x.id),
+    by: byTrainer.size ? confirmation.by : null};
+}
+
+/* The gate result must stay 'pass' for `need` consecutive evaluations before USB is allowed.
+   Any non-pass evaluation resets the count. */
+function makeGateStabilizer(need){
+  let n=0;
+  return { push(g){ n = g && g.pass ? n+1 : 0; return n>=need; }, reset(){ n=0; }, get count(){ return n; } };
 }
 
 /* Which components are put at risk by a given error (for the protection report). Physics of THIS circuit. */
@@ -232,7 +287,8 @@ function report(sessions){
       if(e.type==='ok') r.ok++;
       if(e.type==='blocked') r.blocked++;
       if(e.type==='override') r.overrides++;
-      if(e.type==='manual' && e.why) r.manualConfirms++;   // trainer confirmed what the camera could not see
+      if(e.type==='trainer_confirm') r.manualConfirms++;   // trainer confirmed (server record) what the camera could not see
+      if(e.type==='manual' && e.why) r.manualConfirms++;   // sessions saved before Nov 14 (no trainer identity)
     }
   }
   r.top = Object.entries(r.freq).sort((a,b)=>b[1]-a[1]);
@@ -249,6 +305,7 @@ function makeStabilizer(need){
 }
 
 const api = {ROW_Y,rowY,homography,apply,mul,inv,scaleH,makeBoard,calibHoles,boardFromTaps,netOf,sameNet,RAIL_SAFE_MAX_COL,
-  targets,holeXY,checkCircuit,wireEnd,judgeStep,earlyWarning,safetyGate,RISK,report,makeStabilizer};
+  targets,holeXY,checkCircuit,wireEnd,judgeStep,earlyWarning,safetyGate,RISK,report,makeStabilizer,
+  GATE_MIN_CONF,CAMERA_LINES,TRAINER_LINES,GATE_LINES,validConfirmation,makeGateStabilizer};
 if(typeof module!=='undefined' && module.exports) module.exports = api; else root.MirasBoard = api;
 })(this);

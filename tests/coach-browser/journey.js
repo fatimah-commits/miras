@@ -2,7 +2,7 @@ const {chromium}=require('playwright'); const path=require('path'); const LIB=pr
 const TAPS=[[1140.5,646],[113,656.4],[118,474.3],[1133.75,466.5]], RP=[[600,699],[600,715]];
 (async()=>{
   const b=await chromium.launch(); const p=await b.newPage({viewport:{width:1180,height:820}});
-  const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>d.accept(d.type()==='prompt'?'9001':undefined));
+  const errs=[]; p.on('pageerror',e=>errs.push(e.message)); p.on('dialog',d=>d.dismiss());
   await p.route(/fonts\.(googleapis|gstatic)/,r=>r.abort());
   await p.route(/onnxruntime-web@1\.26\.0\/dist\/(.*)$/,r=>{const f=r.request().url().match(/dist\/([^?]*)/)[1]; r.fulfill({path:path.join(LIB,'ort/dist',f),contentType:f.endsWith('.wasm')?'application/wasm':'text/javascript',headers:{'access-control-allow-origin':'*'}})});
   await p.route(/opencv\.js/,r=>r.fulfill({path:path.join(LIB,'ocv/dist/opencv.js'),contentType:'text/javascript',headers:{'access-control-allow-origin':'*'}}));
@@ -19,7 +19,7 @@ const TAPS=[[1140.5,646],[113,656.4],[118,474.3],[1133.75,466.5]], RP=[[600,699]
   await p.click('#setupDone'); await p.check('#usbOff'); await p.click('#nextBtn');
   await p.evaluate(()=>__coach.enterStep(3)); await draw(2); await p.waitForTimeout(2500); await draw(1); await p.waitForTimeout(3500); await draw(3); await p.waitForTimeout(3500);
   console.log('step now:', await p.evaluate(()=>__coach.S.step.id));
-  await p.check('#mResistor'); await p.check('#mLed'); await p.click('#overrideBtn'); await p.waitForTimeout(400); await p.click('#litYes'); await p.waitForTimeout(400);
+  await p.evaluate(()=>__coach.enterStep(6)); await p.waitForTimeout(400); // Nov 14: gate needs a trainer account now (tests/coach-browser/gate.js) await p.click('#litYes'); await p.waitForTimeout(400);
   await p.click('#result a[href="../"]'); await p.waitForURL(u=>!/coach/.test(u.toString())); await p.waitForTimeout(800);
   console.log('back on main, home visible:', await p.isVisible('#scr-home'), '| attempts:', (await p.textContent('#myAttempts')).replace(/\s+/g,' ').slice(0,200));
   await p.screenshot({path:OUT+'-back.png'});

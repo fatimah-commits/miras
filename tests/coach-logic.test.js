@@ -49,16 +49,19 @@ t('red in minus -> bad', B.judgeStep('red',{...ok,railEnds:{red:'-'}}).code==='r
 t('red unclear -> warn', B.judgeStep('red',{...ok,railEnds:{red:'unclear'}}).state==='warn');
 t('black ok', B.judgeStep('black',{...ok,railEnds:{red:'+',black:'-'}}).state==='ok');
 t('black in + with red in + -> short', B.judgeStep('black',{...ok,railEnds:{red:'+',black:'+'}}).code==='short');
-t('resistor far -> warn (suspicion, not confirmed)', B.judgeStep('resistor',{...ok,resistor:{seen:true,near:false}}).state==='warn');
+t('resistor far -> warn (suspicion, not confirmed)', B.judgeStep('resistor',{...ok,resistor:{seen:true,near:false,conf:0.9}}).state==='warn');
+t('resistor seen without confidence -> unknown, never ok (Nov 14)', B.judgeStep('resistor',{...ok,resistor:{seen:true,near:true}}).state==='unknown');
 t('resistor unseen -> unknown', B.judgeStep('resistor',{...ok,resistor:{seen:false}}).state==='unknown');
 t('early warning red', B.earlyWarning('red',{red:'-'})==='early_red_minus');
 t('no early warning when right', B.earlyWarning('red',{red:'+'})===null);
 
 // safety gate
-const allOk={view:'ok',railEnds:{red:'+',black:'-'},resistor:{seen:true,near:true},led:{seen:true,near:true}};
-const man={resistorValue:true,ledPolarity:true};
-t('gate passes when all ok', B.safetyGate(allOk,man).pass);
-t('gate blocks without manual LED polarity', !B.safetyGate(allOk,{resistorValue:true}).pass);
+// Nov 14: trainee ticks ({resistorValue:true,...}) no longer count; lines the camera cannot see need a server-issued trainer confirmation
+const allOk={view:'ok',railEnds:{red:'+',black:'-'},resistor:{seen:true,near:true,conf:0.9},led:{seen:true,near:true,conf:0.9}};
+const man={id:'0b6f1a2e-1c3d-4e5f-8a9b-0c1d2e3f4a5b',by:'مدرب',at:'2026-11-14T16:00:00Z',lines:['resistor_value','led_polarity','no_extra']};
+t('gate passes when all ok + trainer confirmation', B.safetyGate(allOk,man).pass);
+t('gate blocks with old trainee ticks (was: passes)', !B.safetyGate(allOk,{resistorValue:true,ledPolarity:true}).pass);
+t('gate blocks without LED polarity confirmation', !B.safetyGate(allOk,{...man,lines:['resistor_value','no_extra']}).pass);
 t('gate blocks on short + danger flag', (g=>!g.pass&&g.danger)(B.safetyGate({...allOk,railEnds:{red:'+',black:'+'}},man)));
 t('gate blocks when hand covers (unknown, not pass)', (g=>!g.pass&&!g.danger)(B.safetyGate({...allOk,view:'hand'},man)));
 t('gate blocks when resistor unseen', !B.safetyGate({...allOk,resistor:{seen:false}},man).pass);

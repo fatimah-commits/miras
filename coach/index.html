@@ -56,6 +56,8 @@ p{margin:6px 0}
 .state{padding:10px 12px;font-weight:700;border-inline-start:6px solid var(--dim);background:rgba(0,0,0,.18);margin:8px 0}
 .state.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}.state.bad{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}.state.warn,.state.unknown{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}
 .state small{display:block;font-weight:500;color:var(--paper);opacity:.9;margin-top:2px}
+.tform{border:1px solid var(--gold);padding:12px;margin-top:8px;background:rgba(0,0,0,.2)}
+.fld{display:block;margin:8px 0;font-size:.92rem}.fld input{display:block;width:100%;font:inherit;padding:9px;margin-top:3px;background:#0a2e20;color:var(--paper);border:1px solid var(--edge);min-height:44px}
 .steps{display:flex;gap:4px;margin:6px 0 8px}
 .steps i{flex:1;height:6px;background:var(--edge)}.steps i.done{background:var(--ok)}.steps i.cur{background:var(--gold)}
 ul.gate{list-style:none;margin:6px 0;padding:0}
@@ -152,7 +154,7 @@ th{color:var(--dim);font-weight:500}
       </div>
       <div id="manualBox" hidden>
        <p class="mut" id="manualWhy"></p>
-       <button class="btn ghost small" id="manualBtn">تأكيد يدوي من المدرب</button>
+       <button class="btn ghost small" id="manualBtn">تابع (سيراجعها المدرب قبل التشغيل)</button>
       </div>
       <label class="chk" id="usbChk" hidden><input type="checkbox" id="usbOff"> <span>كيبل USB مفصول عن الأردوينو الآن.</span></label>
      </div>
@@ -160,11 +162,19 @@ th{color:var(--dim);font-weight:500}
      <!-- gate -->
      <div id="gateBox" hidden>
       <h3>فحص ما قبل التشغيل</h3>
-      <p class="mut">لا يُسمح بتوصيل الكيبل حتى يصبح كل سطر أخضر. السطر الأصفر يمنع أيضاً: النظام لا يخمّن.</p>
+      <p class="mut">لا يُسمح بتوصيل الكيبل حتى يصبح كل سطر أخضر ويبقى أخضر لحظة. السطر الأصفر يمنع أيضاً: النظام لا يخمّن. السطر الأحمر خطأ خطير لا يتجاوزه أحد.</p>
       <ul class="gate" id="gateList"></ul>
-      <label class="chk"><input type="checkbox" id="mResistor"> <span>قيمة المقاومة 220 أوم (أحمر، أحمر، بني). <em class="mut">الكاميرا لا تقرأ ألوان المقاومة.</em></span></label>
-      <label class="chk"><input type="checkbox" id="mLed"> <span>الرجل الطويلة للمبة في عمود المقاومة، والقصيرة في خط السالب. <em class="mut">الكاميرا لا تميّز طول الأرجل.</em></span></label>
-      <div class="row"><button class="btn" id="allowBtn">اسمح بالتشغيل</button><button class="btn ghost small" id="overrideBtn">تجاوز المدرب</button></div>
+      <div class="row"><button class="btn" id="allowBtn">اسمح بالتشغيل</button><button class="btn ghost small" id="trainerBtn">تأكيد المدرب (بحسابه)</button></div>
+      <p class="mut" id="trainerHint"></p>
+      <div id="trainerForm" class="tform" hidden>
+       <p><b>للمدرب فقط.</b> تحقق بعينك، ثم اختر ما تحققت منه. يُسجَّل اسمك والوقت والسبب، ولا تُحفظ كلمة المرور على الجهاز.</p>
+       <div id="tLines"></div>
+       <label class="fld">السبب (ما الذي تحققت منه)<input id="tReason" maxlength="300" autocomplete="off"></label>
+       <label class="fld">بريد المدرب<input id="tEmail" type="email" autocomplete="username" inputmode="email" dir="ltr"></label>
+       <label class="fld">كلمة المرور<input id="tPass" type="password" autocomplete="current-password" dir="ltr"></label>
+       <div class="row"><button class="btn small" id="tSend">تأكيد وتسجيل</button><button class="btn ghost small" id="tCancel">إلغاء</button></div>
+       <p class="mut" id="tMsg" role="status"></p>
+      </div>
      </div>
 
      <!-- power -->
@@ -183,7 +193,7 @@ th{color:var(--dim);font-weight:500}
     </div>
     <div class="card">
      <h3>ما الذي يتحقق منه النظام فعلاً؟</h3>
-     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة، والقصر بينهما، ووجود المقاومة واللمبة قرب مكانهما (نموذج ذكاء اصطناعي مدرَّب).<br><b>تأكيد يدوي:</b> قيمة المقاومة، واتجاه أرجل اللمبة.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ورؤية الفتحة الدقيقة لكل رجل.</p>
+     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة، والقصر بينهما، ووجود المقاومة واللمبة قرب مكانهما (نموذج ذكاء اصطناعي مدرَّب).<br><b>تأكيد المدرب بحسابه:</b> قيمة المقاومة، واتجاه أرجل اللمبة، وعدم وجود أسلاك إضافية، وأي قطعة لم تتأكد منها الكاميرا. يتحقق الخادم من أن الحساب حساب مدرب.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ورؤية الفتحة الدقيقة لكل رجل. الفحص إرشاد على الشاشة، والكيبل يوصله شخص.</p>
     </div>
    </aside>
   </div>
@@ -205,7 +215,9 @@ th{color:var(--dim);font-weight:500}
  </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.wasm.min.js"></script>
-<script src="board.js?v=3"></script>
-<script src="coach.js?v=3"></script>
+<script src="../app/vendor/supabase-2.119.0.js"></script>
+<script src="../app/config.js"></script>
+<script src="board.js?v=4"></script>
+<script src="coach.js?v=4"></script>
 </body>
 </html>

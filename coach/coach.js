@@ -25,8 +25,8 @@ const S = {
   dets:[], detAt:0, detBusy:false, detMs:0, boardMiss:0,
   committed:null, cand:null, candSince:0,
   early:null, earlyN:0,
-  manual:{resistorValue:false, ledPolarity:false},
-  manualStep:{}, unknownSince:0,
+  confirm:null,                                     // trainer confirmation returned by the server (never set by the trainee)
+  gatePassSince:0, unknownSince:0,
   session:null, t0:0, attempts:0,
   muted:false, lastSay:'', lastSayAt:0,
   track:{ok:false, pts:null, prev:null, n:0, inl:0}, cvReady:false, ortReady:false,
@@ -61,7 +61,13 @@ const MSG = {
   early_red_minus:['تحذير مبكر (تجريبي): الأحمر يتجه إلى السالب','رأيت لون السلك الأحمر في خط السالب قبل أن تثبت الصورة.','انتبه، هذا الخط غير صحيح. الأحمر مكانه خط الموجب.'],
   early_black_plus:['تحذير مبكر (تجريبي): الأسود يتجه إلى الموجب','رأيت لون السلك الأسود في خط الموجب قبل أن تثبت الصورة.','انتبه، هذا الخط غير صحيح. الأسود مكانه خط السالب.'],
   wires_unclear:['لا أرى السلكين بوضوح','',''], no_short:['لا يوجد قصر','',''], wires_ok:['الأسلاك في مكانها','',''],
-  manual_ok:['تم التأكيد يدوياً','',''], manual_needed:['يحتاج تأكيدك','','']
+  manual_ok:['تم التأكيد يدوياً','',''], manual_needed:['يحتاج تأكيدك','',''],
+  resistor_low_conf:['لست متأكداً أنها المقاومة','النموذج يرى شيئاً هنا لكن ثقته منخفضة. لا أعدّها مؤكدة.',''],
+  led_low_conf:['لست متأكداً أنها اللمبة','النموذج يرى شيئاً هنا لكن ثقته منخفضة. لا أعدّها مؤكدة.',''],
+  trainer_ok:['أكّده المدرب','',''], trainer_needed:['يحتاج تأكيد المدرب','الكاميرا لا ترى هذا. يتحقق منه المدرب بعينه ثم يؤكّد بحسابه.',''],
+  nocv:['التتبع غير متاح','',''],
+  not_trainer:['هذا الحساب ليس حساب مدرب','',''], bad_login:['البريد أو كلمة المرور غير صحيحة','',''],
+  no_server:['لا يوجد اتصال بالخادم','لا يمكن تسجيل تأكيد المدرب الآن، فيبقى التشغيل ممنوعاً.','']
 };
 const msg = c => MSG[c] || [c,'',''];
 
@@ -376,7 +382,7 @@ const MAIN_W={black_plus:20,red_minus:15,assisted:8,hint:2,unclear:2,quit:0};
 function toMainAttempt(sess){
   if(!ME || ME.role!=='trainee') return;
   const map={red_in_minus:'red_minus', short:'black_plus', black_in_plus:'black_plus', led_reversed:'led_reversed'};
-  const errs=[]; sess.events.forEach(e=>{ if(e.type==='error' && map[e.code]) errs.push(map[e.code]); if(e.type==='manual'&&e.why) errs.push('assisted'); if(e.type==='override') errs.push('override'); });
+  const errs=[]; sess.events.forEach(e=>{ if(e.type==='error' && map[e.code]) errs.push(map[e.code]); if((e.type==='manual'||e.type==='skipped')&&e.why) errs.push('assisted'); if(e.type==='override'||e.type==='trainer_confirm') errs.push('override'); });
   if(!sess.passed) errs.push('quit');
   let sc=100; errs.forEach(e=>{ sc-=MAIN_W[e]!=null?MAIN_W[e]:2; }); sc=Math.max(0,sc); if(!sess.passed) sc=Math.min(40,sc);
   const a={id:'c'+Date.now()+Math.floor(Math.random()*1e4), uid:ME.id, at:Date.now(), dur:sess.seconds, errors:errs, score:sc, done:!!sess.passed, steps:null, clips:0, mode:sess.mode==='test'?'coach-test':'coach'};
@@ -455,7 +461,7 @@ function enterStep(i){
     say('وضع الاختبار. ركّب الدائرة كاملة ثم اضغط انتهيت.',true);
   } else if(S.step.id!=='gate' && S.step.id!=='power'){
     $('stepTitle').textContent=`${i+1}. ${S.step.t}`; $('stepText').textContent=S.step.text; setState('unknown','بانتظار التركيب',''); say(S.step.say,true);
-  } else if(S.step.id==='gate'){ $('mResistor').checked=S.manual.resistorValue; $('mLed').checked=S.manual.ledPolarity; say(S.step.say,true); }
+  } else if(S.step.id==='gate'){ voidConfirm(null); S.gatePassSince=0; closeTrainer(); say(S.step.say,true); }
   else { $('litHelp').hidden=true; say(S.step.say,true); }
   renderBar();
 }
@@ -465,7 +471,7 @@ $('usbOff').onchange=()=>{ $('nextBtn').disabled=!$('usbOff').checked; };
 $('nextBtn').onclick=()=>{ if(S.step.id==='prep'){ log('manual',{what:'usb_off'}); enterStep(1); return; } advance(); };
 $('repeatBtn').onclick=()=>{ const c=S.committed; say(c && msg(c.code)[2] ? msg(c.code)[2] : S.step.say, true); };
 $('muteBtn').onclick=()=>{ S.muted=!S.muted; $('muteBtn').textContent=S.muted?'الصوت: مطفأ':'الصوت: يعمل'; if(S.muted) try{speechSynthesis.cancel()}catch(e){} };
-$('manualBtn').onclick=()=>{ log('manual',{what:S.step.id, why:'camera_unsure'}); S.manualStep[S.step.id]=true; banner('تم التأكيد يدوياً من المدرب، وسُجّل في التقرير.','warn'); advance(); };
+$('manualBtn').onclick=()=>{ log('skipped',{what:S.step.id, why:'camera_unsure'}); banner('تابعنا. هذه القطعة لم تتأكد بالكاميرا، وسيراجعها المدرب في فحص ما قبل التشغيل.','warn'); advance(); };
 function advance(){ if(S.stepIdx<STEPS.length-1) enterStep(S.stepIdx+1); }
 $('finishBuild').onclick=()=>{ S.attempts++; log('attempt',{n:S.attempts}); enterStep(STEPS.findIndex(s=>s.id==='gate')); };
 
@@ -496,62 +502,111 @@ function evalStep(ev){
 }
 function maybeManual(j,now){ // camera can't see it for 8 s of stable view -> allow recorded manual confirmation
   if((j.state==='unknown'||j.state==='warn') && now-S.unknownSince>8000 && ['resistor','led'].includes(S.step.id)){
-    $('manualBox').hidden=false; $('manualWhy').textContent = j.state==='warn' ? 'الكاميرا تشكّ في مكان القطعة. إن تأكد المدرب بعينه أنها صحيحة، يستطيع التأكيد يدوياً (يُسجَّل في التقرير).' : 'الكاميرا لم تتعرف على القطعة. إن كانت موضوعة في المكان الصحيح، يستطيع المدرب التأكيد يدوياً (يُسجَّل في التقرير).'; }
+    $('manualBox').hidden=false; $('manualWhy').textContent = j.state==='warn' ? 'الكاميرا تشكّ في مكان القطعة. يمكنك المتابعة، لكن التشغيل سيبقى ممنوعاً حتى يتحقق المدرب منها.' : 'الكاميرا لم تتعرف على القطعة. يمكنك المتابعة، لكن التشغيل سيبقى ممنوعاً حتى يتحقق المدرب منها.'; }
 }
 
-/* ---------------- gate ---------------- */
-$('mResistor').onchange=e=>{ S.manual.resistorValue=e.target.checked; };
-$('mLed').onchange=e=>{ S.manual.ledPolarity=e.target.checked; };
-const GATE_LABEL={short:'لا يوجد قصر بين الأحمر والأسود',wires:'الأحمر في الموجب والأسود في السالب',resistor:'المقاومة موجودة في مكانها (على التوالي مع اللمبة)',led:'اللمبة موجودة في مكانها',resistor_value:'قيمة المقاومة 220 أوم',led_polarity:'اتجاه أرجل اللمبة صحيح'};
+/* ---------------- gate (fail-safe) ----------------
+   USB is allowed only when board.js safetyGate() passes AND keeps passing for GATE_HOLD_MS on a still view.
+   The trainee cannot tick anything. Lines the camera cannot verify need a trainer confirmation created on the
+   server (confirm_safety); the page only keeps the server's answer {id, by, at, lines}. */
+const GATE_HOLD_MS = 1000;
+const GATE_LABEL={short:'لا يوجد قصر بين الأحمر والأسود',wires:'الأحمر في الموجب والأسود في السالب',resistor:'المقاومة موجودة في مكانها',led:'اللمبة موجودة في مكانها',
+  resistor_value:'قيمة المقاومة 220 أوم (أحمر، أحمر، بني)',led_polarity:'اللمبة على التوالي مع المقاومة: الرجل الطويلة في عمود المقاومة والقصيرة في خط السالب',no_extra:'لا توجد أسلاك أو قطع أخرى على اللوحة غير المطلوبة'};
+const FIX_TXT={trainee:'أصلحه أولاً. لا يمكن لأحد تجاوزه.',trainer:'يتحقق منه المدرب ويؤكّد بحسابه.',trainee_or_trainer:'أصلحه، أو يتحقق منه المدرب ويؤكّد بحسابه.',wait:'أبعد اليد وثبّت الكاميرا.'};
+const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function voidConfirm(why){
+  if(S.confirm && why){ log('confirm_void',{id:S.confirm.id, why}); banner('أُلغي تأكيد المدرب لأن '+(why==='hand'?'يداً اقتربت من اللوحة بعده':'الكاميرا فقدت اللوحة')+'. يلزم تأكيد جديد.','warn'); }
+  S.confirm=null;
+}
 function gateEval(ev){
-  const man = {resistorValue:S.manual.resistorValue, ledPolarity:S.manual.ledPolarity};
-  const g = B.safetyGate(ev, man);
-  // a part the trainer confirmed manually (camera couldn't see it) counts as manual-ok, labelled as such
-  g.lines.forEach(l=>{ if((l.id==='resistor'||l.id==='led') && (l.state==='unknown'||l.state==='warn') && S.manualStep[l.id] && ev.view==='ok'){ l.state='ok'; l.code='manual_ok'; l.src='manual'; } });
-  g.pass = g.lines.every(l=>l.state==='ok');
+  if(S.confirm && (ev.view==='hand' || ev.view==='lost')) voidConfirm(ev.view);   // parts may have been touched after the trainer looked
+  const g = B.safetyGate(ev, S.confirm);
+  const now = performance.now();
+  if(g.pass && ev.view==='ok'){ if(!S.gatePassSince) S.gatePassSince=now; } else S.gatePassSince=0;
+  g.ready = !!S.gatePassSince && now-S.gatePassSince>=GATE_HOLD_MS;
   S.gate=g;
   $('gateList').innerHTML = g.lines.map(l=>{ const ic=l.state==='ok'?'<b class="ok-t">✓</b>':l.state==='bad'?'<b class="bad-t">✕</b>':'<b class="warn-t">؟</b>';
-    const m=msg(l.code); return `<li>${ic}<span>${GATE_LABEL[l.id]}<br><span class="mut">${l.state==='ok'?'':m[0]}</span></span><span class="src">${l.src==='manual'?'يدوي':'الكاميرا'}</span></li>`; }).join('');
-  $('allowBtn').className = 'btn ' + (g.pass?'okb':'ghost');
+    const m=msg(l.code); const src = l.src==='trainer' ? (l.state==='ok'&&g.by ? 'المدرب: '+esc(g.by) : 'المدرب') : 'الكاميرا';
+    const why = l.state==='ok' ? '' : esc(m[0])+(l.fix?'<br>'+FIX_TXT[l.fix]:'');
+    return `<li data-line="${l.id}" data-state="${l.state}">${ic}<span>${GATE_LABEL[l.id]}<br><span class="mut">${why}</span></span><span class="src">${src}</span></li>`; }).join('');
+  $('allowBtn').className = 'btn ' + (g.ready?'okb':'ghost');
+  $('trainerBtn').disabled = g.danger || !g.trainerCan.length;
+  $('trainerHint').textContent = g.danger ? 'يوجد خطأ خطير (أحمر). يجب إصلاحه أولاً، ولا يستطيع أحد تجاوزه.' : g.trainerCan.length ? '' : (g.pass ? 'كل الأسطر مؤكدة.' : 'انتظر ثبات الصورة.');
+}
+function blockReasons(g){
+  return g.lines.filter(l=>l.state!=='ok').map(l=>l.id+':'+l.state+':'+l.code);
 }
 $('allowBtn').onclick=()=>{
   const g=S.gate; if(!g) return;
   if(S.view!=='ok'){ banner('أنتظر حتى تثبت الصورة وتبتعد اليد، ثم أفحص.','warn'); return; }
-  if(g.pass){ log('gate_pass',{}); enterStep(STEPS.findIndex(s=>s.id==='power')); return; }
-  const bad=g.lines.filter(l=>l.state==='bad'), unk=g.lines.filter(l=>l.state!=='ok'&&l.state!=='bad');
-  log('blocked',{reasons:g.lines.filter(l=>l.state!=='ok').map(l=>l.code)});
+  if(g.pass && g.ready){ log('gate_pass',{confirm:S.confirm?S.confirm.id:null}); enterStep(STEPS.findIndex(s=>s.id==='power')); return; }
+  if(g.pass){ banner('لحظة: أتأكد أن الصورة ثابتة والنتيجة لا تتغير.','warn'); return; }
+  const bad=g.lines.filter(l=>l.state==='bad'), open=g.lines.filter(l=>l.state!=='ok'&&l.state!=='bad');
+  log('blocked',{reasons:blockReasons(g)});
   const hasShort=bad.some(l=>l.code==='short');
   bad.filter(l=>!(hasShort && (l.code==='black_in_plus'||l.code==='red_in_minus'))).forEach(l=>log('error',{code:l.code, step:'gate'})); // one physical mistake = one error
   const first = bad[0] ? msg(bad[0].code) : null;
-  banner(first ? 'منع التشغيل: '+first[0] : 'منع التشغيل: لا أستطيع التأكد من كل شيء بعد.', 'bad');
+  banner(first ? 'منع التشغيل: '+first[0] : 'منع التشغيل: '+open.length+' '+(open.length===1?'سطر غير مؤكد':'أسطر غير مؤكدة')+'. انظر القائمة.', 'bad');
   say(first ? 'توقف، لا يمكن التشغيل. '+first[2] : 'لا يمكن التشغيل قبل أن يصبح كل سطر أخضر.', true);
-  if(S.mode==='test'){ setTimeout(()=>{ if(S.step.id==='gate'){ enterStep(STEPS.findIndex(s=>s.id==='resistor')); banner('أصلح الأخطاء ثم اضغط «انتهيت» مرة أخرى.','warn'); } },2200); }
+  if(S.mode==='test' && bad.length){ setTimeout(()=>{ if(S.step.id==='gate'){ enterStep(STEPS.findIndex(s=>s.id==='resistor')); banner('أصلح الأخطاء ثم اضغط «انتهيت» مرة أخرى.','warn'); } },2200); }
 };
-$('overrideBtn').onclick=()=>{
-  const pin=prompt('رمز المدرب (للتجاوز). التجاوز يُسجَّل في التقرير:'); if(pin===null) return;
-  if(pin!=='9001'){ banner('رمز غير صحيح.','bad'); return; }
-  log('override',{state:S.gate?S.gate.lines.map(l=>l.id+':'+l.state):[]}); banner('تجاوز المدرب: سُجّل في التقرير.','warn'); enterStep(STEPS.findIndex(s=>s.id==='power'));
+
+/* ---- trainer confirmation: trainer's own account, checked on the server, password never stored ---- */
+function closeTrainer(){ $('trainerForm').hidden=true; $('tPass').value=''; $('tMsg').textContent=''; }
+$('trainerBtn').onclick=()=>{
+  const g=S.gate; if(!g || g.danger || !g.trainerCan.length) return;
+  $('tLines').innerHTML = g.trainerCan.map(id=>`<label class="chk"><input type="checkbox" value="${id}"> <span>${GATE_LABEL[id]}</span></label>`).join('');
+  $('tMsg').textContent=''; $('trainerForm').hidden=false;
+};
+$('tCancel').onclick=closeTrainer;
+let trainerBusy=false;
+$('tSend').onclick=async()=>{
+  if(trainerBusy) return;
+  const lines=[...$('tLines').querySelectorAll('input:checked')].map(x=>x.value);
+  const email=$('tEmail').value.trim(), pw=$('tPass').value, reason=$('tReason').value.trim();
+  if(!lines.length){ $('tMsg').textContent='اختر ما تحققت منه بعينك.'; return; }
+  if(reason.length<3){ $('tMsg').textContent='اكتب سبباً قصيراً (ما الذي تحققت منه).'; return; }
+  if(!email || !pw){ $('tMsg').textContent='أدخل بريد المدرب وكلمة المرور.'; return; }
+  const cfg=window.MIRAS_CONFIG||{};
+  if(!window.supabase || !cfg.supabaseUrl || !cfg.supabaseAnonKey){ $('tMsg').textContent=msg('no_server')[0]+'. '+msg('no_server')[1]; return; }
+  trainerBusy=true; $('tSend').disabled=true; $('tMsg').textContent='أتحقق من الحساب…';
+  const snap = S.gate ? Object.fromEntries(S.gate.lines.map(l=>[l.id, l.state+':'+(l.camCode||l.code)])) : null;
+  let sb=null;
+  try{
+    // separate client: does not touch any trainee session on this iPad, keeps nothing after the call
+    sb = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth:{persistSession:false, autoRefreshToken:false, detectSessionInUrl:false, storageKey:'miras-trainer-once'}});
+    const li = await sb.auth.signInWithPassword({email, password:pw});
+    if(li.error){ $('tMsg').textContent = /invalid|credentials/i.test(li.error.message) ? msg('bad_login')[0] : msg('no_server')[0]+'. '+msg('no_server')[1]; return; }
+    const r = await sb.rpc('confirm_safety', {p_lines:lines, p_reason:reason, p_device_session:(S.session&&S.session.id||'nosession').slice(0,64).padEnd(4,'-'), p_trainee:null, p_trainee_label:S.trainee||null, p_camera:snap});
+    if(r.error){ $('tMsg').textContent = /not_trainer/.test(r.error.message) ? msg('not_trainer')[0]+'. التشغيل ما زال ممنوعاً.' : msg('no_server')[0]+'. '+msg('no_server')[1]; log('confirm_refused',{why:String(r.error.message).slice(0,40)}); return; }
+    const row = r.data && r.data[0];
+    const c = row && {id:row.id, by:row.trainer_name||email, at:row.created_at, lines};
+    if(!B.validConfirmation(c)){ $('tMsg').textContent=msg('no_server')[0]+'. '+msg('no_server')[1]; return; }
+    S.confirm=c; log('trainer_confirm',{id:c.id, by:c.by, at:c.at, lines, reason});
+    closeTrainer(); banner('سُجّل تأكيد المدرب '+c.by+'. إن اقتربت يد من اللوحة بعد الآن يُلغى التأكيد.','ok');
+  }catch(e){ $('tMsg').textContent=msg('no_server')[0]+'. '+msg('no_server')[1]; }
+  finally{ trainerBusy=false; $('tSend').disabled=false; $('tPass').value=''; try{ sb && await sb.auth.signOut({scope:'local'}); }catch(e){} }
 };
 $('litYes').onclick=()=>{ log('lit',{yes:true}); finish(true); };
 $('litNo').onclick=()=>{ log('lit',{yes:false}); log('error',{code:'led_reversed', step:'power', afterPower:true}); $('litHelp').hidden=false; say('افصل الكيبل أولاً. غالباً اللمبة مقلوبة. اقلبها ثم أعد الفحص.',true);
-  setTimeout(()=>{ S.manual.ledPolarity=false; enterStep(STEPS.findIndex(s=>s.id==='gate')); },3500); };
+  setTimeout(()=>{ voidConfirm(null); enterStep(STEPS.findIndex(s=>s.id==='gate')); },3500); };
 $('endBtn').onclick=()=>finish(false);
 
 /* ---------------- session log (real data only) ---------------- */
 function loadAll(){ try{ return JSON.parse(localStorage.getItem(STORE)||'[]'); }catch(e){ return []; } }
 function saveAll(a){ try{ localStorage.setItem(STORE, JSON.stringify(a.slice(-300))); }catch(e){} }
-function newSession(){ S.trainee=($('trainee').value||'').trim(); S.session={id:Date.now().toString(36), mode:S.mode, trainee:S.trainee, uid:ME&&ME.id||null, cols:S.cols, src:S.kind, start:new Date().toISOString(), events:[]}; S.t0=performance.now(); S.attempts=0; S.manual={resistorValue:false,ledPolarity:false}; S.manualStep={}; $('modeName').textContent = S.mode==='train'?'وضع التدريب':'وضع الاختبار'; }
+function newSession(){ S.trainee=($('trainee').value||'').trim(); S.session={id:Date.now().toString(36), mode:S.mode, trainee:S.trainee, uid:ME&&ME.id||null, cols:S.cols, src:S.kind, start:new Date().toISOString(), events:[]}; S.t0=performance.now(); S.attempts=0; S.confirm=null; S.gatePassSince=0; $('modeName').textContent = S.mode==='train'?'وضع التدريب':'وضع الاختبار'; }
 function log(type, data){ if(!S.session) return; const afterPower = S.step && S.step.id==='power'; S.session.events.push(Object.assign({type, t:Math.round((performance.now()-S.t0)/1000), afterPower}, data)); }
 function finish(lit){
   if(!S.session) return;
   S.session.end=new Date().toISOString(); S.session.seconds=Math.round((performance.now()-S.t0)/1000); S.session.attempts=S.attempts; S.session.passed=!!lit;
   const all=loadAll(); all.push(S.session); saveAll(all); toMainAttempt(S.session);
-  const ev=S.session.events, errs=ev.filter(e=>e.type==='error'), blocked=ev.filter(e=>e.type==='blocked').length, man=ev.filter(e=>e.type==='manual'&&e.why).length, ovr=ev.filter(e=>e.type==='override').length;
+  const ev=S.session.events, errs=ev.filter(e=>e.type==='error'), blocked=ev.filter(e=>e.type==='blocked').length, man=ev.filter(e=>e.type==='trainer_confirm').length, ovr=ev.filter(e=>e.type==='override').length;
   $('resTitle').textContent = lit ? 'اكتملت المهارة: أضاءت اللمبة' : 'انتهت الجلسة';
   const mm=Math.floor(S.session.seconds/60), ss=S.session.seconds%60;
   $('resBody').innerHTML = `<table><tr><th>الوضع</th><td>${S.mode==='train'?'تدريب':'اختبار'}</td></tr><tr><th>الوقت</th><td>${mm}:${String(ss).padStart(2,'0')}</td></tr>`+
     (S.mode==='test'?`<tr><th>عدد المحاولات</th><td>${S.attempts}</td></tr>`:'')+
-    `<tr><th>أخطاء اكتُشفت</th><td>${errs.length? errs.map(e=>msg(e.code)[0]).join('، ') : 'لا شيء'}</td></tr><tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr><tr><th>تأكيدات يدوية</th><td>${man}</td></tr><tr><th>تجاوزات المدرب</th><td>${ovr}</td></tr></table>`+
+    `<tr><th>أخطاء اكتُشفت</th><td>${errs.length? errs.map(e=>msg(e.code)[0]).join('، ') : 'لا شيء'}</td></tr><tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr><tr><th>تأكيدات المدرب (بحسابه)</th><td>${man}</td></tr>`+(ovr?`<tr><th>تجاوزات قديمة</th><td>${ovr}</td></tr>`:'')+`</table>`+
     `<p class="mut">إضاءة اللمبة سجّلها المتدرب بنفسه، ولم تتحقق منها الكاميرا.</p>`;
   S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
   try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
@@ -679,5 +734,5 @@ function drawOverlay(ev, ts){
 }
 
 /* test hook for automated checks (no effect on users) */
-window.__coach = {S, B, useSource, bands(colour,y){ const d=[]; bandCols(S.rect,S.ref,colour,y-0.42,y+0.42,exclusionZones(),d); return d; }, setTaps(t,r){ S.taps=t; S.H=B.boardFromTaps(S.cols,t); S.rails=r; renderSetup(); }, done(){ $('setupDone').click(); }, enterStep, quad:()=>quad(0)};
+window.__coach = {S, B, useSource, bands(colour,y){ const d=[]; bandCols(S.rect,S.ref,colour,y-0.42,y+0.42,exclusionZones(),d); return d; }, setTaps(t,r){ S.taps=t; S.H=B.boardFromTaps(S.cols,t); S.rails=r; renderSetup(); }, done(){ $('setupDone').click(); }, enterStep, gateEval, quad:()=>quad(0)};
 })();
