@@ -50,6 +50,29 @@ function makeBoard(cols){ return {cols, rows:10}; }
 // (3) last column / far row, (4) column 1 / far row.
 function calibHoles(cols){ return [[0,0],[cols-1,0],[cols-1,11],[0,11]]; }
 function boardFromTaps(cols, taps){ return homography(calibHoles(cols), taps); }
+/* Corner taps may come in any order. Returns them as [top-left, top-right, bottom-right, bottom-left] in the image,
+   where 1->2 is a long edge of the board. Null if the four points do not form a convex quad. */
+function orderTaps(taps){
+  if(!taps || taps.length!==4) return null;
+  const cx=taps.reduce((a,p)=>a+p[0],0)/4, cy=taps.reduce((a,p)=>a+p[1],0)/4;
+  let q=taps.slice().sort((p,r)=>Math.atan2(p[1]-cy,p[0]-cx)-Math.atan2(r[1]-cy,r[0]-cx));   // clockwise on screen (y down)
+  const cross=i=>{ const A=q[i],Bq=q[(i+1)%4],C=q[(i+2)%4]; return (Bq[0]-A[0])*(C[1]-Bq[1])-(Bq[1]-A[1])*(C[0]-Bq[0]); };
+  const sg=[0,1,2,3].map(cross); if(!(sg.every(v=>v>0)||sg.every(v=>v<0))) return null;
+  const len=i=>Math.hypot(q[(i+1)%4][0]-q[i][0], q[(i+1)%4][1]-q[i][1]);
+  // start index: a long edge, and of the two long edges the one whose midpoint is higher (or more to the left if the board is upright)
+  const longFirst = len(0)+len(2) >= len(1)+len(3) ? [0,2] : [1,3];
+  const mid=i=>[(q[i][0]+q[(i+1)%4][0])/2,(q[i][1]+q[(i+1)%4][1])/2];
+  const m0=mid(longFirst[0]), m1=mid(longFirst[1]);
+  const horiz=Math.abs(m0[1]-m1[1])>=Math.abs(m0[0]-m1[0]);
+  const st = (horiz ? m0[1]<=m1[1] : m0[0]<=m1[0]) ? longFirst[0] : longFirst[1];
+  return [0,1,2,3].map(i=>q[(st+i)%4]);
+}
+/* Board size from the tapped corners: long/short side is 29/11 = 2.6 for 30 columns, 62/11 = 5.6 for 63. Null when unclear. */
+function guessCols(o){
+  if(!o) return null; const d=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+  const r=(d(o[0],o[1])+d(o[2],o[3]))/Math.max(1e-6,d(o[1],o[2])+d(o[3],o[0]));
+  return r>=4.4 ? 63 : r<=3.6 ? 30 : null;
+}
 
 /* Breadboard mapping: which holes are electrically the same node. */
 function netOf(hole){
@@ -304,7 +327,7 @@ function makeStabilizer(need){
   };
 }
 
-const api = {ROW_Y,rowY,homography,apply,mul,inv,scaleH,makeBoard,calibHoles,boardFromTaps,netOf,sameNet,RAIL_SAFE_MAX_COL,
+const api = {ROW_Y,rowY,homography,apply,mul,inv,scaleH,makeBoard,calibHoles,boardFromTaps,orderTaps,guessCols,netOf,sameNet,RAIL_SAFE_MAX_COL,
   targets,holeXY,checkCircuit,wireEnd,judgeStep,earlyWarning,safetyGate,RISK,report,makeStabilizer,
   GATE_MIN_CONF,CAMERA_LINES,TRAINER_LINES,GATE_LINES,validConfirmation,makeGateStabilizer};
 if(typeof module!=='undefined' && module.exports) module.exports = api; else root.MirasBoard = api;
