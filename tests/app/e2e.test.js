@@ -67,7 +67,7 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
   await A.p.click('text=بدء التدريب');
   await A.p.waitForSelector('#board');
   await A.p.screenshot({ path:`${SHOTS}/03-sim-start.png` });
-  t('6 cannot pass step 1 without wiring', /لم يُوصَّل/.test(await check(A.p)));
+  t('6 cannot pass step 1 without wiring', /أي سلك/.test(await check(A.p)));
   // 10 سلك غير متصل: طرف في 5V والآخر حر
   await dragEnd(A.p, 'w1', 0, 'pin:5V');
   t('10 unconnected wire detected', /غير مثبّت/.test(await check(A.p)), await stateText(A.p));
