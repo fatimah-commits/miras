@@ -126,7 +126,7 @@ export const views = {
 
   async settings(el, app){
     const s = app.settings.get(), src = await app.voice.source();
-    const srcText = { files:'ملفات صوت مولّدة (طبيعية)', device:'صوت الجهاز (قد يكون آلياً)', none:'لا يوجد صوت عربي في هذا الجهاز' }[src];
+    const srcText = { files:'التسجيلات الصوتية للمنصة', none:'تعذّر تحميل التسجيلات الصوتية' }[src];
     el.innerHTML = `<h1>الإعدادات</h1>
       <section class="card"><h2>الصوت</h2>
         <p class="dim">المصدر الحالي: ${srcText}</p>
