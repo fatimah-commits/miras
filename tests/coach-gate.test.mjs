@@ -124,5 +124,6 @@ for(const ra of holes) for(const rb of holes) for(const la of holes) for(const l
 }
 t(`14 checkCircuit agrees with app/core/circuit.js on ${pc} placements (${dangerSeen} LED-without-resistor cases)`, pd===0, pd+' disagreements');
 
+console.log(`exhaustive: ${n} combinations (${passes} pass); parity: ${pc} placements (${dangerSeen} no_resistor)`);
 console.log(`coach gate: ${pass} passed, ${fail} failed`);
 process.exit(fail?1:0);
