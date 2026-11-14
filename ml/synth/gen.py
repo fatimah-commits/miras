@@ -214,7 +214,7 @@ def build(rng, split, texdir, idx):
         d=Vector((bx,by,0))-lo_.location; lo_.rotation_mode='QUATERNION'; lo_.rotation_quaternion=d.to_track_quat('-Z','Y')
     # camera on a stand, looking at the working area
     cd=bpy.data.cameras.new('cam'); cam=bpy.data.objects.new('cam',cd); bpy.context.collection.objects.link(cam); sc.camera=cam
-    tilt=math.radians(rng.uniform(0,38) if split=='train' else rng.uniform(5,45)); az=rng.uniform(-0.5,0.5)+math.pi*1.5; dist=rng.uniform(170,380)
+    tilt=math.radians(rng.uniform(0,38) if split=='train' else rng.uniform(5,45)); az=rng.uniform(-0.5,0.5)+math.pi*1.5; dist=rng.uniform(110,360)
     tgt=Vector((hole(C,0)[0]+rng.uniform(-25,25),by+rng.uniform(-40,10),0))
     cam.location=tgt+Vector((math.cos(az)*math.sin(tilt)*dist,math.sin(az)*math.sin(tilt)*dist,math.cos(tilt)*dist))
     d=tgt-cam.location; cam.rotation_mode='QUATERNION'; cam.rotation_quaternion=d.to_track_quat('-Z','Y'); cd.lens=rng.uniform(24,34); cd.sensor_width=36; cd.clip_end=5000; cd.clip_start=10
