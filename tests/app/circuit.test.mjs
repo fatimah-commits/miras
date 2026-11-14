@@ -44,6 +44,7 @@ t('short detected', analyze(s).short, true);
 t('short: power step dangerous', STEPS[3].check(s), { ok:false, code:'short', danger:true });
 s=correct(); s.wires[1]=W('w2','black','pin:GND1','rail:+:3');
 t('both in + rail = short', checkSupply(s,'GND').code, 'short');
+t('both in + rail: black step reports short, not regression', STEPS[1].check(s).code, 'short');
 
 // 7 3.3V بدل 5V
 s=correct(); s.wires[0]=W('w1','red','pin:3V3','rail:+:2');

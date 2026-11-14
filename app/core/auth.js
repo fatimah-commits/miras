@@ -4,25 +4,25 @@
 const MSG = {
   'Invalid login credentials': 'البريد أو كلمة المرور غير صحيحة.',
   'User already registered': 'هذا البريد مسجّل مسبقاً.',
-  'Email not confirmed': 'أكّدي بريدك من الرسالة المرسلة أولاً.',
+  'Email not confirmed': 'يلزم تأكيد البريد من الرسالة المرسلة أولاً.',
   'Password should be at least 6 characters.': 'كلمة المرور قصيرة.',
 };
 const ar = e => {
   if(!e) return null;
   const m = e.message || String(e);
   if(MSG[m]) return MSG[m];
-  if(/rate limit/i.test(m)) return 'محاولات كثيرة. انتظري قليلاً ثم أعيدي.';
+  if(/rate limit/i.test(m)) return 'محاولات كثيرة. يُرجى الانتظار قليلاً ثم الإعادة.';
   if(/fetch|network|Failed to fetch/i.test(m)) return 'لا يوجد اتصال بالإنترنت.';
-  if(/weak|pwned/i.test(m)) return 'كلمة المرور ضعيفة. اختاري كلمة أطول وأصعب.';
+  if(/weak|pwned/i.test(m)) return 'كلمة المرور ضعيفة. المطلوب كلمة أطول وأصعب.';
   return 'حدث خطأ: ' + m;
 };
 
 export const PW_MIN = 8;
 export function validate({ email, password, full_name, trainee_no }, signup){
-  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')) return 'اكتبي بريداً صحيحاً.';
+  if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')) return 'البريد غير صحيح.';
   if(!password || password.length < PW_MIN) return `كلمة المرور ${PW_MIN} أحرف على الأقل.`;
   if(signup){
-    if(!full_name || full_name.trim().length < 3) return 'اكتبي الاسم الكامل.';
+    if(!full_name || full_name.trim().length < 3) return 'الاسم الكامل مطلوب.';
     if(trainee_no && !/^[0-9]{4,12}$/.test(trainee_no)) return 'الرقم التدريبي أرقام فقط.';
   }
   return null;
@@ -45,7 +45,7 @@ export function makeAuth(sb){
     },
     async signOut(){ const { error } = await sb.auth.signOut(); return error ? { ok:false, error: ar(error) } : { ok:true }; },
     async requestReset(email, redirectTo){
-      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')) return { ok:false, error:'اكتبي بريداً صحيحاً.' };
+      if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')) return { ok:false, error:'البريد غير صحيح.' };
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
       return error ? { ok:false, error: ar(error) } : { ok:true };
     },

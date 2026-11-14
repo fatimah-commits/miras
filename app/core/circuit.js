@@ -120,7 +120,7 @@ export function colorNote(which, color){
 // خطوات الدرس. كل خطوة تفحص الحالة وترجع {ok, code}. لا انتقال قبل ok.
 export const STEPS = [
   { code:'red',   check: s => checkSupply(s,'5V') },
-  { code:'black', check: s => { const r=checkSupply(s,'5V'); if(!r.ok) return { ok:false, code:'regressed_red' }; return checkSupply(s,'GND'); } },
+  { code:'black', check: s => { const r=checkSupply(s,'5V'); if(r.code==='short') return r; if(!r.ok) return { ok:false, code:'regressed_red' }; return checkSupply(s,'GND'); } },
   { code:'parts', check: s => {
       const a = analyze(s);
       if(a.short) return { ok:false, code:'short' };
@@ -140,19 +140,19 @@ export const STEPS = [
 export const REASONS = {
   ok:'صحيح.',
   lit:'اللمبة أضاءت. الدائرة صحيحة.',
-  not_started:'وصّلي سلكاً من الطرف المطلوب.',
+  not_started:'لم يُوصَّل سلك من الطرف المطلوب بعد.',
   unconnected:'طرف السلك غير مثبّت في أي فتحة.',
   wrong_rail:'القطبية معكوسة: السلك في الخط المعاكس.',
   wrong_hole:'السلك في فتحة خارج خط الطاقة.',
   wrong_pin:'الطرف خطأ: هذا 3.3V وليس 5V.',
-  short:'قصر كهربائي: الموجب متصل بالأرضي مباشرة. لا توصّلي الكهرباء.',
-  regressed_red:'سلك 5V لم يعد في خط +. أعيديه أولاً.',
+  short:'قصر كهربائي: الموجب متصل بالأرضي مباشرة. لا توصيل للكهرباء.',
+  regressed_red:'سلك 5V لم يعد في خط +. يجب إعادته أولاً.',
   resistor_missing:'المقاومة غير موضوعة.',
   resistor_shorted:'طرفا المقاومة في الشبكة نفسها، فلا تعمل.',
   led_missing:'اللمبة غير موضوعة.',
   led_shorted:'رجلا اللمبة في الشبكة نفسها.',
   led_reversed:'اللمبة مقلوبة: الرجل الطويلة يجب أن تتجه للموجب.',
-  no_resistor:'اللمبة بلا مقاومة: ستتلف. ضعي المقاومة على التوالي.',
+  no_resistor:'اللمبة بلا مقاومة: ستتلف. المقاومة لازمة على التوالي.',
   open:'الدائرة مفتوحة: يوجد انقطاع في المسار.',
   pins_bridged:'5V و3.3V متصلان ببعض.',
   color_5v:'ملاحظة: المتعارف عليه أن سلك 5V أحمر.',
