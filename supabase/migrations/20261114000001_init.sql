@@ -211,4 +211,9 @@ from public.attempt_events e where e.kind = 'error'
 group by e.user_id, e.code;
 
 grant select on public.trainee_progress, public.error_counts to authenticated;
+-- صلاحيات صريحة (تعمل حتى لو أُطفئ خيار "Automatically expose new tables")، وRLS يبقى الحاكم
+grant usage on schema public to authenticated;
+grant select, insert, update on public.profiles, public.sections, public.lessons, public.lesson_steps, public.attempts, public.attempt_events to authenticated;
+grant delete on public.sections, public.lessons, public.lesson_steps to authenticated;
+grant usage on all sequences in schema public to authenticated;
 revoke all on all tables in schema public from anon;
