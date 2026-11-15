@@ -81,26 +81,25 @@ const STEPS = [
   {id:'power', t:'التشغيل', text:'', say:'اجتازت الدائرة الفحص. الآن وصّل كيبل يو إس بي.'}
 ];
 
-/* ---------------- voice (recorded clips from ../voice/voice.json, else device voice) ---------------- */
-let arVoice=null, VOICE={};
+/* ---------------- voice: recorded clips only, never the device voice ---------------- */
+let VOICE={};
 const vkey=t=>String(t).replace(/[^ء-يa-zA-Z0-9]/g,'');
-function pickVoice(){ try{ const v=speechSynthesis.getVoices().filter(x=>/^ar/i.test(x.lang));
-  v.sort((a,b)=>(/enhanced|premium|neural|natural/i.test(b.name)?2:0)+(/^ar[-_]SA/i.test(b.lang)?1:0)-((/enhanced|premium|neural|natural/i.test(a.name)?2:0)+(/^ar[-_]SA/i.test(a.lang)?1:0)));
-  arVoice=v[0]||null; }catch(e){} }
-try{ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }catch(e){}
 fetch('../voice/voice.json',{cache:'no-cache'}).then(r=>r.ok?r.json():[]).then(l=>(l||[]).forEach(x=>{ if(x&&x.file&&x.text) VOICE[vkey(x.text)]='../voice/'+x.file; })).catch(()=>{});
-/* The recorded clips of the platform (app/voice). A line is played from a clip only when the clip says the same thing;
-   every other line falls back to the device voice. */
+/* The recorded clips of the platform (app/voice). A line is played from the clip that says the same thing;
+   a line with no clip is shown as text only. */
 let REC={};
 fetch('../app/voice/manifest.json',{cache:'no-cache'}).then(r=>r.ok?r.json():{}).then(m=>{ REC=m||{}; }).catch(()=>{});
 const REC_FOR = { // message code or step id -> clip
   resistor_ok:'ok', resistor_ok_hole:'ok', led_ok:'ok', red_ok:'red_seen', black_ok:'black_seen',
   red_in_minus:'wrong_rail', short:'short', lost:'board_lost', hand:'hand_in_view', moving:'cam_moving', early_red_minus:'wrong_rail',
   'step:prep':'usb_unplug', 'step:resistor':'resistor_missing', 'step:led':'led_missing', 'step:gate':'usb_locked', 'step:power':'usb_ok',
-  calib_ok:'calib_ok', cam_aim:'cam_aim', led_reversed:'led_reversed', mode_test:'mode_test', power_short:'short' };
+  calib_ok:'calib_ok', cam_aim:'cam_aim', led_reversed:'led_reversed', mode_test:'mode_test', power_short:'short',
+  resistor_far:'test_wrong', led_far:'test_wrong', black_in_plus:'wrong_rail', early_black_plus:'wrong_rail',
+  resistor_low_conf:'cannot_verify', led_low_conf:'cannot_verify', gate_block:'usb_locked',
+  'step:red':'@voice/wire_red.mp3', 'step:black':'@voice/wire_black.mp3' };   // '@' = a clip cut from the same recordings, stored in coach/voice
 const voiceEl = new Audio();
 let unlocked=false;
-function unlock(){ if(unlocked) return; unlocked=true; try{ const u=new SpeechSynthesisUtterance(' '); u.volume=0; speechSynthesis.speak(u);}catch(e){}
+function unlock(){ if(unlocked) return; unlocked=true;
   // iPad only lets an <audio> element play later if it was started once inside a touch
   try{ voiceEl.muted=true; voiceEl.src='../app/voice/ok.mp3'; const p=voiceEl.play(); const done=()=>{ try{voiceEl.pause(); voiceEl.currentTime=0;}catch(e){} voiceEl.muted=false; }; if(p&&p.then) p.then(done,()=>{voiceEl.muted=false;}); else done(); }catch(e){ voiceEl.muted=false; } }
 ['pointerdown','touchend'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
@@ -109,14 +108,12 @@ function say(t, force, key){
   const now=performance.now();
   if(!force && t===S.lastSay && now-S.lastSayAt<6000) return;
   S.lastSay=t; S.lastSayAt=now;
-  const clip=key && REC_FOR[key] && REC[REC_FOR[key]];
-  const rec=clip ? '../app/voice/'+clip : VOICE[vkey(t)];
+  const k=key && REC_FOR[key], clip=k && (k[0]==='@' ? k.slice(1) : REC[k] && '../app/voice/'+REC[k]);
+  const rec=clip || VOICE[vkey(t)];
   voiceEl.muted=false;
-  try{ speechSynthesis.cancel(); }catch(e){}
-  if(rec){ try{ voiceEl.src=rec; const p=voiceEl.play(); if(p&&p.catch) p.catch(()=>tts(t)); }catch(e){ tts(t); } return; }
-  tts(t);
+  // Only the recorded clips are spoken. A line with no clip stays on the screen as text: the device voice is never used.
+  if(rec){ try{ voiceEl.src=rec; const p=voiceEl.play(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
 }
-function tts(t){ try{ const u=new SpeechSynthesisUtterance(t); u.lang='ar-SA'; if(arVoice) u.voice=arVoice; u.rate=0.95; speechSynthesis.speak(u); }catch(e){} }
 
 /* ---------------- loading: model + OpenCV ---------------- */
 function loadState(){ $('loadState').textContent = `النموذج: ${S.ortReady?'جاهز ✓':S.ortErr?'تعذّر التحميل':'يُحمَّل…'} · التتبع (OpenCV): ${S.cvReady?'جاهز ✓':S.cvErr?'غير متاح، ثبّت الكاميرا':'يُحمَّل…'}`; }
@@ -518,7 +515,7 @@ function setState(st,title,why){ const e=$('stepState'); e.className='state '+st
 $('usbOff').onchange=()=>{ $('nextBtn').disabled=!$('usbOff').checked; };
 $('nextBtn').onclick=()=>{ if(S.step.id==='prep'){ log('manual',{what:'usb_off'}); enterStep(1); return; } advance(); };
 $('repeatBtn').onclick=()=>{ const c=S.committed; say(c && msg(c.code)[2] ? msg(c.code)[2] : S.step.say, true, c && msg(c.code)[2] ? c.code : 'step:'+S.step.id); };
-$('muteBtn').onclick=()=>{ S.muted=!S.muted; $('muteBtn').textContent=S.muted?'الصوت: مطفأ':'الصوت: يعمل'; if(S.muted){ try{speechSynthesis.cancel()}catch(e){} try{voiceEl.pause()}catch(e){} } };
+$('muteBtn').onclick=()=>{ S.muted=!S.muted; $('muteBtn').textContent=S.muted?'الصوت: مطفأ':'الصوت: يعمل'; if(S.muted){ try{voiceEl.pause()}catch(e){} } };
 $('manualBtn').onclick=()=>{ log('skipped',{what:S.step.id, why:'camera_unsure'}); banner('تابعنا. هذه القطعة لم تتأكد بالكاميرا، وسيراجعها المدرب في فحص ما قبل التشغيل.','warn'); advance(); };
 function advance(){ if(S.stepIdx<STEPS.length-1) enterStep(S.stepIdx+1); }
 $('finishBuild').onclick=()=>{ S.attempts++; log('attempt',{n:S.attempts}); enterStep(STEPS.findIndex(s=>s.id==='gate')); };
@@ -595,7 +592,7 @@ $('allowBtn').onclick=()=>{
   bad.filter(l=>!(hasShort && (l.code==='black_in_plus'||l.code==='red_in_minus'))).forEach(l=>log('error',{code:l.code, step:'gate'})); // one physical mistake = one error
   const first = bad[0] ? msg(bad[0].code) : null;
   banner(first ? 'منع التشغيل: '+first[0] : 'منع التشغيل: '+open.length+' '+(open.length===1?'سطر غير مؤكد':'أسطر غير مؤكدة')+'. انظر القائمة.', 'bad');
-  say(first ? 'توقف، لا يمكن التشغيل. '+first[2] : 'لا يمكن التشغيل قبل أن يصبح كل سطر أخضر.', true);
+  say(first ? 'توقف، لا يمكن التشغيل. '+first[2] : 'لا يمكن التشغيل قبل أن يصبح كل سطر أخضر.', true, 'gate_block');
   if(S.mode==='test' && bad.length){ setTimeout(()=>{ if(S.step.id==='gate'){ enterStep(STEPS.findIndex(s=>s.id==='resistor')); banner('أصلح الأخطاء ثم اضغط «انتهيت» مرة أخرى.','warn'); } },2200); }
 };
 
