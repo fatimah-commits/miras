@@ -36,7 +36,7 @@ jobs:
           NODE_PATH=/tmp/t/node_modules APP=http://127.0.0.1:8099/app/ SB_URL=$SB_API_URL SB_ANON=$SB_ANON_KEY DB_URL=$SB_DB_URL MAIL_URL=$SB_INBUCKET_URL SHOTS=shots node tests/app/e2e.test.js
       - name: Pre-power safety gate in the browser (trainer account on the server)
         run: NODE_PATH=/tmp/t/node_modules SB_JS=/tmp/t/x.js BASE=http://127.0.0.1:8099/ SB_URL=$SB_API_URL SB_ANON=$SB_ANON_KEY DB_URL=$SB_DB_URL SHOTS=shots node tests/coach-browser/gate.js
-      - name: Automatic board calibration on real iPad frames
+      - name: Board calibration checks (no real photos)
         run: NODE_PATH=/tmp/t/node_modules BASE=http://127.0.0.1:8099/ node tests/coach-browser/autocal.js
       - uses: actions/upload-artifact@v4
         if: always()
