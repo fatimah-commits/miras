@@ -82,8 +82,8 @@ th{color:var(--dim);font-weight:500}
 <body>
 <div class="app">
  <header class="bar">
-  <b>مراس · المدرب المباشر</b><span class="sub">إرشاد فوق اللوحة الحقيقية وفحص قبل التشغيل</span><span class="tag">نسخة تجريبية</span>
-  <nav><span class="sub" id="whoTop" hidden></span><a href="../">العودة إلى مراس</a><a href="../lab/">مختبر النموذج</a><a href="#report" id="toReport">تقرير حماية الأدوات</a></nav>
+  <b>مراس · المدرب المباشر</b><span class="sub">إرشاد فوق اللوحة الحقيقية وفحص قبل التشغيل</span>
+  <nav><span class="sub" id="whoTop" hidden></span><a href="../">العودة إلى مراس</a></nav>
  </header>
 
  <!-- start -->
@@ -211,7 +211,7 @@ th{color:var(--dim);font-weight:500}
   <h2>تقرير حماية الأدوات</h2>
   <p class="mut">من جلسات حقيقية على هذا الجهاز فقط. لا توجد أرقام مضافة أو تجريبية.</p>
   <div id="repBody"></div>
-  <div class="row" style="margin-top:10px"><button class="btn ghost small" id="repExport">تنزيل البيانات (JSON)</button><button class="btn ghost small" id="repClear">مسح البيانات</button></div>
+  <div class="row" style="display:none"><button class="btn ghost small" id="repExport">تنزيل البيانات (JSON)</button><button class="btn ghost small" id="repClear">مسح البيانات</button></div>
  </section>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.wasm.min.js"></script>
