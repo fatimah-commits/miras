@@ -48,8 +48,8 @@ label.row{display:flex;gap:8px;align-items:center;font-size:.9rem}
    <label class="file">تجربة على صورة<input type="file" id="pick" accept="image/*"></label>
    <button class="alt" id="calib" disabled>تحديد الخطين</button>
   </div>
-  <div class="stage"><canvas id="cv"></canvas><div class="ph" id="ph">جاري تحميل النموذج…</div></div>
-  <p class="mut" id="hint">بعد ظهور الصورة اضغطي «تحديد الخطين» ثم المسي خط الموجب (+) ثم خط السالب (−).</p>
+  <div class="stage"><canvas id="cv"></canvas><div class="ph" id="ph">جاري تحميل النموذج…</div><div id="recNote" hidden style="position:absolute;bottom:8px;left:8px;right:8px;padding:6px 12px;font-weight:700;font-size:.9rem;background:rgba(0,0,0,.78);color:#fff;border-inline-start:5px solid #e5484d;pointer-events:none">تنبيه: الكاميرا تعمل وتصوّر الآن. تُحلَّل الصورة داخل الجهاز فقط، ولا تُحفظ ولا تُرسل.</div></div>
+  <p class="mut" id="hint">بعد ظهور الصورة اضغط «تحديد الخطين» ثم المس خط الموجب (+) ثم خط السالب (−).</p>
  </section>
  <aside>
   <div class="panel">
@@ -58,7 +58,7 @@ label.row{display:flex;gap:8px;align-items:center;font-size:.9rem}
    <div class="mut" id="why"></div>
   </div>
   <div class="panel" style="margin-top:12px">
-   <h3>القطع اللي شافها النموذج</h3>
+   <h3>القطع التي تعرّف عليها النموذج</h3>
    <ul id="parts"><li class="mut">لا شيء بعد</li></ul>
   </div>
   <div class="panel" style="margin-top:12px">
@@ -88,7 +88,7 @@ if (window.ort) { ort.env.wasm.wasmPaths = window.MIRAS_ORT_WASM || 'https://cdn
 async function load(){
   try{
     session = await ort.InferenceSession.create(MODEL_URL, {executionProviders:['wasm']});
-    $('ph').textContent = 'النموذج جاهز. شغّلي الكاميرا أو جربي صورة.';
+    $('ph').textContent = 'النموذج جاهز. يمكن تشغيل الكاميرا أو التجربة على صورة.';
   }catch(e){ $('ph').textContent = 'تعذّر تحميل النموذج: ' + e.message; console.error(e); }
 }
 load();
@@ -141,8 +141,8 @@ function wireInfo(img, W, H, d){
 
 function judge(dets, img, W, H){
   const has = c => dets.some(d=>d.cls===c);
-  if(!has('board')) return ['warn','ما شفت لوحة التجارب','قرّبي الكاميرا أو حسّني الإضاءة.'];
-  if(rails.plus==null || rails.minus==null) return ['warn','حدّدي الخطين أولاً','اضغطي «تحديد الخطين» والمسي + ثم −.'];
+  if(!has('board')) return ['warn','ما شفت لوحة التجارب','الحل: تقريب الكاميرا أو تحسين الإضاءة.'];
+  if(rails.plus==null || rails.minus==null) return ['warn','يلزم تحديد الخطين أولاً','اضغط «تحديد الخطين» ثم المس + ثم −.'];
   let redP=0, redM=0, blkP=0, blkM=0;
   for(const d of dets.filter(d=>d.cls==='wire')){
     const w = wireInfo(img, W, H, d); d.colour = w.colour;
@@ -198,19 +198,19 @@ $('cam').onclick = async () => {
   try{
     const s = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}, width:{ideal:1280}, height:{ideal:720}}, audio:false});
     video = document.createElement('video'); video.playsInline = true; video.muted = true; video.srcObject = s; await video.play();
-    still = null; running = true; $('ph').style.display='none'; $('calib').disabled=false; loop();
-  }catch(e){ $('ph').style.display='flex'; $('ph').textContent = 'ما قدرت أفتح الكاميرا: ' + e.message + '. جربي «تجربة على صورة».'; }
+    still = null; running = true; $('ph').style.display='none'; $('recNote').hidden=false; $('calib').disabled=false; loop();
+  }catch(e){ $('ph').style.display='flex'; $('ph').textContent = 'ما قدرت أفتح الكاميرا: ' + e.message + '. يمكن استخدام «تجربة على صورة».'; }
 };
 $('pick').onchange = e => {
   const f = e.target.files[0]; if(!f) return; running = false;
   const im = new Image(); im.onload = () => { still = im; $('ph').style.display='none'; $('calib').disabled=false; runOn(im, im.naturalWidth, im.naturalHeight); };
   im.src = URL.createObjectURL(f);
 };
-$('calib').onclick = () => { calibMode = 1; rails = {plus:null, minus:null}; $('hint').textContent = 'المسي الآن خط الموجب (+) على الصورة.'; };
+$('calib').onclick = () => { calibMode = 1; rails = {plus:null, minus:null}; $('hint').textContent = 'المس الآن خط الموجب (+) على الصورة.'; };
 cv.addEventListener('click', e => {
   if(!calibMode) return;
   const r = cv.getBoundingClientRect(), y = (e.clientY - r.top) / r.height;
-  if(calibMode===1){ rails.plus = y; calibMode = 2; $('hint').textContent = 'ممتاز. المسي الآن خط السالب (−).'; }
+  if(calibMode===1){ rails.plus = y; calibMode = 2; $('hint').textContent = 'ممتاز. المس الآن خط السالب (−).'; }
   else { rails.minus = y; calibMode = 0; $('hint').textContent = 'تم تحديد الخطين. وصّلي الأسلاك وراقبي الحكم.'; }
   if(still) runOn(still, still.naturalWidth, still.naturalHeight);
 });

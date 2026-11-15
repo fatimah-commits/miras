@@ -361,6 +361,7 @@ async function startCam(){
     v.srcObject=st;
     await new Promise(r=>{ if(v.readyState>=1 && v.videoWidth) r(); else v.onloadedmetadata=()=>r(); });
     await v.play();
+    $('recNote').hidden=false;
     useSource(v,'cam');
   }catch(e){ $('loadState').textContent='ما قدرت أفتح الكاميرا: '+e.message+'. يمكن التجربة على فيديو مسجّل.'; }
 }
@@ -655,6 +656,7 @@ function finish(lit){
     `<p class="mut">إضاءة اللمبة سجّلها المتدرب بنفسه، ولم تتحقق منها الكاميرا.</p>`;
   S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
   try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
+  $('recNote').hidden=true;
   try{ S.src && S.src.parentNode && S.src.remove(); }catch(e){} S.src=null; S.loop=false; trackFree();
 }
 $('againBtn').onclick=()=>{ $('result').hidden=true; $('start').hidden=false; };
