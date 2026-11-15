@@ -12,7 +12,7 @@ const psql = sql => execFileSync('psql', [DB, '-tAc', sql]).toString().trim();
 const run = Date.now().toString(36);
 const mail = n => `${n}.${run}@miras.test`;
 const PW = 'Miras-e2e-2026!';
-const NAME = 'سارة ' + run;
+const NAME = 'سارة ' + run.replace(/[0-9]/g, d => 'abcdefghij'[d]);   // الاسم حروف فقط (شرط التسجيل)
 let pass=0, fail=0;
 const t=(name, ok, info='')=>{ ok?pass++:fail++; console.log((ok?'✓ ':'✗ ')+name+(ok?'':'  '+info)); };
 
