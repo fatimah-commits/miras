@@ -40,13 +40,16 @@ export const views = {
       <label>الاسم الكامل<input name="full_name" autocomplete="name" required></label>
       <label>الرقم التدريبي (اختياري)<input name="trainee_no" inputmode="numeric" dir="ltr"></label>
       <label>البريد الإلكتروني<input name="email" type="email" autocomplete="email" required dir="ltr"></label>
-      <label>كلمة المرور (8 أحرف على الأقل)<input name="password" type="password" autocomplete="new-password" minlength="8" required dir="ltr"></label>
+      <label>كلمة المرور<input name="password" type="password" autocomplete="new-password" minlength="8" required dir="ltr"></label>
+      <label>تأكيد كلمة المرور<input name="password2" type="password" autocomplete="new-password" minlength="8" required dir="ltr"></label>
+      <p class="dim">الشروط: الاسم الأول واسم العائلة. بريد صحيح. كلمة المرور 8 أحرف على الأقل وفيها حرف ورقم.</p>
       <p class="msg" role="alert"></p>
       <button class="btn" type="submit">إنشاء الحساب</button>
       <p class="dim">حسابات المدربين يفعّلها مدير المنصة.</p>
       <a class="link" href="#/login">لدي حساب، سجّل دخولي</a></form>`,
       async v => {
-        const r = await app.auth.signUp({ ...v, redirectTo: redirect() });
+        if((v.password||'').length >= 8 && v.password !== v.password2) return { error:'كلمتا المرور غير متطابقتين.' };
+        const r = await app.auth.signUp({ full_name:v.full_name, trainee_no:v.trainee_no, email:v.email, password:v.password, redirectTo: redirect() });
         if(!r.ok) return r;
         if(r.needsConfirm) return { ok:'أُرسل رابط تأكيد إلى البريد. بعد فتحه يمكن تسجيل الدخول.' };
         await app.refresh();
