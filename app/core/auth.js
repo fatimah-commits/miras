@@ -23,8 +23,10 @@ export function validate({ email, password, full_name, trainee_no }, signup){
   if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')) return 'البريد غير صحيح.';
   if(!password || password.length < PW_MIN) return `كلمة المرور ${PW_MIN} أحرف على الأقل.`;
   if(signup){
-    if(!full_name || full_name.trim().length < 3) return 'الاسم الكامل مطلوب.';
-    if(trainee_no && !/^[0-9]{4,12}$/.test(trainee_no)) return 'الرقم التدريبي أرقام فقط.';
+    if(!/[A-Za-z\u0600-\u06FF]/.test(password) || !/[0-9\u0660-\u0669]/.test(password)) return 'كلمة المرور يجب أن تحتوي على حرف ورقم على الأقل.';
+    const nm = (full_name||'').trim().replace(/\s+/g,' ');
+    if(nm.length < 5 || nm.split(' ').length < 2 || nm.length > 60 || /[0-9<>@]/.test(nm)) return 'اكتب الاسم الأول واسم العائلة، بحروف فقط.';
+    if(trainee_no && !/^[0-9]{4,12}$/.test(trainee_no)) return 'الرقم التدريبي أرقام فقط، من 4 إلى 12 رقماً.';
   }
   return null;
 }
@@ -34,7 +36,7 @@ export function makeAuth(sb){
     async signUp({ email, password, full_name, trainee_no, redirectTo }){
       const v = validate({ email, password, full_name, trainee_no }, true); if(v) return { ok:false, error:v };
       const { data, error } = await sb.auth.signUp({ email, password,
-        options:{ data:{ full_name: full_name.trim(), trainee_no: trainee_no||null }, emailRedirectTo: redirectTo } });
+        options:{ data:{ full_name: full_name.trim().replace(/\s+/g,' '), trainee_no: trainee_no||null }, emailRedirectTo: redirectTo } });
       if(error) return { ok:false, error: ar(error) };
       // عند تفعيل تأكيد البريد لا تُنشأ جلسة حتى يؤكد
       return { ok:true, needsConfirm: !data.session, user: data.user };
