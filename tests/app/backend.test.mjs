@@ -36,6 +36,8 @@ t('1 role in signup metadata ignored', (await X.auth.me()).role==='trainee');
 
 // تحقق من المدخلات قبل الإرسال
 t('1 short password rejected', !(await A.auth.signUp({ email:mail('x'), password:'123', full_name:'اسم كامل' })).ok);
+t('1 password without a digit rejected', !(await A.auth.signUp({ email:mail('x'), password:'onlyletters', full_name:'اسم كامل' })).ok);
+t('1 one-word name rejected', !(await A.auth.signUp({ email:mail('x'), password:PW, full_name:'اسم' })).ok);
 t('1 duplicate email rejected', !(await device().auth.signUp({ email:mail('noura'), password:PW, full_name:'نورة' })).ok);
 
 // 2 الدخول والخروج
