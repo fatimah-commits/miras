@@ -47,6 +47,7 @@ p{margin:6px 0}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
 .stage{position:relative;background:#000;border:2px solid var(--edge);min-height:200px}
 .stage canvas{display:block;width:100%;height:auto;touch-action:none;position:relative;z-index:1}
+.recnote{position:absolute;bottom:8px;inset-inline-start:8px;inset-inline-end:8px;padding:6px 12px;font-weight:700;font-size:.9rem;background:rgba(0,0,0,.78);color:#fff;border-inline-start:5px solid #e5484d;pointer-events:none;z-index:3}.recnote::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:#e5484d;margin-inline-end:8px}
 .chip{position:absolute;top:8px;inset-inline-start:8px;padding:5px 12px;font-weight:700;font-size:.95rem;background:rgba(0,0,0,.7);border-inline-start:5px solid var(--dim);pointer-events:none}
 .chip.ok{border-color:var(--ok);color:var(--ok)}.chip.bad{border-color:var(--bad);color:var(--bad)}.chip.warn{border-color:var(--warn);color:var(--warn)}
 .banner{position:absolute;inset-inline:8px;bottom:8px;padding:10px 14px;font-weight:700;background:rgba(5,25,17,.88);pointer-events:none;border-inline-start:6px solid var(--gold)}
@@ -116,7 +117,7 @@ th{color:var(--dim);font-weight:500}
  <section id="work" hidden>
   <div class="grid">
    <div>
-    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip">…</div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div></div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip">…</div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div><div class="recnote" id="recNote" role="status" hidden>تنبيه: الكاميرا تعمل وتصوّر الآن. تُحلَّل الصورة داخل الجهاز فقط، ولا تُحفظ ولا تُرسل.</div></div>
     <div class="legend" style="margin-top:8px"><span class="t">المكان المطلوب</span><span class="g">تم التأكد</span><span class="y">اشتباه أو لا أرى بوضوح</span><span class="r">خطأ مؤكد</span></div>
     <p class="tech" id="tech"></p>
    </div>
@@ -219,6 +220,6 @@ th{color:var(--dim);font-weight:500}
 <script src="../app/config.js"></script>
 <script src="board.js?v=5"></script>
 <script src="autocal.js?v=1"></script>
-<script src="coach.js?v=7"></script>
+<script src="coach.js?v=8"></script>
 </body>
 </html>
