@@ -55,7 +55,10 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
   await A.p.fill('[name=password]', '123');
   await A.p.click('button[type=submit]');
   t('1 UI rejects short password', /8 أحرف/.test(await A.p.locator('.msg').innerText()));
-  await A.p.fill('[name=password]', PW);
+  await A.p.fill('[name=password]', PW); await A.p.fill('[name=password2]', PW+'x');
+  await A.p.click('button[type=submit]');
+  t('1 UI rejects mismatched password confirmation', /غير متطابقتين/.test(await A.p.locator('.msg').innerText()));
+  await A.p.fill('[name=password2]', PW);
   await A.p.click('button[type=submit]');
   await A.p.waitForSelector('text=بدء التدريب');
   t('1 signup lands on trainee home', true);
@@ -171,7 +174,7 @@ async function check(p){ await p.click('#check'); await p.waitForTimeout(150); r
   // 4 المدرب: يرى شعبته فقط، والبيانات من القاعدة، والتصدير يعمل
   const T = await ctx(browser);
   await T.p.goto(APP+'#/login'); await T.p.click('text=حساب جديد');
-  await T.p.fill('[name=full_name]', 'مدرب واجهة'); await T.p.fill('[name=email]', mail('coach')); await T.p.fill('[name=password]', PW);
+  await T.p.fill('[name=full_name]', 'مدرب واجهة'); await T.p.fill('[name=email]', mail('coach')); await T.p.fill('[name=password]', PW); await T.p.fill('[name=password2]', PW);
   await T.p.click('button[type=submit]'); await T.p.waitForSelector('text=بدء التدريب');
   psql(`update profiles set role='admin' where id=(select id from auth.users where email='${mail('coach')}')`);
   await T.p.reload(); await T.p.waitForSelector('text=الحسابات');
