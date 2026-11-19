@@ -73,6 +73,15 @@ const r=B.report([{mode:'train',events:[{type:'error',code:'short'},{type:'error
 t('report counts', r.sessions===2&&r.wrong===4&&r.beforePower===3&&r.blocked===1&&r.ok===1&&r.overrides===1&&r.top[0][0]==='short'&&r.atRisk['الأردوينو']===3&&r.manualConfirms===1);
 t('reversed polarity puts no part at risk', !Object.keys(r.atRisk).some(k=>k.includes('اللمبة')));
 
+// Nov 19: a part's leg in the opposite power rail (seen from the rail holes) is a confirmed error, even before the model names the part
+t('resistor leg in − rail -> bad', B.judgeStep('resistor',{...ok,reach:{resistor:'wrong'}}).code==='resistor_in_minus');
+t('resistor leg in − rail -> bad even if the model sees it near', B.judgeStep('resistor',{...ok,resistor:{seen:true,near:true,conf:0.9},reach:{resistor:'wrong'}}).state==='bad');
+t('LED short leg in + rail -> bad', B.judgeStep('led',{...ok,reach:{led:'wrong'}}).code==='led_short_in_plus');
+t('resistor in the right rail keeps the old rule', B.judgeStep('resistor',{...ok,resistor:{seen:true,near:true,conf:0.9},reach:{resistor:'right'}}).state==='ok');
+t('rail reach is not judged while moving', B.judgeStep('resistor',{view:'moving',reach:{resistor:'wrong'}}).state==='unknown');
+t('gate: resistor in − rail is danger (cannot be confirmed away)', (g=>!g.pass&&g.danger&&g.lines.find(l=>l.id==='resistor').code==='resistor_in_minus')(B.safetyGate({...allOk,reach:{resistor:'wrong'}},{...man,lines:['resistor','resistor_value','led_polarity','no_extra']})));
+t('gate: LED short leg in + rail is danger', (g=>!g.pass&&g.danger)(B.safetyGate({...allOk,reach:{led:'wrong'}},man)));
+
 const s=B.makeStabilizer(3); t('stabilizer needs repeats', s.push('a')===null&&s.push('a')===null&&s.push('a')==='a'&&s.push('b')===null);
 
 console.log(`coach logic: ${pass} passed, ${fail} failed`); process.exit(fail?1:0);
