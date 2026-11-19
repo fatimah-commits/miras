@@ -39,6 +39,8 @@ if(!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.supabase){
 async function loadMe(){
   try{ app.me = await app.auth.me(); }catch(e){ app.me = null; }
   if(app.me) guest.end();
+  // محاولات هذا الحساب التي حُفظت على الجهاز بلا إنترنت تُرسل فور الدخول
+  if(app.me && app.data.pending() && navigator.onLine){ try{ await app.data.sync(); }catch(e){} }
 }
 
 function nav(){

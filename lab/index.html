@@ -150,8 +150,8 @@ function judge(dets, img, W, H){
     if(w.colour==='red'){ if(w.inPlus>MIN) redP++; if(w.inMinus>MIN) redM++; }
     if(w.colour==='black'){ if(w.inPlus>MIN) blkP++; if(w.inMinus>MIN) blkM++; }
   }
-  if(blkP && redP) return ['bad','خطر: تماس','السلك الأسود (GND) والأحمر (5V) في خط الموجب نفسه. افصلي الكهرباء فوراً.'];
-  if(redM && !redP) return ['bad','القطبية معكوسة','السلك الأحمر في خط السالب. انقليه إلى خط الموجب (+).'];
+  if(blkP && redP) return ['bad','خطر: تماس','السلك الأسود (GND) والأحمر (5V) في خط الموجب نفسه. افصل الكهرباء فوراً.'];
+  if(redM && !redP) return ['bad','القطبية معكوسة','السلك الأحمر في خط السالب. انقله إلى خط الموجب (+).'];
   if(blkP) return ['bad','السلك الأسود في المكان الخطأ','السلك الأسود في خط الموجب. مكانه خط السالب (−).'];
   if(redP && blkM) return ['ok','التوصيل صحيح','الأحمر في الموجب والأسود في السالب.'];
   if(redP) return ['warn','باقي السلك الأسود','الأحمر في مكانه. وصّلي الأسود من GND إلى خط السالب.'];
