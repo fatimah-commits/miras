@@ -570,24 +570,48 @@ $('imgPick').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const im=ne
 function seg(id, key, cb){ $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{ $(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); S[key]= key==='cols'?+b.dataset.v:b.dataset.v; cb&&cb(); }); }
 seg('modeSeg','mode',()=>{ $('modeHelp').textContent = S.mode==='train' ? 'التدريب: أسهم وأماكن صحيحة وشرح للأخطاء.' : 'الاختبار: لا تظهر الأماكن مسبقاً. يركّب المتدرب الدائرة وحده، ثم يُقيَّم ويُسجَّل الوقت والأخطاء وعدد المحاولات. فحص الأمان قبل التشغيل يبقى إلزامياً.'; });
 seg('colsSeg','cols');
-/* one platform: who is signed in on the main page (same tab), and which mode they chose there */
-let ME=null; try{ ME=JSON.parse(sessionStorage.getItem('miras_me')||'null'); }catch(e){}
+/* منصة واحدة: الحساب المسجّل في المنصة (app/) على هذا الجهاز نفسه. الجلسة محفوظة في المتصفح باسم Supabase
+   الافتراضي، فتُقرأ هنا دون تسجيل دخول جديد. بلا حساب: تعمل الشاشة كما هي ولا يُحفظ شيء في قاعدة البيانات. */
+let ME=null, SB=null;
+function showWho(){
+  if(!ME||!ME.name) return;
+  $('nameRow').hidden=true; $('trainee').value=ME.name;
+  $('whoTop').hidden=false; $('whoTop').textContent=({trainee:'المتدرب: ',trainer:'المدرب: ',admin:'المدير: '}[ME.role]||'')+ME.name;
+}
 (function fromMain(){
   const m=new URLSearchParams(location.search).get('mode');
   if(m==='train'||m==='test'){ const b=$('modeSeg').querySelector(`button[data-v="${m}"]`); b&&b.click(); }
-  if(ME&&ME.name){ $('nameRow').hidden=true; $('trainee').value=ME.name; $('whoTop').hidden=false; $('whoTop').textContent=(ME.role==='trainer'?'المدرب: ':'المتدرب: ')+ME.name; }
 })();
-/* the attempt also goes to the main page's list (mx_real), so it shows in "المحاولات السابقة" and the trainer dashboard.
-   Same point weights as index.html WEIGHT. */
-const MAIN_W={black_plus:20,red_minus:15,assisted:8,hint:2,unclear:2,quit:0};
-function toMainAttempt(sess){
-  if(!ME || ME.role!=='trainee') return;
-  const map={red_in_minus:'red_minus', short:'black_plus', black_in_plus:'black_plus', led_reversed:'led_reversed'};
-  const errs=[]; sess.events.forEach(e=>{ if(e.type==='error' && map[e.code]) errs.push(map[e.code]); if((e.type==='manual'||e.type==='skipped')&&e.why) errs.push('assisted'); if(e.type==='override'||e.type==='trainer_confirm') errs.push('override'); });
-  if(!sess.passed) errs.push('quit');
-  let sc=100; errs.forEach(e=>{ sc-=MAIN_W[e]!=null?MAIN_W[e]:2; }); sc=Math.max(0,sc); if(!sess.passed) sc=Math.min(40,sc);
-  const a={id:'c'+Date.now()+Math.floor(Math.random()*1e4), uid:ME.id, at:Date.now(), dur:sess.seconds, errors:errs, score:sc, done:!!sess.passed, steps:null, clips:0, mode:sess.mode==='test'?'coach-test':'coach'};
-  try{ const k='mx_real', L=JSON.parse(localStorage.getItem(k)||'[]'); L.push(a); localStorage.setItem(k, JSON.stringify(L.slice(-60))); }catch(e){}
+const meReady=(async function account(){
+  const cfg=window.MIRAS_CONFIG||{};
+  if(!window.supabase||!cfg.supabaseUrl||!cfg.supabaseAnonKey) return;
+  try{
+    SB=window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {auth:{persistSession:true, autoRefreshToken:true, detectSessionInUrl:false}});
+    const {data:{session}}=await SB.auth.getSession(); if(!session) return;
+    const {data:p}=await SB.from('profiles').select('id,full_name,role').eq('id',session.user.id).single();
+    if(p){ ME={id:p.id, name:p.full_name, role:p.role}; showWho(); }
+  }catch(e){ console.warn('account', e); }
+})();
+/* المحاولة بالكاميرا تُحفظ في حساب المتدرب بالطريقة نفسها التي تُحفظ بها المحاكاة (app/core/data.js):
+   تظهر في «سجل محاولاتي» وفي لوحة المدرب، ومع انقطاع الإنترنت تنتظر في الجهاز وتُرسل لاحقاً.
+   فقط الكاميرا الحية تُحسب محاولة؛ الفيديو المسجّل والصورة للتجربة ولا تُحفظ. */
+async function saveToAccount(sess){
+  await meReady;
+  if(!ME || ME.role!=='trainee' || !SB) return null;
+  if(sess.src!=='cam') return {skipped:true};
+  const [{makeData, localStore}, {scoreOf}, {CAM_WEIGHT_AS}] = await Promise.all([import('../app/core/data.js'), import('../app/core/circuit.js'), import('../app/core/camcodes.js')]);
+  const events=[]; const add=(e,kind,code)=>events.push({seq:events.length, step_code:String(e.step||e.what||(S.step&&S.step.id)||'-').slice(0,40), kind, code:String(code||'-').slice(0,40), confidence:null, t_s:Math.max(0,e.t||0)});
+  sess.events.forEach(e=>{
+    if(e.type==='error') add(e,'error',e.code);
+    else if(e.type==='ok') add(e,'ok',e.code);
+    else if(e.type==='suspect') add(e,'uncertain',e.code);
+    else if(e.type==='skipped') add(e,'uncertain','camera_unsure');
+  });
+  const errors=events.filter(e=>e.kind==='error');
+  const a={ client_id:('cam'+sess.id+Math.random().toString(36).slice(2,8)).slice(0,40), lesson_id:'power-rails', mode:sess.mode==='test'?'cam-test':'cam-train',
+    started_at:sess.start, finished_at:sess.end, duration_s:sess.seconds, completed:!!sess.passed, error_count:errors.length,
+    score: sess.passed ? scoreOf(errors.map(e=>({kind:'error', code:CAM_WEIGHT_AS[e.code]||e.code}))) : null, events };
+  return makeData(SB, localStore()).save(a);
 }
 
 /* ---------------- setup (calibration) ---------------- */
@@ -855,6 +879,14 @@ $('litNo').onclick=()=>{ log('lit',{yes:false}); log('error',{code:'led_reversed
 $('endBtn').onclick=()=>finish(false);
 
 /* ---------------- session log (real data only) ---------------- */
+async function showSaved(sess){
+  const el=$('resSave'); el.textContent='';
+  let r=null; try{ r=await saveToAccount(sess); }catch(e){ r={saved:false, queued:false}; }
+  if(!r) el.textContent = ME ? '' : 'لم تُحفظ النتيجة في حساب، لأن الدخول إلى المنصة لم يتم على هذا الجهاز.';
+  else if(r.skipped) el.textContent='التجربة على فيديو مسجّل أو صورة لا تُحفظ في الحساب. المحاولة تُحسب بالكاميرا الحية فقط.';
+  else if(r.saved) el.textContent='حُفظت النتيجة في حسابك، وتظهر في سجل المحاولات وعند المدرب.';
+  else el.textContent='النتيجة محفوظة على هذا الجهاز ولم تُرسل بعد، وتُرسل تلقائياً عند الاتصال بالإنترنت.';
+}
 function loadAll(){ try{ return JSON.parse(localStorage.getItem(STORE)||'[]'); }catch(e){ return []; } }
 function saveAll(a){ try{ localStorage.setItem(STORE, JSON.stringify(a.slice(-300))); }catch(e){} }
 function newSession(){ S.trainee=($('trainee').value||'').trim(); S.session={id:Date.now().toString(36), mode:S.mode, trainee:S.trainee, uid:ME&&ME.id||null, cols:S.cols, src:S.kind, start:new Date().toISOString(), events:[]}; S.t0=performance.now(); S.attempts=0; S.confirm=null; S.gatePassSince=0; $('modeName').textContent = S.mode==='train'?'وضع التدريب':'وضع الاختبار'; }
@@ -862,7 +894,7 @@ function log(type, data){ if(!S.session) return; const afterPower = S.step && S.
 function finish(lit){
   if(!S.session) return;
   S.session.end=new Date().toISOString(); S.session.seconds=Math.round((performance.now()-S.t0)/1000); S.session.attempts=S.attempts; S.session.passed=!!lit;
-  const all=loadAll(); all.push(S.session); saveAll(all); toMainAttempt(S.session);
+  const all=loadAll(); all.push(S.session); saveAll(all); showSaved(S.session);
   const ev=S.session.events, errs=ev.filter(e=>e.type==='error'), blocked=ev.filter(e=>e.type==='blocked').length, man=ev.filter(e=>e.type==='trainer_confirm').length, ovr=ev.filter(e=>e.type==='override').length;
   const skipped=ev.filter(e=>e.type==='skipped'), sus=ev.filter(e=>e.type==='suspect'||e.type==='early'), backs=ev.filter(e=>e.type==='back').length;
   const stepName=id=>{ const s=STEPS.find(x=>x.id===id); return s?s.t:id; };

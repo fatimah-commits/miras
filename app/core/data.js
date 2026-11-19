@@ -53,17 +53,26 @@ export function makeData(sb, store){
   }
   return {
     pending: () => queue().length,
+    pendingMine: async () => { let me=null; try{ me=(await sb.auth.getSession()).data.session?.user?.id||null; }catch(e){} return queue().filter(a => !a.owner || a.owner===me).length; },
     // يحفظ فوراً إن أمكن، وإلا يضعه في الطابور ويقول ذلك بصراحة
     async save(a){
+      // صاحب المحاولة يُحفظ معها: في جهاز مشترك (المعرض) لا تُرسل محاولة متدرب باسم متدرب آخر يدخل بعده
+      if(!a.owner){ try{ a.owner = (await sb.auth.getSession()).data.session?.user?.id || null; }catch(e){} }
       store.set(Q, [...queue(), a]);
       const r = await this.sync();
-      return r.failed ? { saved:false, queued:true, error:r.error } : { saved:true };
+      const waiting = queue().some(x => x.client_id===a.client_id);   // «حُفظ» فقط إن وصلت هذه المحاولة نفسها
+      return waiting ? { saved:false, queued:true, error:r.error } : { saved:true };
     },
     async sync(){
-      const q = queue(); const left=[]; let error=null;
-      for(const a of q){ try{ await push(a); }catch(e){ left.push(a); error = e.message||String(e); } }
-      store.set(Q, left);
-      return { sent:q.length-left.length, failed:left.length, error };
+      const q = queue(); const left=[]; let error=null, other=0;
+      let me = null; try{ me = (await sb.auth.getSession()).data.session?.user?.id || null; }catch(e){}
+      for(const a of q){
+        if(!me || (a.owner && a.owner!==me)){ left.push(a); other++; continue; }   // تنتظر صاحبها
+        try{ await push(a); }catch(e){ left.push(a); error = e.message||String(e); }
+      }
+      // ما بقي في الطابور يُكتب فوق النسخة الحالية دون حذف ما أُضيف أثناء الإرسال
+      const now = queue(); store.set(Q, [...left, ...now.filter(x => !q.includes(x) && !q.some(y => y.client_id===x.client_id))]);
+      return { sent:q.length-left.length, failed:left.length-other, waiting:other, error };
     },
     async myAttempts(){
       const { data, error } = await sb.from('attempts').select('*').order('started_at', { ascending:false }).limit(50);

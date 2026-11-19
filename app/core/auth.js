@@ -46,7 +46,12 @@ export function makeAuth(sb){
       const { data, error } = await sb.auth.signInWithPassword({ email, password });
       return error ? { ok:false, error: ar(error) } : { ok:true, user: data.user };
     },
-    async signOut(){ const { error } = await sb.auth.signOut(); return error ? { ok:false, error: ar(error) } : { ok:true }; },
+    async signOut(){
+      // بلا إنترنت يفشل الخروج من الخادم، فيُمسح الدخول من هذا الجهاز على الأقل (مهم للجهاز المشترك)
+      let { error } = await sb.auth.signOut();
+      if(error) ({ error } = await sb.auth.signOut({ scope:'local' }));
+      return error ? { ok:false, error: ar(error) } : { ok:true };
+    },
     async requestReset(email, redirectTo){
       if(!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email||'')) return { ok:false, error:'البريد غير صحيح.' };
       const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo });
