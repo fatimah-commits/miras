@@ -511,8 +511,12 @@ function enterStep(i){
   else { $('litHelp').hidden=true; say(S.step.say,true,'step:'+S.step.id); }
   renderBar();
 }
-function renderBar(){ $('stepBar').innerHTML = STEPS.map((s,i)=>`<i class="${i<S.stepIdx?'done':i===S.stepIdx?'cur':''}" title="${s.t}"></i>`).join(''); }
+function renderBar(){ $('backBtn').hidden = !(S.phase==='steps' && S.stepIdx>0 && S.step && S.step.id!=='power'); $('stepBar').innerHTML = STEPS.map((s,i)=>`<i class="${i<S.stepIdx?'done':i===S.stepIdx?'cur':''}" title="${s.t}"></i>`).join(''); }
 function setState(st,title,why){ const e=$('stepState'); e.className='state '+st; e.innerHTML=`${title}${why?`<small>${why}</small>`:''}`; }
+$('backBtn').onclick=()=>{ if(!S.step || S.step.id==='power' || S.stepIdx<1) return;
+  let i=S.stepIdx-1; if(S.mode==='test' && S.step.id==='gate') i=STEPS.findIndex(s=>s.id==='resistor');
+  if(S.mode==='test' && S.step.id==='resistor') i=0;
+  log('back',{from:S.step.id, to:STEPS[i].id}); banner('رجعنا إلى خطوة: '+STEPS[i].t,'warn'); enterStep(i); };
 $('usbOff').onchange=()=>{ $('nextBtn').disabled=!$('usbOff').checked; };
 $('nextBtn').onclick=()=>{ if(S.step.id==='prep'){ log('manual',{what:'usb_off'}); enterStep(1); return; } advance(); };
 $('repeatBtn').onclick=()=>{ const c=S.committed; say(c && msg(c.code)[2] ? msg(c.code)[2] : S.step.say, true, c && msg(c.code)[2] ? c.code : 'step:'+S.step.id); };
@@ -648,12 +652,20 @@ function finish(lit){
   S.session.end=new Date().toISOString(); S.session.seconds=Math.round((performance.now()-S.t0)/1000); S.session.attempts=S.attempts; S.session.passed=!!lit;
   const all=loadAll(); all.push(S.session); saveAll(all); toMainAttempt(S.session);
   const ev=S.session.events, errs=ev.filter(e=>e.type==='error'), blocked=ev.filter(e=>e.type==='blocked').length, man=ev.filter(e=>e.type==='trainer_confirm').length, ovr=ev.filter(e=>e.type==='override').length;
-  $('resTitle').textContent = lit ? 'اكتملت المهارة: أضاءت اللمبة' : 'انتهت الجلسة';
+  const skipped=ev.filter(e=>e.type==='skipped'), sus=ev.filter(e=>e.type==='suspect'||e.type==='early'), backs=ev.filter(e=>e.type==='back').length;
+  const stepName=id=>{ const s=STEPS.find(x=>x.id===id); return s?s.t:id; };
+  const reached=S.step?S.step.t:'—';
+  $('resTitle').textContent = lit ? 'اكتملت المهارة: أضاءت اللمبة' : 'لم تكتمل المهارة';
   const mm=Math.floor(S.session.seconds/60), ss=S.session.seconds%60;
   $('resBody').innerHTML = `<table><tr><th>الوضع</th><td>${S.mode==='train'?'تدريب':'اختبار'}</td></tr><tr><th>الوقت</th><td>${mm}:${String(ss).padStart(2,'0')}</td></tr>`+
     (S.mode==='test'?`<tr><th>عدد المحاولات</th><td>${S.attempts}</td></tr>`:'')+
-    `<tr><th>أخطاء اكتُشفت</th><td>${errs.length? errs.map(e=>msg(e.code)[0]).join('، ') : 'لا شيء'}</td></tr><tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr><tr><th>تأكيدات المدرب (بحسابه)</th><td>${man}</td></tr>`+(ovr?`<tr><th>تجاوزات قديمة</th><td>${ovr}</td></tr>`:'')+`</table>`+
-    `<p class="mut">إضاءة اللمبة سجّلها المتدرب بنفسه، ولم تتحقق منها الكاميرا.</p>`;
+    `<tr><th>الحالة</th><td>${lit?'مكتملة':'لم تكتمل، وتوقفت عند خطوة: '+reached}</td></tr>`+
+    `<tr><th>أخطاء اكتُشفت</th><td>${errs.length? errs.map(e=>msg(e.code)[0]).join('، ') : (skipped.length||!lit ? 'لم تُرصد أخطاء مؤكدة، لكن الكاميرا لم تتحقق من كل الخطوات، فلا يُعدّ ذلك نتيجة صحيحة' : 'لا شيء')}</td></tr>`+
+    `<tr><th>تنبيهات واشتباهات</th><td>${sus.length? [...new Set(sus.map(e=>msg(e.code)[0]))].join('، ') : 'لا شيء'}</td></tr>`+
+    `<tr><th>خطوات تُجووزت دون تأكيد الكاميرا</th><td>${skipped.length? skipped.map(e=>stepName(e.what)).join('، ') : 'لا شيء'}</td></tr>`+
+    (backs?`<tr><th>مرات الرجوع خطوة</th><td>${backs}</td></tr>`:'')+
+    `<tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr>`+`<tr><th>تأكيدات المدرب (بحسابه)</th><td>${man}</td></tr>`+(ovr?`<tr><th>تجاوزات قديمة</th><td>${ovr}</td></tr>`:'')+`</table>`+
+    (lit?`<p class="mut">إضاءة اللمبة سُجّلت بجواب من الجهاز نفسه، ولم تتحقق منها الكاميرا.</p>`:'');
   S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
   try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
   $('recNote').hidden=true;
@@ -675,7 +687,7 @@ function renderReport(){
     <div class="kpi"><b>${r.manualConfirms} · ${r.overrides}</b><span>تأكيد يدوي · تجاوز مدرب</span></div></div>
     <h3>أكثر الأخطاء تكراراً</h3>${r.top.length?`<table><tr><th>الخطأ</th><th>المرات</th><th>الأثر لو شُغّلت الدائرة</th></tr>${r.top.map(([c,n])=>{ const k=B.RISK[c]; return `<tr><td>${msg(c)[0]}</td><td>${n}</td><td>${k?RISK_TXT[k.level]+(k.parts.length?': '+k.parts.join('، '):''):'—'}</td></tr>`; }).join('')}</table>`:'<p class="mut">لا أخطاء مسجلة.</p>'}
     <h3 style="margin-top:12px">المكونات التي تعرضت لخطر محتمل</h3>${Object.keys(r.atRisk).length?`<table>${Object.entries(r.atRisk).map(([p,n])=>`<tr><td>${p}</td><td>${n} مرة</td></tr>`).join('')}</table>`:'<p class="mut">لا شيء.</p>'}
-    <h3 style="margin-top:12px">آخر الجلسات</h3><table><tr><th>التاريخ</th><th>المتدرب</th><th>الوضع</th><th>الوقت</th><th>المحاولات</th><th>النتيجة</th></tr>${all.slice(-10).reverse().map(s=>`<tr><td>${new Date(s.start).toLocaleString('ar-SA-u-nu-latn',{dateStyle:'short',timeStyle:'short'})}</td><td>${(s.trainee||'—').replace(/</g,'')}</td><td>${s.mode==='test'?'اختبار':'تدريب'}</td><td>${Math.floor((s.seconds||0)/60)}:${String((s.seconds||0)%60).padStart(2,'0')}</td><td>${s.attempts||'—'}</td><td>${s.passed?'أضاءت':'لم تكتمل'}</td></tr>`).join('')}</table>`;
+    <h3 style="margin-top:12px">آخر الجلسات</h3><table><tr><th>التاريخ</th><th>المتدرب</th><th>الوضع</th><th>الوقت</th><th>المحاولات</th><th>أخطاء</th><th>خطوات تُجووزت</th><th>النتيجة</th></tr>${all.slice(-10).reverse().map(s=>`<tr><td>${new Date(s.start).toLocaleString('ar-SA-u-nu-latn',{dateStyle:'short',timeStyle:'short'})}</td><td>${(s.trainee||'—').replace(/</g,'')}</td><td>${s.mode==='test'?'اختبار':'تدريب'}</td><td>${Math.floor((s.seconds||0)/60)}:${String((s.seconds||0)%60).padStart(2,'0')}</td><td>${s.attempts||'—'}</td><td>${(s.events||[]).filter(e=>e.type==='error').length}</td><td>${(s.events||[]).filter(e=>e.type==='skipped').length}</td><td>${s.passed?'أضاءت':'لم تكتمل'}</td></tr>`).join('')}</table>`;
 }
 $('repExport').onclick=()=>{ const a=document.createElement('a'); a.href=URL.createObjectURL(new Blob([JSON.stringify(loadAll(),null,1)],{type:'application/json'})); a.download='miras-coach-sessions.json'; a.click(); };
 $('repClear').onclick=()=>{ if(confirm('مسح كل الجلسات من هذا الجهاز؟')){ saveAll([]); renderReport(); } };
