@@ -1,0 +1,71 @@
+{
+ "model": "lab/miras-parts-v1.onnx (live model until 2026-11-19)",
+ "split": "test",
+ "images": 9,
+ "per_class": {
+  "board": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "mAP50": 0.995,
+   "mAP50_95": 0.8310625
+  },
+  "led": {
+   "precision": 1.0,
+   "recall": 0.9285714285714286,
+   "mAP50": 0.925,
+   "mAP50_95": 0.47247936220642106
+  },
+  "arduino": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "mAP50": 0.995,
+   "mAP50_95": 0.9187638888888889
+  },
+  "resistor": {
+   "precision": 1.0,
+   "recall": 1.0,
+   "mAP50": 0.995,
+   "mAP50_95": 0.5678669230769231
+  },
+  "wire": {
+   "precision": 0.9954118473532648,
+   "recall": 0.9130434782608695,
+   "mAP50": 0.915,
+   "mAP50_95": 0.5192253746366717
+  }
+ },
+ "all": {
+  "precision": 0.999082369470653,
+  "recall": 0.9683229813664596,
+  "mAP50": 0.9650000000000001,
+  "mAP50_95": 0.6618796097617811
+ },
+ "at_conf_0.60": {
+  "board": {
+   "gt": 9,
+   "found": 8,
+   "false": 0
+  },
+  "led": {
+   "gt": 28,
+   "found": 25,
+   "false": 0
+  },
+  "arduino": {
+   "gt": 9,
+   "found": 9,
+   "false": 0
+  },
+  "resistor": {
+   "gt": 28,
+   "found": 28,
+   "false": 0
+  },
+  "wire": {
+   "gt": 69,
+   "found": 58,
+   "false": 0
+  }
+ },
+ "images_with_any_error": 8
+}
