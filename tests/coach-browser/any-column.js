@@ -71,12 +71,22 @@ let pass=0, fail=0; const t=(n,ok,i='')=>{ ok?pass++:fail++; console.log((ok?'�
   await p.evaluate(([X,y,LX,ym])=>__parts([[X,0,X,y,'#d8b98e'],[X,3,LX,ym,'#e8e8e8']]),[RX,rail('plus'),LX,rail('minus')]);
   r=await settle(r=>r.committed==='led_ok');
   t('اللمبة: رجل في عمود المقاومة (صف 4) والأخرى في خط السالب بعيداً: صحيحة', r.committed==='led_ok', JSON.stringify(r));
+  const lesson=await p.evaluate(()=>({why:!document.getElementById('whyBox').hidden && document.getElementById('whyTxt').textContent.length>20, q:document.getElementById('quizQ').textContent, path:document.getElementById('pathTxt').textContent}));
+  t('خطوة اللمبة: «لماذا؟» وسؤال فهم ظاهران', lesson.why && /رجل/.test(lesson.q), JSON.stringify(lesson));
+  t('مسار التيار: المقاومة واللمبة صحيحتان والسلكان ينقصان', /ينقص: السلك الأحمر 5V، السلك الأسود GND/.test(lesson.path), lesson.path);
+  await p.evaluate(()=>document.querySelector('#quizA button[data-i="1"]').click());
+  const qz=await p.evaluate(()=>({fb:document.getElementById('quizFb').textContent, logged:__coach.S.session.events.filter(e=>e.type==='quiz').length}));
+  t('إجابة خاطئة: تظهر الإجابة الصحيحة وتُسجّل مرة واحدة', /الطويلة/.test(qz.fb) && qz.logged===1, JSON.stringify(qz));
   // الرجل القصيرة في خط الموجب
   await p.evaluate(()=>__coach.enterStep(2));
   await p.evaluate(([X,y,LX])=>__parts([[X,0,X,y,'#d8b98e'],[X,3,LX,y,'#e8e8e8']]),[RX,rail('plus'),LX]);
   r=await settle(r=>r.committed==='led_short_in_plus');
   t('اللمبة: الرجل الثانية في خط الموجب: خطأ مؤكد', r.committed==='led_short_in_plus' && r.state==='bad', JSON.stringify(r));
   t('بطاقة الخطأ الحمراء ظاهرة فوق الصورة', /bad/.test(r.alert||''), r.alert);
+  if(process.env.SHOT) await p.screenshot({path:process.env.SHOT});
+  // (the alert names the rule it breaks)
+  t('بطاقة الخطأ تذكر القاعدة التي كُسرت', await p.evaluate(()=>/القاعدة 4/.test(document.getElementById('alert').innerText)));
+  t('الخطأ يظهر في مكان واحد: البطاقة، لا في الشريط العلوي ولا في اللوحة الجانبية', await p.evaluate(()=>document.getElementById('chip').hidden && document.getElementById('stepState').hidden && document.getElementById('banner').hidden));
   // عبر المجرى الأوسط: نفس رقم العمود، جهة أخرى
   await p.evaluate(()=>__coach.enterStep(2));
   await p.evaluate(([X,y,LX,ym])=>__parts([[X,0,X,y,'#d8b98e'],[X,8,LX,ym,'#e8e8e8']]),[RX,rail('plus'),LX,rail('minus')]);
@@ -106,10 +116,25 @@ let pass=0, fail=0; const t=(n,ok,i='')=>{ ok?pass++:fail++; console.log((ok?'�
   await p.evaluate(([X])=>__parts([[X,0,X+4,0,'#d8b98e']]),[RX]);
   r=await settle(r=>r.committed==='resistor_no_rail');
   t('المقاومة داخل اللوحة بلا خط الموجب: خطأ', r.committed==='resistor_no_rail', JSON.stringify(r));
+  // ---------- لوحة فارغة والكاميرا تهتز: لا تنبيه كاذب (ما ظهر على الآيباد 19 نوفمبر) ----------
+  await p.evaluate(()=>__coach.enterStep(1));
+  const shake=await p.evaluate(async()=>{ __parts([]); let bad=null;
+    for(let i=0;i<50;i++){ __draw(((i*7)%13)-6, ((i*5)%9)-4, ((i%5)-2)*0.3); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); if(__coach.S.early||(__coach.S.committed&&__coach.S.committed.state==='bad')) bad=(__coach.S.early||__coach.S.committed.code); }
+    __draw(0,0,0); return bad; });
+  t('لوحة فارغة والكاميرا تهتز: لا تنبيه ولا خطأ كاذب', !shake, shake);
+  // ---------- صورة تومض (مثل تصوير شاشة): الفتحات تتغير عشوائياً كل إطار. لا «صحيح» ولا «خطأ» من الضجيج ----------
+  await p.evaluate(()=>__coach.enterStep(1));
+  const flick=await p.evaluate(async()=>{ __parts([]); const c=__src.getContext('2d'), S=__coach.S; let seen=null; let seed=3; const rnd=()=>{ seed=(seed*16807)%2147483647; return seed/2147483647; };
+    for(let i=0;i<70;i++){ __draw(0,0,0);
+      for(let n=0;n<10;n++){ const col=Math.floor(rnd()*S.cols), row=Math.floor(rnd()*10), q=__coach.B.apply(S.H,col,__coach.B.rowY(row)); c.fillStyle='#e9e6dc'; c.fillRect(q[0]-4,q[1]-4,8,8); }
+      await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r)));
+      const cm=S.committed; if(cm && (cm.state==='ok'||cm.state==='bad')) seen=cm.code; }
+    __draw(0,0,0); return seen+'|noisy='+S.coverNoisy; });
+  t('صورة تومض على لوحة فارغة: لا حكم بصح ولا بخطأ', /^null\|/.test(flick), flick);
   // ---------- تنبيه قبل الخطأ: اليد ما زالت فوق اللوحة ----------
   await p.evaluate(()=>__coach.enterStep(1));
   const early=await p.evaluate(async([X,y])=>{ __parts([[X,0,X,y,'#d8b98e']]); const c=__src.getContext('2d'); let seen=null;
-    for(let i=0;i<30 && !seen;i++){ __draw(0,0,0); c.fillStyle='#e0a57e'; c.beginPath(); const q=__coach.B.apply(__coach.S.H,X+7,3); c.ellipse(q[0]+(i%2)*14,q[1],60,45,0,0,7); c.fill(); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); if(__coach.S.early) seen=__coach.S.early+'|'+__coach.S.view; } return seen; },[MX,rail('minus')]);
+    for(let i=0;i<60 && !seen;i++){ __draw(0,0,0); c.fillStyle='#e0a57e'; c.beginPath(); const q=__coach.B.apply(__coach.S.H,X+7,3); c.ellipse(q[0]+(i%2)*14+i*5,q[1]+(i%3)*8,60,45,0,0,7); c.fill(); await new Promise(r=>requestAnimationFrame(()=>requestAnimationFrame(r))); if(__coach.S.early) seen=__coach.S.early+'|'+__coach.S.view; } return seen; },[MX,rail('minus')]);
   t('تنبيه قبل الخطأ: رجل المقاومة دخلت خط السالب واليد ما زالت فوق اللوحة', /early_resistor_minus/.test(early||''), early);
   // ---------- إعادة ضبط اللوحة في منتصف الجلسة: نفس الخطوة وما رُكّب محفوظ ----------
   await p.evaluate(()=>__coach.enterStep(1));
@@ -129,6 +154,9 @@ let pass=0, fail=0; const t=(n,ok,i='')=>{ ok?pass++:fail++; console.log((ok?'�
   await p.evaluate(()=>document.getElementById('endBtn').click());
   const v2=await p.evaluate(()=>({afterEnd:__coach.voiceAllowed()}));
   t('الصوت مسموح في شاشة الكاميرا أثناء الجلسة فقط', v.onWork===true && v2.afterEnd===false, JSON.stringify([v,v2]));
+  await p.waitForTimeout(800);
+  const as=await p.evaluate(()=>document.getElementById('resAssess').innerText);
+  t('صفحة النتيجة: تقييم المدرب (الدرجة، أسئلة الفهم، القوانين التي تحتاج مراجعة)', /أسئلة الفهم/.test(as) && /قوانين تحتاج مراجعة/.test(as), as.slice(0,200));
   t('لا أخطاء جافاسكربت في الصفحة', errs.length===0, errs.join(' | '));
   await b.close(); console.log(`\n${pass} نجح، ${fail} فشل`); process.exit(fail?1:0);
 })();
