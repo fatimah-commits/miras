@@ -291,15 +291,16 @@ function orbOf(g, maskQuad){
   return {kp,des};
 }
 function refFree(){ try{ if(S.orbRef){ S.orbRef.kp.delete(); S.orbRef.des.delete(); } }catch(e){} S.orbRef=null; }
-function relocalize(g, k){
-  if(!S.orbRef || S.orbRef.des.rows<20) return false;
+function relocalize(g, k, ref, Href, blend){
+  ref=ref||S.orbRef; Href=Href||S.Hcal;
+  if(!ref || ref.des.rows<20) return false;
   const cur=orbOf(g,null), bf=new cv.BFMatcher(cv.NORM_HAMMING,false), mm=new cv.DMatchVectorVector();
   let ok=false;
   try{
     if(cur.des.rows<20) return false;
-    bf.knnMatch(S.orbRef.des,cur.des,mm,2);
+    bf.knnMatch(ref.des,cur.des,mm,2);
     const a=[], b=[];
-    for(let i=0;i<mm.size();i++){ const m=mm.get(i); if(m.size()<2) continue; const m0=m.get(0), m1=m.get(1); if(m0.distance<0.75*m1.distance){ const p=S.orbRef.kp.get(m0.queryIdx).pt, q=cur.kp.get(m0.trainIdx).pt; a.push(p.x,p.y); b.push(q.x,q.y); } }
+    for(let i=0;i<mm.size();i++){ const m=mm.get(i); if(m.size()<2) continue; const m0=m.get(0), m1=m.get(1); if(m0.distance<0.75*m1.distance){ const p=ref.kp.get(m0.queryIdx).pt, q=cur.kp.get(m0.trainIdx).pt; a.push(p.x,p.y); b.push(q.x,q.y); } }
     const n=a.length/2; S.reloc={matches:n};
     if(n<15) return false;
     const A=cv.matFromArray(n,1,cv.CV_32FC2,a), Bm=cv.matFromArray(n,1,cv.CV_32FC2,b), inl=new cv.Mat();
@@ -307,15 +308,52 @@ function relocalize(g, k){
     S.reloc.inliers=ni;
     if(!G.empty() && ni>=20 && ni/n>0.3){
       const h=Array.from(G.data64F), D=B.mul(B.mul([1/k,0,0,0,1/k,0,0,0,1],h),[k,0,0,0,k,0,0,0,1]);
-      const Hn=B.mul(D,S.Hcal);
+      const Hn=B.mul(D,Href);
       // sanity: the board must keep a plausible size (scale change < 2x)
       const q=[[0,0],[S.cols-1,0],[S.cols-1,11],[0,11]], d0=Math.hypot(...[0,1].map(i=>B.apply(S.Hcal,...q[1])[i]-B.apply(S.Hcal,...q[0])[i])), d1=Math.hypot(...[0,1].map(i=>B.apply(Hn,...q[1])[i]-B.apply(Hn,...q[0])[i]));
-      if(d1/d0>0.5 && d1/d0<2){ S.H=Hn; ok=true; }
+      if(d1/d0>0.5 && d1/d0<2){ S.H = blend && S.H ? blendH(S.H,Hn,blend) : Hn; ok=true; }
     }
     A.delete(); Bm.delete(); inl.delete(); G.delete();
   }catch(e){ console.error(e); }
   finally{ cur.kp.delete(); cur.des.delete(); bf.delete(); mm.delete(); }
   return ok;
+}
+/* Smooth correction: move part of the way from the current overlay to the new pose (no visible jump). */
+function blendH(Ha, Hb, t){ const C=B.calibHoles(S.cols), pa=C.map(q=>B.apply(Ha,q[0],q[1])), pb=C.map(q=>B.apply(Hb,q[0],q[1]));
+  return B.homography(C, pa.map((a,i)=>[a[0]+(pb[i][0]-a[0])*t, a[1]+(pb[i][1]-a[1])*t])) || Hb; }
+/* A second, recent reference (refreshed while tracking is healthy), so the board is found again
+   even after wires and parts changed how it looks since calibration. */
+function refreshRecent(img, k){
+  if(!S.cvReady || !S.H) return;
+  try{ const g=grayMat(img), r=orbOf(g,quad(1.0).map(p=>[p[0]*k,p[1]*k])); g.delete();
+    if(S.orbRecent){ S.orbRecent.kp.delete(); S.orbRecent.des.delete(); }
+    S.orbRecent={kp:r.kp, des:r.des, H:S.H.slice()}; S.recentAt=performance.now(); }catch(e){ console.error(e); }
+}
+function recentFree(){ try{ if(S.orbRecent){ S.orbRecent.kp.delete(); S.orbRecent.des.delete(); } }catch(e){} S.orbRecent=null; }
+/* Automatic recovery after the device moved: find the hole grid again in the current frame (same code as the
+   automatic calibration). Two frames in a row must agree, the board size must match, and the + / − rails must
+   land where they were calibrated. Otherwise it keeps waiting; «إعادة ضبط اللوحة» stays as the fallback. */
+function autoRecover(){
+  if(!window.MirasAutoCal || !S.H || !S.rails) return false;
+  const now=performance.now(); if(now-(S.recAt||0)<600) return false; S.recAt=now;
+  const fresh=now-S.detAt<3000 ? S.dets : [], bs=fresh.filter(d=>d.cls==='board' && d.s>=0.35);
+  const box = bs.length ? [Math.min(...bs.map(d=>d.x1)),Math.min(...bs.map(d=>d.y1)),Math.max(...bs.map(d=>d.x2)),Math.max(...bs.map(d=>d.y2))] : [0,0,S.srcW,S.srcH];
+  let im; try{ ac.width=S.srcW; ac.height=S.srcH; actx.drawImage(S.src,0,0,ac.width,ac.height); im=actx.getImageData(0,0,ac.width,ac.height); }catch(e){ return false; }
+  let r=MirasAutoCal.autoCalibrate(im.data,ac.width,ac.height,box,{});
+  if(!r.ok && bs.length) r=MirasAutoCal.autoCalibrate(im.data,ac.width,ac.height,[0,0,S.srcW,S.srcH],{});
+  if(!r.ok || r.cols!==S.cols){ S.recPrev=null; return false; }
+  // the board frame can come back turned round (180°): pick the orientation that keeps + and − where they were
+  const cands=[{taps:r.taps, rails:r.rails}, {taps:[r.taps[2],r.taps[3],r.taps[0],r.taps[1]], rails:r.rails&&{plus:11-r.rails.plus, minus:11-r.rails.minus}}];
+  const last=B.calibHoles(S.cols).map(q=>B.apply(S.H,q[0],q[1]));
+  const dist=c=>c.taps.reduce((a,t,i)=>a+Math.hypot(t[0]-last[i][0],t[1]-last[i][1]),0);
+  const railsOk=c=>!c.rails || (Math.abs(c.rails.plus-S.rails.plus)<0.6 && Math.abs(c.rails.minus-S.rails.minus)<0.6);
+  const ok=cands.filter(railsOk).sort((a,b)=>dist(a)-dist(b));
+  if(!ok.length){ S.recPrev=null; return false; }
+  const c=ok[0], p=S.recPrev; S.recPrev=c;
+  if(!p) return false;
+  for(let i=0;i<4;i++) if(Math.hypot(p.taps[i][0]-c.taps[i][0],p.taps[i][1]-c.taps[i][1])>0.6*r.pitchPx) return false;
+  const Hn=B.boardFromTaps(S.cols,c.taps); if(!Hn) return false;
+  S.H=Hn; S.recPrev=null; return true;
 }
 function trackInit(img, k){
   trackFree(); if(!S.cvReady){ S.track.ok=true; S.track.static=true; return; }
@@ -484,7 +522,7 @@ $('setupUndo').onclick=()=>{ if(S.rails && S.rails.minus!=null) S.rails.minus=nu
 $('setupDone').onclick=()=>{
   pctx.drawImage(S.src,0,0,pc.width,pc.height); const img=pctx.getImageData(0,0,pc.width,pc.height), k=pc.width/S.srcW;
   S.rect=makeRect(); sampleRect(S.rect,img,k); S.ref=captureRef(S.rect); S.prevGray=S.rect.gray.slice();
-  S.Hcal=S.H.slice(); S.needRecal=false; trackInit(img,k); S.lastMove=0;
+  S.Hcal=S.H.slice(); S.needRecal=false; S.lostFrom=0; S.recPrev=null; recentFree(); S.recentAt=performance.now(); trackInit(img,k); S.lastMove=0;
   if(S.cvReady){ refFree(); const g=grayMat(img); S.orbRef=orbOf(g,quad(1.0).map(p=>[p[0]*k,p[1]*k])); g.delete(); }
   log('setup',{cols:S.cols, auto:!!S.autoDone});
   $('setupBox').hidden=true; S.stepIdx=0; enterStep(0);
@@ -712,10 +750,21 @@ function frame(ts){
   if(S.track.ok) trackStep(img,k);
   if(S.cvReady && S.orbRef && (!S.track.ok ? performance.now()-S.lostSince>500 : performance.now()-S.relocAt>1500)){
     // lost: find the board again against the calibration frame; tracking: periodic drift correction
-    const g=grayMat(img), wasOk=S.track.ok, ok=relocalize(g,k); g.delete(); S.relocAt=performance.now();
-    if(ok){ if(!wasOk || S.needRecal){ S.needRecal=false; trackInit(img,k); } else { trackFree(); trackInit(img,k); } }
+    const g=grayMat(img), wasOk=S.track.ok;
+    let ok = wasOk ? relocalize(g,k,S.orbRef,S.Hcal,0.5) : relocalize(g,k,S.orbRef,S.Hcal);
+    if(!ok && !wasOk && S.orbRecent) ok=relocalize(g,k,S.orbRecent,S.orbRecent.H);
+    g.delete(); S.relocAt=performance.now();
+    if(ok){ if(!wasOk || S.needRecal){ S.needRecal=false; trackInit(img,k); log('board_found',{how:'features'}); } else { trackFree(); trackInit(img,k); } }
     else if(!wasOk) S.lostSince=performance.now();
   }
+  // lost for a moment (or the overlay no longer matches): look for the hole grid again, no taps needed
+  const nowT=performance.now();
+  if(!S.track.ok || S.track.static){ if(!S.lostFrom) S.lostFrom=nowT; } else S.lostFrom=0;
+  if(S.lostFrom && nowT-S.lostFrom>700 && (!S.track.ok || S.needRecal) && autoRecover()){
+    S.needRecal=false; S.lostFrom=0; trackInit(img,k); S.lostSince=0; log('board_found',{how:'grid'});
+    banner('رجعت الإرشادات فوق اللوحة.','ok');
+  }
+  if(S.track.ok && !S.track.static && S.view==='ok' && (S.track.inl||0)>=30 && nowT-(S.recentAt||0)>4000) refreshRecent(img,k);
   if(performance.now()-S.detAt>DET_EVERY) detect();
   boardSanity();
   const R=sampleRect(S.rect,img,k);
@@ -764,7 +813,7 @@ function drawOverlay(ev, ts){
   railSeg(S.rails.plus,-0.5,S.cols-0.5,'rgba(255,93,93,.8)','rgba(255,93,93,.10)');
   railSeg(S.rails.minus,-0.5,S.cols-0.5,'rgba(90,147,255,.8)','rgba(90,147,255,.10)');
   const pv=toImg(-1.2,S.rails.plus), mv=toImg(-1.2,S.rails.minus); ctx.font=`700 ${Math.round(L*9)}px sans-serif`; ctx.textAlign='center'; ctx.fillStyle='#ff5d5d'; ctx.fillText('+',pv[0],pv[1]+L*3); ctx.fillStyle='#5a93ff'; ctx.fillText('−',mv[0],mv[1]+L*3);
-  if(S.view==='lost'){ chip(S.needRecal?'الإرشادات لم تعد فوق اللوحة: اضغط «إعادة ضبط اللوحة»':'لا أرى اللوحة: أعد توجيه الكاميرا','warn'); return; }
+  if(S.view==='lost'){ const long = S.lostFrom && performance.now()-S.lostFrom>8000; chip(long ? 'لم أجد اللوحة بعد: ثبّت الجهاز فوقها، أو اضغط «إعادة ضبط اللوحة»' : 'أبحث عن اللوحة… ثبّت الجهاز لحظة','warn'); return; }
   // guidance (training mode only)
   const id=S.step&&S.step.id, T=B.targets(S.cols), C=T.col-1, out=yTop()<0 ? -1 : 1;
   const tc = st==='ok'?COL.ok : st==='bad'?COL.bad : st==='warn'?COL.warn : COL.target;
