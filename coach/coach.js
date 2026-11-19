@@ -30,7 +30,8 @@ const S = {
   session:null, t0:0, attempts:0,
   muted:false, lastSay:'', lastSayAt:0,
   track:{ok:false, pts:null, prev:null, n:0, inl:0}, cvReady:false, ortReady:false,
-  fps:0, _fpsN:0, _fpsT:0
+  fps:0, _fpsN:0, _fpsT:0,
+  parts:{}, place:{}, cov:null, stepBase:null, wireCols:{red:[],black:[]}
 };
 const cvs = $('cv'), ctx = cvs.getContext('2d');
 const pc = document.createElement('canvas'), pctx = pc.getContext('2d', {willReadFrequently:true});
@@ -41,15 +42,15 @@ const MSG = {
   lost:['لا أرى اللوحة بوضوح','وجّه الكاميرا نحو اللوحة، أو اضغط «إعادة ضبط اللوحة».','لا أرى اللوحة بوضوح. وجّه الكاميرا نحو اللوحة.'],
   hand:['اليد فوق اللوحة، أنتظر','لن أحكم حتى تبتعد اليد وتثبت الصورة.',''],
   moving:['الصورة تتحرك، أنتظر','أنتظر حتى تثبت الصورة ثم أفحص.',''],
-  resistor_ok:['تم التأكد: المقاومة في مكانها','النموذج رأى المقاومة عند العمود المطلوب. قيمتها تؤكَّد يدوياً قبل التشغيل.','ممتاز، تم التأكد من هذه الخطوة.'],
+  resistor_ok:['صحيح: المقاومة في مكان سليم','رجل في خط الموجب (+)، والثانية في العمود {col}. الفتحات الخمس المضيئة في هذا العمود صارت متصلة بالمقاومة.','ممتاز، تم التأكد من هذه الخطوة.'],
   resistor_ok_hole:['تم التأكد: المقاومة في مكانها','النموذج رأى المقاومة، وتغيّرت الفتحة المطلوبة. قيمتها تؤكَّد يدوياً قبل التشغيل.','ممتاز، تم التأكد من هذه الخطوة.'],
-  resistor_far:['اشتباه: المقاومة ليست في العمود المطلوب','النموذج رأى المقاومة بعيداً عن المكان المضيء. انقلها إلى العمود المحدد.','انتبه، هذا الصف غير صحيح. ضع المقاومة في المكان المضيء.'],
-  resistor_unseen:['لا أرى المقاومة بعد','ضعها في المكان المضيء. إن كانت موضوعة ولم تظهر، فالنموذج لم يتعرف عليها.',''],
+  resistor_far:['اشتباه: لا أرى أرجل المقاومة في المكان الصحيح','النموذج يرى المقاومة، لكن الفتحات لا تؤكد أن رجلاً في خط الموجب والأخرى داخل اللوحة.','انتبه، هذا الصف غير صحيح. ضع المقاومة في المكان المضيء.'],
+  resistor_unseen:['لا أرى المقاومة بعد','ضع رجلاً في أي فتحة من خط الموجب (+)، والرجل الثانية في أي فتحة داخل اللوحة. ثم أبعد يدك.',''],
   resistor_in_minus:['خطأ: رجل المقاومة في خط السالب','رجل المقاومة يجب أن تكون في خط الموجب (+). في خط السالب لن تضيء اللمبة.','انتبه، المقاومة في الخط المعاكس. انقل رجلها إلى خط الموجب.'],
   led_short_in_plus:['خطأ: رجل اللمبة القصيرة في خط الموجب','الرجل القصيرة مكانها خط السالب (−). في خط الموجب لن تضيء اللمبة.','انتبه، رجل اللمبة القصيرة في الخط المعاكس. انقلها إلى خط السالب.'],
-  led_ok:['تم التأكد: اللمبة في مكانها','النموذج رأى اللمبة قرب المكان المطلوب. اتجاه الأرجل يؤكَّد يدوياً.','ممتاز، تم التأكد من هذه الخطوة.'],
-  led_far:['اشتباه: اللمبة ليست في مكانها','النموذج رأى اللمبة بعيداً عن المكان المضيء.','انتبه، هذا المكان غير صحيح. ضع اللمبة في المكان المضيء.'],
-  led_unseen:['لا أرى اللمبة بعد','ضعها في المكان المضيء.',''],
+  led_ok:['صحيح: اللمبة على التوالي مع المقاومة','رجل في عمود المقاومة، والأخرى في خط السالب (−). تأكد بعينك أن الرجل الطويلة هي التي مع المقاومة.','ممتاز، تم التأكد من هذه الخطوة.'],
+  led_far:['اشتباه: لا أرى أرجل اللمبة في المكان الصحيح','النموذج يرى اللمبة، لكن الفتحات لا تؤكد أن رجلاً في عمود المقاومة والأخرى في خط السالب.','انتبه، هذا المكان غير صحيح. ضع اللمبة في المكان المضيء.'],
+  led_unseen:['لا أرى اللمبة بعد','الرجل الطويلة في أي فتحة من الفتحات الخضراء (عمود المقاومة)، والقصيرة في أي فتحة من خط السالب (−).',''],
   red_ok:['تم التأكد: الأحمر في خط الموجب','طرف السلك الأحمر داخل خط الموجب (+).','ممتاز، تم التأكد من هذه الخطوة.'],
   red_in_minus:['خطأ: الأحمر في خط السالب','السلك الأحمر (5V) في خط السالب. القطبية ستنعكس واللمبة لن تضيء. انقله إلى خط الموجب.','انتبه، السلك الأحمر في خط السالب. انقله إلى خط الموجب.'],
   red_unclear:['اشتباه: لا أعرف أين ينتهي الأحمر','السلك يمر فوق الخطين. أبعده عن وسط اللوحة ليظهر طرفه.',''],
@@ -68,17 +69,34 @@ const MSG = {
   led_low_conf:['لم أتمكن من التعرف على اللمبة','أرى شيئاً في مكان اللمبة لكني لست متأكداً ما هو. لا أخمّن، ولا أعدّها مؤكدة. قرّب الكاميرا أو زد الإضاءة، أو يؤكدها المدرب.','لم أتمكن من التعرف على هذه القطعة.'],
   trainer_ok:['أكّده المدرب','',''], trainer_needed:['يحتاج تأكيد المدرب','الكاميرا لا ترى هذا. يتحقق منه المدرب بعينه ثم يؤكّد بحسابه.',''],
   nocv:['التتبع غير متاح','',''],
+  resistor_shorted:['خطأ: رجلا المقاومة في فتحات متصلة ببعض','الرجلان في الشريط نفسه، فالتيار يتجاوز المقاومة ولا يمر خلالها. انقل رجلاً إلى خط الموجب (+).',''],
+  resistor_across_rails:['خطأ: المقاومة بين خط الموجب وخط السالب','التيار يمر في المقاومة وحدها ولا يصل إلى اللمبة. اترك رجلاً في خط الموجب، وانقل الثانية إلى أي فتحة داخل اللوحة.',''],
+  resistor_no_rail:['خطأ: المقاومة غير موصولة بخط الموجب','ولا رجل في خط الموجب (+)، فلن يصل التيار. ضع رجلاً في خط الموجب، والثانية في أي فتحة داخل اللوحة.',''],
+  resistor_legs_unseen:['أرى المقاومة، لكن لا أرى أين دخلت أرجلها','اضغط الأرجل في الفتحات حتى تثبت، وأبعد يدك عن اللوحة.',''],
+  resistor_moved:['المقاومة تحركت من مكانها','أعدها كما كانت، أو اضغط «رجوع خطوة» وركّبها من جديد.',''],
+  led_shorted:['خطأ: رجلا اللمبة في فتحات متصلة ببعض','الرجلان في الشريط نفسه، فاللمبة لن تضيء. ضع كل رجل في مكان مختلف.',''],
+  no_resistor:['خطر: اللمبة بين الموجب والسالب مباشرة','بدون مقاومة يمر تيار كبير فتتلف اللمبة. ضع الرجل الطويلة في عمود المقاومة.',''],
+  led_open:['خطأ: الرجل الثانية للمبة ليست في خط السالب','الدائرة مفتوحة، فاللمبة لن تضيء. ضع الرجل القصيرة في أي فتحة من خط السالب (−).',''],
+  led_not_series:['خطأ: اللمبة ليست في عمود المقاومة','اللمبة غير متصلة بالمقاومة. ضع الرجل الطويلة في أي فتحة من الفتحات الخضراء.',''],
+  led_other_half:['خطأ: اللمبة في الجهة الأخرى من المجرى الأوسط','رقم العمود نفسه، لكن جهتا المجرى غير متصلتين. ضع الرجل الطويلة في الجهة نفسها مع المقاومة (الفتحات الخضراء).',''],
+  led_res_unknown:['اشتباه: لم أتأكد من مكان المقاومة','لا أستطيع الحكم على اللمبة قبل التأكد من المقاومة. يراجعها المدرب قبل التشغيل.',''],
+  led_legs_unseen:['أرى اللمبة، لكن لا أرى أين دخلت أرجلها','اضغط الأرجل في الفتحات حتى تثبت، وأبعد يدك عن اللوحة.',''],
+  led_moved:['اللمبة تحركت من مكانها','أعدها كما كانت، أو اضغط «رجوع خطوة» وركّبها من جديد.',''],
+  early_resistor_minus:['تنبيه قبل الخطأ: هذا خط السالب','رجل المقاومة مكانها خط الموجب (+)، لا السالب.',''],
+  early_led_plus:['تنبيه قبل الخطأ: هذا خط الموجب','الرجل القصيرة للمبة مكانها خط السالب (−)، لا الموجب.',''],
   not_trainer:['هذا الحساب ليس حساب مدرب','',''], bad_login:['البريد أو كلمة المرور غير صحيحة','',''],
   no_server:['لا يوجد اتصال بالخادم','لا يمكن تسجيل تأكيد المدرب الآن، فيبقى التشغيل ممنوعاً.','']
 };
-const msg = c => MSG[c] || [c,'',''];
+const msg = c => { const m = MSG[c] || [c,'','']; const col = S.parts && S.parts.resistor && S.parts.resistor.legs ? resColLabel() : ''; return m.map(x=>x.replace('{col}', col)); };
+function resColLabel(){ const P=S.place&&S.place.resistor; return P && P.hole ? String(P.hole.col) : ''; }
 
+const DO_DONT = {"prep": ["افصل كيبل USB، واترك اللوحة فارغة. ثبّت الآيباد بحيث تظهر اللوحة كاملة.", "لا توصل الكهرباء أثناء التركيب، ولا تحرّك اللوحة نفسها بعد الضبط."], "resistor": ["رجل في خط الموجب (+)، والثانية في أي فتحة داخل اللوحة. اضغطها حتى تثبت، ثم أبعد يدك.", "لا تضع أي رجل في خط السالب (−)، ولا الرجلين في العمود نفسه."], "led": ["الرجل الطويلة في إحدى الفتحات الخضراء، والقصيرة في أي فتحة من خط السالب (−).", "لا تضع القصيرة في خط الموجب (+)، ولا تعبر باللمبة المجرى الأوسط."], "red": ["من منفذ 5V إلى أي فتحة في خط الموجب (+).", "لا تضعه في خط السالب (−)."], "black": ["من منفذ GND إلى أي فتحة في خط السالب (−).", "لا تضعه في خط الموجب (+): هذا قصر يضر الأردوينو."]};
 const STEPS = [
   {id:'prep', t:'التجهيز', text:'افصل كيبل USB عن الأردوينو. ضع الأردوينو تحت اللوحة، واترك اللوحة فارغة.', say:'قبل البدء، افصل كيبل يو إس بي عن الأردوينو، واترك اللوحة فارغة.'},
-  {id:'resistor', t:'تركيب المقاومة', text:'ضع المقاومة هنا: رجل في خط الموجب (+)، والرجل الثانية في الفتحة المضيئة في العمود 10.', say:'ضع المقاومة هنا. رجل في خط الموجب، والرجل الثانية في العمود عشرة.'},
-  {id:'led', t:'تركيب اللمبة', text:'الرجل الطويلة للـ LED في العمود 10 مع المقاومة، والرجل القصيرة في خط السالب (−).', say:'الرجل الطويلة للّمبة يجب أن تكون في العمود عشرة مع المقاومة، والرجل القصيرة في خط السالب.'},
-  {id:'red', t:'السلك الأحمر', text:'وصّل السلك الأحمر من منفذ 5V في الأردوينو إلى خط الموجب (+) المضيء.', say:'وصّل السلك الأحمر من منفذ فايف فولت إلى خط الموجب.'},
-  {id:'black', t:'السلك الأسود', text:'وصّل السلك الأسود من منفذ GND إلى خط السالب (−) المضيء.', say:'وصّل السلك الأسود من منفذ جي إن دي إلى خط السالب.'},
+  {id:'resistor', t:'تركيب المقاومة', text:'رجل في أي فتحة من خط الموجب (+)، والرجل الثانية في أي فتحة داخل اللوحة (أي عمود). الدائرة الصفراء مجرد اقتراح. لا تضعها في خط السالب (−).', say:'ضع المقاومة على اللوحة.'},
+  {id:'led', t:'تركيب اللمبة', text:'الرجل الطويلة في أي فتحة من الفتحات الخضراء (عمود المقاومة نفسه، الجهة نفسها من المجرى)، والرجل القصيرة في أي فتحة من خط السالب (−). لا تضع القصيرة في خط الموجب.', say:'ضع اللمبة على اللوحة.'},
+  {id:'red', t:'السلك الأحمر', text:'وصّل السلك الأحمر من منفذ 5V في الأردوينو إلى أي فتحة في خط الموجب (+). لا تضعه في خط السالب.', say:'وصّل السلك الأحمر من منفذ فايف فولت إلى خط الموجب.'},
+  {id:'black', t:'السلك الأسود', text:'وصّل السلك الأسود من منفذ GND إلى أي فتحة في خط السالب (−). لا تضعه في خط الموجب: هذا قصر كهربائي.', say:'وصّل السلك الأسود من منفذ جي إن دي إلى خط السالب.'},
   {id:'gate', t:'فحص ما قبل التشغيل', text:'', say:'الآن فحص ما قبل التشغيل. لا توصل الكيبل حتى يصبح كل سطر أخضر.'},
   {id:'power', t:'التشغيل', text:'', say:'اجتازت الدائرة الفحص. الآن وصّل كيبل يو إس بي.'}
 ];
@@ -96,23 +114,30 @@ const REC_FOR = { // message code or step id -> clip
   red_in_minus:'wrong_rail', short:'short', lost:'board_lost', hand:'hand_in_view', moving:'cam_moving', early_red_minus:'wrong_rail',
   'step:prep':'usb_unplug', 'step:resistor':'resistor_missing', 'step:led':'led_missing', 'step:gate':'usb_locked', 'step:power':'usb_ok',
   calib_ok:'calib_ok', cam_aim:'cam_aim', led_reversed:'led_reversed', mode_test:'mode_test', power_short:'short',
-  resistor_far:'test_wrong', led_far:'test_wrong', resistor_in_minus:'wrong_rail', led_short_in_plus:'wrong_rail', black_in_plus:'wrong_rail', early_black_plus:'wrong_rail',
+  resistor_far:'test_wrong', led_far:'test_wrong', resistor_shorted:'resistor_shorted', led_shorted:'led_shorted', no_resistor:'no_resistor', led_open:'open', led_not_series:'open', led_other_half:'open', resistor_across_rails:'test_wrong', resistor_no_rail:'test_wrong', resistor_legs_unseen:'cannot_verify', led_legs_unseen:'cannot_verify', early_resistor_minus:'wrong_rail', early_led_plus:'wrong_rail', resistor_in_minus:'wrong_rail', led_short_in_plus:'wrong_rail', black_in_plus:'wrong_rail', early_black_plus:'wrong_rail',
   resistor_low_conf:'cannot_verify', led_low_conf:'cannot_verify', gate_block:'usb_locked',
   'step:red':'@voice/wire_red.mp3', 'step:black':'@voice/wire_black.mp3' };   // '@' = a clip cut from the same recordings, stored in coach/voice
 const voiceEl = new Audio();
+/* Sound rules (Nov 19): a clip plays ONLY while the camera session is open on screen and running.
+   Never on the start page, the result page or the report, never while the page is hidden or being left,
+   and anything still playing stops at once when that happens. */
+const SILENCE='data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
 let unlocked=false;
 function unlock(){ if(unlocked) return; unlocked=true;
-  // iPad only lets an <audio> element play later if it was started once inside a touch
-  try{ voiceEl.muted=true; voiceEl.src='../app/voice/ok.mp3'; const p=voiceEl.play(); const done=()=>{ try{voiceEl.pause(); voiceEl.currentTime=0;}catch(e){} voiceEl.muted=false; }; if(p&&p.then) p.then(done,()=>{voiceEl.muted=false;}); else done(); }catch(e){ voiceEl.muted=false; } }
-['pointerdown','touchend'].forEach(ev=>document.addEventListener(ev,unlock,{capture:true,passive:true}));
+  // iPad only lets an <audio> element play later if it was started once inside a touch: a silent clip, nothing audible
+  try{ voiceEl.src=SILENCE; const p=voiceEl.play(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
+function hush(){ try{ voiceEl.pause(); voiceEl.removeAttribute('src'); voiceEl.load(); }catch(e){} }
+function voiceAllowed(){ return !S.muted && S.loop && !!S.src && S.phase!=='done' && document.visibilityState==='visible' && !$('work').hidden; }
+document.addEventListener('visibilitychange', ()=>{ if(document.visibilityState!=='visible') hush(); });
+window.addEventListener('pagehide', hush);
+window.addEventListener('blur', ()=>{ if(document.visibilityState!=='visible') hush(); });
 function say(t, force, key){
-  if(!t || S.muted) return;
+  if(!t || !voiceAllowed()) return;
   const now=performance.now();
   if(!force && t===S.lastSay && now-S.lastSayAt<6000) return;
   S.lastSay=t; S.lastSayAt=now;
   const k=key && REC_FOR[key], clip=k && (k[0]==='@' ? k.slice(1) : REC[k] && '../app/voice/'+REC[k]);
   const rec=clip || VOICE[vkey(t)];
-  voiceEl.muted=false;
   // Only the recorded clips are spoken. A line with no clip stays on the screen as text: the device voice is never used.
   if(rec){ try{ voiceEl.src=rec; const p=voiceEl.play(); if(p&&p.catch) p.catch(()=>{}); }catch(e){} }
 }
@@ -215,7 +240,10 @@ function bandCols(R, ref, colour, ya, yb, exclude, dbg){
   return out;
 }
 function exclusionZones(){
-  const T=B.targets(S.cols), C=T.col-1, z=[[C-1,C+4]];          // resistor + LED target area (board x = col-1)
+  // columns where a part sits (its legs, found from the holes, and the model's box): a red LED or a resistor's red
+  // bands there are not a wire. No fixed column any more: the zones follow the parts wherever they are.
+  const z=[];
+  for(const id of ['resistor','led']){ const P=S.parts&&S.parts[id]; if(P && P.legs) for(const h of P.legs){ const x=h.col-1; z.push([x-1,x+1]); } }
   for(const d of S.dets){ if(d.cls!=='resistor' && d.cls!=='led') continue;
     const xs=[[d.x1,d.y1],[d.x2,d.y1],[d.x2,d.y2],[d.x1,d.y2]].map(p=>toBoard(p[0],p[1])[0]).filter(Number.isFinite);
     if(xs.length) z.push([Math.floor(Math.min(...xs))-1, Math.ceil(Math.max(...xs))+1]); }
@@ -227,6 +255,7 @@ function railEnds(R){
     const b={outer:bandCols(R,S.ref,col,yo-0.42,yo+0.42,ex), inner:bandCols(R,S.ref,col,yi-0.42,yi+0.42,ex), main:bandCols(R,S.ref,col,-0.45,1.45,ex)};
     const e=B.wireEnd(b).end;
     out[col] = e==='outer'?o : e==='inner'?inn : e;   // '+','-','unclear',null
+    S.wireCols[col] = e==='inner' ? b.inner : e==='outer' ? b.outer : [];   // where the wire end is (board x), for drawing
   }
   return out;
 }
@@ -267,46 +296,118 @@ function holePatch(img, k, x, y){
     const o=(v*W+u)*4; out.push((d[o]*77+d[o+1]*150+d[o+2]*29)>>8); }
   return out;
 }
-function reachCols(){ const C=B.targets(S.cols).col-1; return [C-1,C,C+1,C+2,C+3,C+4]; }
+/* ---- every hole of the board (Nov 19): which holes have a leg in them now? ----
+   At calibration (empty board) each visible hole is a small dark spot. Later, a leg in it covers that spot.
+   holeRef[key] keeps the calibration darkness of each hole; coverAll() gives 0 (as at calibration) .. 1 (covered). */
+function holeY(h){ return h.rail ? (h.rail==='+' ? S.rails.plus : S.rails.minus) : B.rowY(h.row); }
 function captureHoles(img, k){
-  S.holeRef={};
-  for(const x of reachCols()) for(const rail of ['plus','minus']){
-    const p=holePatch(img,k,x,S.rails[rail]), v=p.filter(a=>a>=0).sort((a,b)=>a-b); if(v.length<40) continue;
+  S.holeRef={}; S.holeList=[];
+  for(const h of B.allHoles(S.cols)){
+    const p=holePatch(img,k,h.col-1,holeY(h)), v=p.filter(a=>a>=0).sort((a,b)=>a-b); if(v.length<40) continue;
     const thr=v[Math.floor(v.length*0.5)]*0.6, dark=p.filter(a=>a>=0&&a<thr).length;
-    if(dark>=3) S.holeRef[x+'|'+rail]={thr, dark};
+    if(dark>=3){ S.holeRef[B.holeKey(h)]={thr, dark}; S.holeList.push(h); }
   }
 }
-function holeCover(img, k, x, rail, gain){ // 0 = hole looks as at calibration, 1 = hole fully covered
-  const r=S.holeRef && S.holeRef[x+'|'+rail]; if(!r) return 0;
-  const p=holePatch(img,k,x,S.rails[rail]), t=r.thr*(gain||1); let dark=0; for(const a of p) if(a>=0&&a<t) dark++;
+function holeCoverOf(img, k, h, gain){ // 0 = hole looks as at calibration, 1 = hole fully covered, null = not measurable
+  const r=S.holeRef && S.holeRef[B.holeKey(h)]; if(!r) return null;
+  const p=holePatch(img,k,h.col-1,holeY(h)), t=r.thr*(gain||1); let dark=0; for(const a of p) if(a>=0&&a<t) dark++;
   return Math.max(0, 1-dark/r.dark);
 }
 const HOLE_COVERED = 0.45;
-function railReach(img, k, xs, target, gain){
-  let sp=0, sm=0; for(const x of xs){ sp=Math.max(sp,holeCover(img,k,x,'plus',gain)); sm=Math.max(sm,holeCover(img,k,x,'minus',gain)); }
-  const st = target==='+'?sp:sm, sw = target==='+'?sm:sp, wrongOuter = outerRail()!==target;
-  const to=st>HOLE_COVERED, tw=sw>HOLE_COVERED;
-  // a leg in the outer rail passes over the inner rail too, so the inner hole can be covered as well
-  const wrong = wrongOuter ? (tw && (!to || sw>=0.8*st)) : (tw && !to);
-  return {reach: wrong ? 'wrong' : to ? 'right' : null, plus:+sp.toFixed(2), minus:+sm.toFixed(2)};
+function coverAll(img, k, gain){
+  const m=new Map();
+  for(const h of (S.holeList||[])){ const c=holeCoverOf(img,k,h,gain); if(c!=null && c>HOLE_COVERED) m.set(B.holeKey(h),{h, cover:+c.toFixed(2)}); }
+  return m;
+}
+/* legs of the part being placed now: holes covered now that were not covered when the step began */
+function newHoles(cov, base, box){
+  const out=[];
+  for(const [key,x] of cov){ if(base && base.has(key)) continue;
+    if(box){ const [bx,by]=[x.h.col-1, holeY(x.h)]; if(bx<box[0]-1.2||bx>box[2]+1.2||by<box[1]-1.2||by>box[3]+1.2) continue; }
+    out.push(x); }
+  return out;
+}
+/* the model's box of a part, in board units [x0,y0,x1,y1] (null if the model does not see it confidently enough) */
+function partBox(cls){
+  if(performance.now()-S.detAt>=DET_MAX_AGE) return null;
+  const d=S.dets.filter(q=>q.cls===cls && q.s>=0.35).sort((a,b)=>b.s-a.s)[0]; if(!d) return null;
+  const c=[[d.x1,d.y1],[d.x2,d.y1],[d.x2,d.y2],[d.x1,d.y2]].map(p=>toBoard(p[0],p[1]));
+  if(!c.every(p=>Number.isFinite(p[0])&&Number.isFinite(p[1]))) return null;
+  return [Math.min(...c.map(p=>p[0])),Math.min(...c.map(p=>p[1])),Math.max(...c.map(p=>p[0])),Math.max(...c.map(p=>p[1]))];
 }
 function partEvidence(cls){
   const fresh = performance.now()-S.detAt < DET_MAX_AGE;
-  const T=B.targets(S.cols), C=T.col-1;
-  const ds = fresh ? S.dets.filter(d=>d.cls===cls) : [];
-  if(!ds.length) return {seen:false};
-  let near=false, best=0;
-  for(const d of ds){ const [bx,by]=toBoard((d.x1+d.x2)/2,(d.y1+d.y2)/2); best=Math.max(best,d.s);
-    if(cls==='resistor' && Math.abs(bx-C)<=2.5 && by>=yTop()-1.5 && by<=2.5) near=true;
-    if(cls==='led' && bx>=C-2 && bx<=C+5 && by>=yTop()-2 && by<=4.5) near=true; }
-  return {seen:true, near, conf:best};
+  const ds = fresh ? S.dets.filter(d=>d.cls===cls && (()=>{ const [bx,by]=toBoard((d.x1+d.x2)/2,(d.y1+d.y2)/2); return bx>=-1.5 && bx<=S.cols+0.5 && by>=yTop()-2 && by<=12.5; })()) : [];
+  const P = S.place && S.place[cls];
+  // near = the legs are electrically where they must be (any column). Unknown legs = null (not "far").
+  const near = P && P.state==='ok' ? true : P && P.state==='bad' ? false : null;
+  if(!ds.length) return {seen:false, near};
+  return {seen:true, near, conf:Math.max(...ds.map(d=>d.s))};
+}
+/* Where are the resistor's and the LED's legs? Training mode: the holes that became covered during the step
+   (the board was empty at calibration and the resistor goes in first). Test mode: all parts at once, split into
+   groups; each group is matched to a part by the model's box or by where its legs are. */
+function placeParts(cov){
+  S.parts=S.parts||{};
+  const id=S.step&&S.step.id, rails=S.rails, test=S.mode==='test';
+  const rememberCheck = P => !!(P && P.legs && P.legs.every(h=>cov.has(B.holeKey(h))));   // legs still in their holes?
+  if(!test && (id==='resistor' || id==='led')){
+    const base = S.stepBase || new Set();
+    const box = partBox(id);
+    let r = B.legsFromHoles(newHoles(cov, base, box), rails);
+    if(!r.legs && box) r = B.legsFromHoles(newHoles(cov, base, null), rails);   // the model's box can be off: try without it
+    S.parts[id] = {legs:r.legs, keys:r.keys, why:r.why};
+  } else if(test && id!=='gate' && id!=='power'){
+    // test mode, while building: nothing is judged before «انتهيت»
+  } else if(test && id==='gate'){
+    const wireX = new Set([].concat(S.wireCols.red||[], S.wireCols.black||[]).flatMap(x=>[x-1,x,x+1]));
+    const H = [...cov.values()].filter(x=>!(x.h.rail && wireX.has(x.h.col-1)));      // a wire end in a rail is not a part leg
+    S.parts.resistor = splitFor('resistor', H); S.parts.led = splitFor('led', H, S.parts.resistor);
+  }
+  // in the gate (training mode) the parts are the ones found in their steps: they must still be in their holes
+  if(!test && id==='gate') for(const k of ['resistor','led']){ const P=S.parts[k]; if(P && P.legs && !rememberCheck(P)) S.parts[k]={legs:null, why:'moved', was:P.legs}; }
+  const pr=S.parts.resistor, pl=S.parts.led;
+  const jr = B.judgeResistorLegs(pr && pr.legs);
+  const resNet = jr.state==='ok' || jr.code==='resistor_in_minus' ? jr.net : null;
+  const jl = B.judgeLedLegs(pl && pl.legs, resNet);
+  if(pr && pr.why==='moved') jr.code='resistor_moved';
+  if(pl && pl.why==='moved') jl.code='led_moved';
+  return {resistor:jr, led:jl};
+}
+function splitFor(cls, H, taken){
+  const box=partBox(cls), used=new Set(taken&&taken.keys ? taken.keys : []);
+  let pool=H.filter(x=>!used.has(B.holeKey(x.h)));
+  if(box){ pool=pool.filter(x=>{ const bx=x.h.col-1, by=holeY(x.h); return bx>=box[0]-1.2&&bx<=box[2]+1.2&&by>=box[1]-1.2&&by<=box[3]+1.2; });
+    const r=B.legsFromHoles(pool, S.rails); return {legs:r.legs, keys:r.keys, why:r.why}; }
+  // no model box: match groups to parts by where their legs are (board.js assignParts); unclear stays unknown
+  const a=B.assignParts(pool, S.rails)[cls];
+  return a ? {legs:a.legs, keys:a.keys} : {legs:null, why:'unclear'};
+}
+/* Warning BEFORE the mistake is finished (experimental): while the hand is still on the board, a leg already
+   pushed into the forbidden rail (resistor -> −, LED -> +) is reported. Holes with skin colour around them are
+   ignored (that is the finger, not a leg). Only rail holes are looked at, so it stays fast. */
+function skinNear(R, x, y){ // a finger (skin colour that is new / still moving) right at this hole; a still beige part body does not count
+  const r=Math.max(2,Math.round(R.P*0.6)), ci=bx2i(R,x), cj=by2j(R,y), A=S.skinAge;
+  for(let j=cj-r;j<=cj+r;j++) for(let i=ci-r;i<=ci+r;i++){ if(i<0||j<0||i>=R.RW||j>=R.RH) continue; const o=j*R.RW+i, c=R.cls[o];
+    if(c!==128 && (c&4) && !(S.ref&&S.ref.skin[o]) && (!A || A[o]<SKIN_STILL_FRAMES)) return true; } return false; }
+function earlyPart(R, img, k){
+  const id=S.step&&S.step.id, bad = id==='resistor' ? '-' : id==='led' ? '+' : null; if(!bad || S.mode==='test') return null;
+  for(const h of (S.holeList||[])){ if(h.rail!==bad) continue; const key=B.holeKey(h); if(S.stepBase && S.stepBase.has(key)) continue;
+    const c=holeCoverOf(img,k,h,R.gain); if(c!=null && c>0.6 && !skinNear(R,h.col-1,holeY(h))) return {h, code: id==='resistor' ? 'early_resistor_minus' : 'early_led_plus'}; }
+  return null;
 }
 function evidence(R, img, k){
-  const ev={view:S.view, railEnds:railEnds(R), resistor:partEvidence('resistor'), led:partEvidence('led')};
-  const T=B.targets(S.cols);
-  ev.targetChanged={resistor:holeChanged(R,T.col-1,0), led:holeChanged(R,T.col-1,2)};
-  const C=T.col-1, rr=railReach(img,k,[C-1,C,C+1],'+',R.gain), lr=railReach(img,k,[C+2,C+3,C+4],'-',R.gain);
-  ev.reach={resistor:rr.reach, led:lr.reach}; S.reachDbg={r:rr, l:lr};
+  const ev={view:S.view, railEnds:railEnds(R)};
+  if(ev.view==='hand' || ev.view==='moving') ev.earlyPart=earlyPart(R,img,k);
+  if(ev.view==='ok'){ S.cov=coverAll(img,k,R.gain); S.place=placeParts(S.cov); }
+  ev.place=S.place||{};
+  ev.resistor=partEvidence('resistor'); ev.led=partEvidence('led');
+  // what the pre-power check must block: confirmed danger cannot be confirmed away; other wrong placements are
+  // shown as suspicion, which a trainer may confirm after looking with their own eyes.
+  const pr=ev.place.resistor||{}, pl=ev.place.led||{};
+  const DANGER={resistor_in_minus:1, led_short_in_plus:1, no_resistor:1};
+  const reachOf = j => j.state==='bad' ? (DANGER[j.code] ? 'wrong' : 'suspect') : j.state==='ok' ? 'right' : null;
+  ev.reach={resistor:reachOf(pr), led:reachOf(pl), resistorCode:pr.state==='bad'?pr.code:null, ledCode:pl.state==='bad'?pl.code:null};
   return ev;
 }
 function boardSanity(){ // tracked outline vs model's board box (only when the model sees a board)
@@ -317,7 +418,10 @@ function boardSanity(){ // tracked outline vs model's board box (only when the m
   const ix=Math.max(0,Math.min(a.x2,bd.x2)-Math.max(a.x1,bd.x1)), iy=Math.max(0,Math.min(a.y2,bd.y2)-Math.max(a.y1,bd.y1)), I=ix*iy;
   const U=(a.x2-a.x1)*(a.y2-a.y1)+(bd.x2-bd.x1)*(bd.y2-bd.y1)-I, iou=U?I/U:0;
   S.boardIou=iou; S.boardBox=bd; S.boardMiss = iou<0.25 ? S.boardMiss+1 : 0;
-  if(S.boardMiss>=4){ S.track.ok=false; S.boardMiss=0; S.needRecal=true; S.lostSince=performance.now(); } // overlay no longer matches the model's board: ask for re-calibration
+  // The model's board box disagrees with the overlay several times in a row. The model is not trained on this
+  // board yet, so its box alone must not throw the session away (that forced a new calibration after every shake).
+  // It only asks for an immediate re-match against the calibration picture; tracking keeps going meanwhile.
+  if(S.boardMiss>=4){ S.boardMiss=0; if(bd.s>=0.6) S.forceReloc=true; }
 }
 
 /* ---------------- tracking (OpenCV.js optical flow + homography) ---------------- */
@@ -458,8 +562,8 @@ function useSource(el, kind){
   $('start').hidden=true; $('work').hidden=false; $('result').hidden=true;
   newSession(); enterSetup(); if(!S.loop){ S.loop=true; requestAnimationFrame(frame); }
 }
-$('camBtn').onclick=startCam;
-$('vidPick').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.loop=true; v.src=URL.createObjectURL(f); v.onloadeddata=()=>{ v.play(); useSource(v,'video'); }; };
+$('camBtn').onclick=()=>{ unlock(); startCam(); };
+$('vidPick').onchange=e=>{ unlock(); const f=e.target.files[0]; if(!f) return; const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.loop=true; v.src=URL.createObjectURL(f); v.onloadeddata=()=>{ v.play(); useSource(v,'video'); }; };
 $('imgPick').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const im=new Image(); im.onload=()=>useSource(im,'image'); im.src=URL.createObjectURL(f); };
 
 /* ---------------- start screen controls ---------------- */
@@ -569,21 +673,37 @@ cvs.addEventListener('pointerup', ()=>{ S.drag=-1; });
 $('setupUndo').onclick=()=>{ if(S.rails && S.rails.minus!=null) S.rails.minus=null; else if(S.rails && S.rails.plus!=null) S.rails.plus=null; else if(S.taps.length){ S.taps.pop(); S.rails=null; S.H=null; } renderSetup(); };
 $('setupDone').onclick=()=>{
   pctx.drawImage(S.src,0,0,pc.width,pc.height); const img=pctx.getImageData(0,0,pc.width,pc.height), k=pc.width/S.srcW;
-  S.rect=makeRect(); sampleRect(S.rect,img,k); S.ref=captureRef(S.rect); S.prevGray=S.rect.gray.slice(); captureHoles(img,k);
+  // Re-calibrating in the middle of a session keeps the session: same step, same parts, and the empty-board
+  // references from the first calibration (the board is no longer empty, so they cannot be taken again).
+  const R0=S.resume; S.resume=null;
+  const same = R0 && R0.cols===S.cols && R0.rails && S.rails && S.rails.plus!=null && S.rails.minus!=null &&
+    Math.abs(R0.rails.plus-S.rails.plus)<0.35 && Math.abs(R0.rails.minus-S.rails.minus)<0.35;
+  if(same){ S.rails={plus:R0.rails.plus, minus:R0.rails.minus}; S.rect=R0.rect; S.ref=R0.ref; S.holeRef=R0.holeRef; S.holeList=R0.holeList; sampleRect(S.rect,img,k); S.prevGray=S.rect.gray.slice(); }
+  else { S.rect=makeRect(); sampleRect(S.rect,img,k); S.ref=captureRef(S.rect); S.prevGray=S.rect.gray.slice(); captureHoles(img,k); }
   S.Hcal=S.H.slice(); S.needRecal=false; S.lostFrom=0; S.recPrev=null; recentFree(); S.recentAt=performance.now(); trackInit(img,k); S.lastMove=0;
   if(S.cvReady){ refFree(); const g=grayMat(img); S.orbRef=orbOf(g,quad(1.0).map(p=>[p[0]*k,p[1]*k])); g.delete(); }
-  log('setup',{cols:S.cols, auto:!!S.autoDone});
-  $('setupBox').hidden=true; S.stepIdx=0; enterStep(0);
+  log('setup',{cols:S.cols, auto:!!S.autoDone, resume:!!same});
+  $('setupBox').hidden=true;
+  if(same){ enterStep(R0.idx); banner('رجعنا إلى الخطوة نفسها، وما ركّبته محفوظ.','ok'); }
+  else { if(R0) banner('تغيّر حجم اللوحة أو مكان خطي الطاقة، فبدأنا من أول خطوة.','warn'); S.stepIdx=0; enterStep(0); }
 };
-$('recalBtn').onclick=()=>{ log('recalibrate',{}); enterSetup(); };
+$('recalBtn').onclick=()=>{ log('recalibrate',{});
+  S.resume = S.phase==='steps' && S.stepIdx>0 && S.rails && S.ref ? {idx:S.stepIdx, cols:S.cols, rails:{...S.rails}, rect:S.rect, ref:S.ref, holeRef:S.holeRef, holeList:S.holeList} : null;
+  enterSetup(); };
 
 /* ---------------- steps ---------------- */
 function enterStep(i){
   S.phase='steps'; S.stepIdx=i; S.step=STEPS[i]; S.committed=null; S.cand=null; S.early=null; S.earlyN=0; S.unknownSince=performance.now();
+  // holes already taken when this step begins: they belong to earlier parts, not to the one placed now
+  const sid=S.step.id; S.parts=S.parts||{};
+  if(sid==='prep' || sid==='resistor'){ S.parts={}; S.place={}; S.stepBase=new Set(); }
+  else if(sid==='led'){ delete S.parts.led; const r=S.parts.resistor; S.stepBase=new Set(r&&r.keys&&r.legs ? r.keys : (S.cov?[...S.cov.keys()]:[])); }
   $('stepBox').hidden = S.step.id==='gate'||S.step.id==='power';
   $('gateBox').hidden = S.step.id!=='gate'; $('powerBox').hidden = S.step.id!=='power';
   $('ledDiag').hidden = S.step.id!=='led';
   $('usbChk').hidden = S.step.id!=='prep';
+  const dd = S.mode==='train' && DO_DONT[S.step.id]; $('doDont').hidden=!dd; if(dd){ $('doTxt').textContent=dd[0]; $('dontTxt').textContent=dd[1]; }
+  $('alert').hidden=true; S.earlyHole=null;
   $('manualBox').hidden=true; $('nextBtn').hidden = S.step.id!=='prep'; $('finishBuild').hidden=true;
   if(S.step.id==='prep'){ $('usbOff').checked=false; $('nextBtn').disabled=true; }
   const testBuild = S.mode==='test' && ['resistor','led','red','black'].includes(S.step.id);
@@ -598,7 +718,12 @@ function enterStep(i){
   renderBar();
 }
 function renderBar(){ $('backBtn').hidden = !(S.phase==='steps' && S.stepIdx>0 && S.step && S.step.id!=='power'); $('stepBar').innerHTML = STEPS.map((s,i)=>`<i class="${i<S.stepIdx?'done':i===S.stepIdx?'cur':''}" title="${s.t}"></i>`).join(''); }
-function setState(st,title,why){ const e=$('stepState'); e.className='state '+st; e.innerHTML=`${title}${why?`<small>${why}</small>`:''}`; }
+function setState(st,title,why,keepAlert){ const e=$('stepState'); e.className='state '+st; e.innerHTML=`${esc(title)}${why?`<small>${esc(why)}</small>`:''}`; if(!keepAlert) alertCard(st,title,why); }
+/* big card on the camera picture itself: what is wrong and how to fix it, while it is wrong (Nov 19) */
+const ICON={bad:'✕',warn:'!',ok:'✓',unknown:'…'};
+function alertCard(st,title,why){ const a=$('alert'); if(!a) return;
+  if(st!=='bad' && st!=='warn' && st!=='ok'){ a.hidden=true; return; }
+  a.className='alert '+st; a.innerHTML=`<b class="ic">${ICON[st]}</b><div><b>${esc(title)}</b>${why?`<span>${esc(why)}</span>`:''}</div>`; a.hidden=false; }
 $('backBtn').onclick=()=>{ if(!S.step || S.step.id==='power' || S.stepIdx<1) return;
   let i=S.stepIdx-1; if(S.mode==='test' && S.step.id==='gate') i=STEPS.findIndex(s=>s.id==='resistor');
   if(S.mode==='test' && S.step.id==='resistor') i=0;
@@ -617,13 +742,14 @@ function evalStep(ev){
   if(!['resistor','led','red','black'].includes(id) || S.mode==='test') return;
   // early warning (experimental): only while view is not yet stable
   if(ev.view!=='ok'){
-    const w = B.earlyWarning(id, ev.rawEnds);
+    const w = B.earlyWarning(id, ev.rawEnds) || (ev.earlyPart ? ev.earlyPart.code : null);
     S.earlyN = w ? S.earlyN+1 : 0;
+    S.earlyHole = w && ev.earlyPart && ev.earlyPart.code===w ? ev.earlyPart.h : null;
     if(w && S.earlyN>=3 && S.early!==w){ S.early=w; log('early',{code:w}); const m=msg(w); setState('warn',m[0],m[1]); banner(m[0],'warn'); say(m[2],false,w); }
-    else if(!S.early){ const v=msg(ev.view); setState('unknown',v[0],v[1]); }
+    else if(!S.early){ const v=msg(ev.view); const keep=S.committed&&S.committed.state==='bad'; setState('unknown',v[0],v[1],keep); }
     S.cand=null; return;
   }
-  S.early=null; S.earlyN=0;
+  S.early=null; S.earlyN=0; S.earlyHole=null;
   const j = B.judgeStep(id, ev), key=j.state+':'+j.code;
   if(!S.cand || S.cand.key!==key){ S.cand={key,j}; S.candSince=now; return; }
   if(now-S.candSince<COMMIT_MS) return;
@@ -632,7 +758,7 @@ function evalStep(ev){
   const m=msg(j.code); setState(j.state==='unknown'?'unknown':j.state, m[0], m[1]);
   if(j.state==='bad'){ log('error',{code:j.code, step:id}); banner(m[0],'bad'); say(m[2],false,j.code); }
   else if(j.state==='warn'){ log('suspect',{code:j.code, step:id}); say(m[2],false,j.code); }
-  else if(j.state==='ok'){ log('ok',{code:j.code, step:id}); banner(m[0],'ok'); say(m[2],false,j.code); $('manualBox').hidden=true; setTimeout(()=>{ if(S.step && S.step.id===id && S.committed && S.committed.state==='ok') advance(); },1600); }
+  else if(j.state==='ok'){ log('ok',{code:j.code, step:id}); banner(m[0],'ok'); say(m[2],false,j.code); $('manualBox').hidden=true; setTimeout(()=>{ if(S.session && S.phase!=='done' && S.step && S.step.id===id && S.committed && S.committed.state==='ok') advance(); },1600); }
   if(j.state==='ok'||j.state==='bad') S.unknownSince=now;
   maybeManual(j,now);
 }
@@ -684,7 +810,7 @@ $('allowBtn').onclick=()=>{
   const first = bad[0] ? msg(bad[0].code) : null;
   banner(first ? 'منع التشغيل: '+first[0] : 'منع التشغيل: '+open.length+' '+(open.length===1?'سطر غير مؤكد':'أسطر غير مؤكدة')+'. انظر القائمة.', 'bad');
   say(first ? 'توقف، لا يمكن التشغيل. '+first[2] : 'لا يمكن التشغيل قبل أن يصبح كل سطر أخضر.', true, 'gate_block');
-  if(S.mode==='test' && bad.length){ setTimeout(()=>{ if(S.step.id==='gate'){ enterStep(STEPS.findIndex(s=>s.id==='resistor')); banner('أصلح الأخطاء ثم اضغط «انتهيت» مرة أخرى.','warn'); } },2200); }
+  if(S.mode==='test' && bad.length){ setTimeout(()=>{ if(S.session && S.phase!=='done' && S.step.id==='gate'){ enterStep(STEPS.findIndex(s=>s.id==='resistor')); banner('أصلح الأخطاء ثم اضغط «انتهيت» مرة أخرى.','warn'); } },2200); }
 };
 
 /* ---- trainer confirmation: trainer's own account, checked on the server, password never stored ---- */
@@ -725,7 +851,7 @@ $('tSend').onclick=async()=>{
 };
 $('litYes').onclick=()=>{ log('lit',{yes:true}); finish(true); };
 $('litNo').onclick=()=>{ log('lit',{yes:false}); log('error',{code:'led_reversed', step:'power', afterPower:true}); $('litHelp').hidden=false; say('افصل الكيبل أولاً. غالباً اللمبة مقلوبة. اقلبها ثم أعد الفحص.',true,'led_reversed');
-  setTimeout(()=>{ voidConfirm(null); enterStep(STEPS.findIndex(s=>s.id==='gate')); },3500); };
+  setTimeout(()=>{ if(!S.session || S.phase==='done') return; voidConfirm(null); enterStep(STEPS.findIndex(s=>s.id==='gate')); },3500); };
 $('endBtn').onclick=()=>finish(false);
 
 /* ---------------- session log (real data only) ---------------- */
@@ -752,7 +878,7 @@ function finish(lit){
     (backs?`<tr><th>مرات الرجوع خطوة</th><td>${backs}</td></tr>`:'')+
     `<tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr>`+`<tr><th>تأكيدات المدرب (بحسابه)</th><td>${man}</td></tr>`+(ovr?`<tr><th>تجاوزات قديمة</th><td>${ovr}</td></tr>`:'')+`</table>`+
     (lit?`<p class="mut">إضاءة اللمبة سُجّلت بجواب من الجهاز نفسه، ولم تتحقق منها الكاميرا.</p>`:'');
-  S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
+  hush(); S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
   try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
   $('recNote').hidden=true;
   try{ S.src && S.src.parentNode && S.src.remove(); }catch(e){} S.src=null; S.loop=false; trackFree();
@@ -796,7 +922,7 @@ function frame(ts){
   pctx.drawImage(S.src,0,0,pc.width,pc.height);
   const img=pctx.getImageData(0,0,pc.width,pc.height), k=pc.width/S.srcW;
   if(S.track.ok) trackStep(img,k);
-  if(S.cvReady && S.orbRef && (!S.track.ok ? performance.now()-S.lostSince>500 : performance.now()-S.relocAt>1500)){
+  if(S.cvReady && S.orbRef && (S.forceReloc || (!S.track.ok ? performance.now()-S.lostSince>500 : performance.now()-S.relocAt>1500))){ S.forceReloc=false;
     // lost: find the board again against the calibration frame; tracking: periodic drift correction
     const g=grayMat(img), wasOk=S.track.ok;
     let ok = wasOk ? relocalize(g,k,S.orbRef,S.Hcal,0.5) : relocalize(g,k,S.orbRef,S.Hcal);
@@ -830,7 +956,9 @@ function frame(ts){
 function chip(t,cls){ const c=$('chip'); c.textContent=t; c.className='chip '+(cls||''); }
 
 /* ---------------- drawing ---------------- */
-const COL={ok:'#47d78f',bad:'#ff5a4a',warn:'#ffc75a',unknown:'#ffc75a',target:'#e2b54e'};
+/* colours (Nov 19): yellow = where to put it, green = confirmed right, orange = suspicion, red = confirmed error,
+   grey = cannot see clearly. Yellow and orange used to look the same; now each colour means one thing only. */
+const COL={ok:'#3ddc84',bad:'#ff4d4d',warn:'#ff8c1a',unknown:'#c9d3cc',target:'#ffd23f'};
 function lw(){ return Math.max(2,cvs.width/400); }
 function drawSetup(){
   const L=lw(); ctx.lineWidth=L;
@@ -852,9 +980,17 @@ function arrow(x,y,fromDy,color,ts){ // animated arrow in board space, bobbing t
 }
 function label(t,x,y,color){ const [px,py]=toImg(x,y), L=lw(); ctx.font=`700 ${Math.round(L*8)}px "IBM Plex Sans Arabic",sans-serif`; ctx.direction='rtl'; ctx.textAlign='center';
   const w=ctx.measureText(t).width+L*6; ctx.fillStyle='rgba(0,0,0,.72)'; ctx.fillRect(px-w/2,py-L*7,w,L*11); ctx.fillStyle=color; ctx.fillText(t,px,py+L*2); }
+function legDot(h, color, cross){ const y=h.rail?(h.rail==='+'?S.rails.plus:S.rails.minus):B.rowY(h.row), [cx,cy]=toImg(h.col-1,y), [ex]=toImg(h.col,y), r=Math.max(6,Math.abs(ex-cx)*0.55), L=lw();
+  ctx.lineWidth=L*1.6; ctx.strokeStyle=color; ctx.fillStyle=color+'55'; ctx.beginPath(); ctx.arc(cx,cy,r,0,7); ctx.fill(); ctx.stroke();
+  if(cross){ ctx.lineWidth=L*1.8; ctx.beginPath(); ctx.moveTo(cx-r*1.5,cy-r*1.5); ctx.lineTo(cx+r*1.5,cy+r*1.5); ctx.moveTo(cx+r*1.5,cy-r*1.5); ctx.lineTo(cx-r*1.5,cy+r*1.5); ctx.stroke(); } }
+function strip(net, color, text){ const hs=B.netHoles(net,S.cols); if(!hs.length||net[0]==='R') return; const x=hs[0].col-1, y0=B.rowY(hs[0].row), y1=B.rowY(hs[hs.length-1].row);
+  poly([toImg(x-0.45,y0-0.45),toImg(x+0.45,y0-0.45),toImg(x+0.45,y1+0.45),toImg(x-0.45,y1+0.45)]); ctx.fillStyle='rgba(61,220,132,.22)'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=lw()*1.3; ctx.stroke();
+  if(text) label(text, x, y1+(y1<5?1.6:-1.6)+ (y0<5?0:0), color); }
+function forbid(rail, text){ const y=rail==='+'?S.rails.plus:S.rails.minus; ctx.setLineDash([lw()*3,lw()*3]); railSeg(y,-0.5,S.cols-0.5,COL.bad,'rgba(255,77,77,.10)'); ctx.setLineDash([]);
+  const x=Math.max(1,Math.round(S.cols*0.75)); label('✕ '+text, x, y+(y<0?-1.7:1.7), COL.bad); }
 function drawOverlay(ev, ts){
   const st = S.view!=='ok' ? 'unknown' : (S.committed ? S.committed.state : 'unknown');
-  const color = S.view==='lost' ? '#ffc75a' : (S.step && ['gate','power'].includes(S.step.id) ? (S.gate&&S.gate.pass?COL.ok:S.gate&&S.gate.danger?COL.bad:COL.warn) : COL[st]);
+  const color = S.view==='lost' ? COL.unknown : (S.step && ['gate','power'].includes(S.step.id) ? (S.gate&&S.gate.pass?COL.ok:S.gate&&S.gate.danger?COL.bad:COL.warn) : COL[st]);
   const L=lw(); ctx.lineWidth=L;
   // board outline + rails
   ctx.setLineDash(S.view==='lost'?[L*4,L*4]:[]); ctx.strokeStyle=color; poly(quad(0.8)); ctx.stroke(); ctx.setLineDash([]);
@@ -862,26 +998,37 @@ function drawOverlay(ev, ts){
   railSeg(S.rails.minus,-0.5,S.cols-0.5,'rgba(90,147,255,.8)','rgba(90,147,255,.10)');
   const pv=toImg(-1.2,S.rails.plus), mv=toImg(-1.2,S.rails.minus); ctx.font=`700 ${Math.round(L*9)}px sans-serif`; ctx.textAlign='center'; ctx.fillStyle='#ff5d5d'; ctx.fillText('+',pv[0],pv[1]+L*3); ctx.fillStyle='#5a93ff'; ctx.fillText('−',mv[0],mv[1]+L*3);
   if(S.view==='lost'){ const long = S.lostFrom && performance.now()-S.lostFrom>8000; chip(long ? 'لم أجد اللوحة بعد: ثبّت الجهاز فوقها، أو اضغط «إعادة ضبط اللوحة»' : 'أبحث عن اللوحة… ثبّت الجهاز لحظة','warn'); return; }
-  // guidance (training mode only)
-  const id=S.step&&S.step.id, T=B.targets(S.cols), C=T.col-1, out=yTop()<0 ? -1 : 1;
-  const tc = st==='ok'?COL.ok : st==='bad'?COL.bad : st==='warn'?COL.warn : COL.target;
+  // guidance (training mode only). Nothing is tied to one column: column 10 is only a suggestion ring.
+  const id=S.step&&S.step.id, T=B.targets(S.cols), C=T.col-1;
+  const tc = COL.target;   // where to put it is always yellow; right/wrong is shown on the legs themselves and in the card
+  const railY = r => r==='+' ? S.rails.plus : S.rails.minus, away = r => railY(r)+(railY(r)<0?-1.7:1.7);
+  const rp=S.parts&&S.parts.resistor, rj=S.place&&S.place.resistor, resNet = rj && rj.state==='ok' ? rj.net : null;
+  // the resistor's 5 connected holes stay lit in green after it is confirmed: this is what "connected" means
+  if(resNet && id!=='resistor') strip(resNet, COL.ok, id==='led' ? 'الطويلة هنا (أي فتحة خضراء)' : '');
   if(S.mode==='train' && id){
-    if(id==='resistor'){ holeRing(C,0,tc,ts); railSeg(S.rails.plus,C-0.5,C+0.5,tc); holeRing(C,S.rails.plus,tc,ts); arrow(C,0,4.5,tc,ts); label('المقاومة هنا',C,6.2,tc); }
-    if(id==='led'){ holeRing(C,2,tc,ts); holeRing(C+3,S.rails.minus,tc,ts); arrow(C,2,4.5,tc,ts);
-      label('الطويلة (+)',C,7.6,tc); label('القصيرة (−)',C+3,S.rails.minus+(S.rails.minus<0?-1.6:1.6),tc);
-      const a=toImg(C,2), b=toImg(C+3,S.rails.minus); ctx.setLineDash([L*3,L*3]); ctx.strokeStyle=tc; ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke(); ctx.setLineDash([]); }
-    if(id==='red'){ railSeg(S.rails.plus,T.red.from-1-0.5,T.red.to-1+0.5,tc,'rgba(226,181,78,.25)'); arrow((T.red.from+T.red.to)/2-1,S.rails.plus,-3.5,tc,ts); label('الأحمر 5V هنا',(T.red.from+T.red.to)/2-1,S.rails.plus-4.6,tc); }
-    if(id==='black'){ railSeg(S.rails.minus,T.black.from-1-0.5,T.black.to-1+0.5,tc,'rgba(226,181,78,.25)'); arrow((T.black.from+T.black.to)/2-1,S.rails.minus,-3.5,tc,ts); label('الأسود GND هنا',(T.black.from+T.black.to)/2-1,S.rails.minus-4.6,tc); }
+    if(id==='resistor'){ railSeg(S.rails.plus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.18)'); label('رجل هنا (أي فتحة في +)',C,away('+'),tc);
+      holeRing(C,0,tc,ts); label('والثانية داخل اللوحة، مثلاً هنا',C,5.6,tc); forbid('-','ليس هنا'); }
+    if(id==='led'){ railSeg(S.rails.minus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.18)'); label('القصيرة هنا (أي فتحة في −)',C+3,away('-'),tc); forbid('+','ليس هنا');
+      if(!resNet){ holeRing(C,2,tc,ts); label('الطويلة مع المقاومة',C,6.2,tc); } }
+    if(id==='red'){ railSeg(S.rails.plus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.22)'); label('الأحمر 5V في أي فتحة هنا',C,away('+'),tc); forbid('-','ليس هنا'); }
+    if(id==='black'){ railSeg(S.rails.minus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.22)'); label('الأسود GND في أي فتحة هنا',C,away('-'),tc); forbid('+','ليس هنا: قصر'); }
   }
-  // mark confirmed wire errors on the rail where they are
+  // the legs the camera found, at their real holes: green = right place, red = wrong place (with a cross)
+  if(S.view==='ok' && S.mode==='train'){
+    for(const k of ['resistor','led']){ const P=S.parts&&S.parts[k], J=S.place&&S.place[k]; if(!P||!P.legs||!J) continue;
+      const wrong = new Set((J.state==='bad'||J.state==='warn') && J.at ? J.at.map(B.holeKey) : []);
+      for(const h of P.legs){ const w=wrong.has(B.holeKey(h)); legDot(h, w ? (J.state==='bad'?COL.bad:COL.warn) : J.state==='ok' ? COL.ok : COL.unknown, w); }
+    }
+  }
+  // confirmed wire errors on the rail where they are
   const E=ev.railEnds;
-  if(E.red==='-' ) railSeg(S.rails.minus,-0.5,S.cols-0.5,COL.bad);
-  if(E.black==='+') railSeg(S.rails.plus,-0.5,S.cols-0.5,COL.bad);
-  const RC=B.targets(S.cols).col-1, RH=ev.reach||{};
-  if(RH.resistor==='wrong') railSeg(S.rails.minus,RC-1.5,RC+1.5,COL.bad,'rgba(255,90,74,.30)');
-  if(RH.led==='wrong') railSeg(S.rails.plus,RC+1.5,RC+4.5,COL.bad,'rgba(255,90,74,.30)');
+  if(E.red==='-' ) railSeg(S.rails.minus,-0.5,S.cols-0.5,COL.bad,'rgba(255,77,77,.22)');
+  if(E.black==='+') railSeg(S.rails.plus,-0.5,S.cols-0.5,COL.bad,'rgba(255,77,77,.22)');
+  if(S.earlyHole){ legDot(S.earlyHole, COL.warn, true); }
   // model detections (thin)
-  for(const d of (performance.now()-S.detAt<DET_MAX_AGE?S.dets:[])) if(d.cls==='resistor'||d.cls==='led'){
+  // only boxes on the board itself: things on the table around it are not parts of this circuit
+  const onBoard = d => { const [bx,by]=toBoard((d.x1+d.x2)/2,(d.y1+d.y2)/2); return bx>=-1.5 && bx<=S.cols+0.5 && by>=yTop()-2 && by<=12.5; };
+  for(const d of (performance.now()-S.detAt<DET_MAX_AGE?S.dets:[])) if((d.cls==='resistor'||d.cls==='led') && onBoard(d)){
     // uncertainty mode: below the gate confidence the part is not named, it is shown as not recognised
     const sure=d.s>=B.GATE_MIN_CONF; ctx.strokeStyle=!sure?COL.warn:d.cls==='led'?'#ff4fd8':'#7CFC00'; ctx.lineWidth=L*0.8; ctx.setLineDash(sure?[]:[L*3,L*2]); ctx.strokeRect(d.x1,d.y1,d.x2-d.x1,d.y2-d.y1); ctx.setLineDash([]);
     const t=sure?(d.cls==='led'?'اللمبة':'المقاومة'):'لم أتمكن من التعرف عليها', fs=Math.max(13,L*6.5); ctx.save(); ctx.font=`600 ${fs}px "Readex Pro",sans-serif`; ctx.textBaseline='top'; ctx.direction='rtl'; ctx.textAlign='left';
@@ -897,5 +1044,5 @@ function drawOverlay(ev, ts){
 }
 
 /* test hook for automated checks (no effect on users) */
-window.__coach = {S, B, useSource, bands(colour,y){ const d=[]; bandCols(S.rect,S.ref,colour,y-0.42,y+0.42,exclusionZones(),d); return d; }, setTaps(t,r){ S.taps=t; S.H=B.boardFromTaps(S.cols,t); S.rails=r; renderSetup(); }, done(){ $('setupDone').click(); }, enterStep, gateEval, quad:()=>quad(0)};
+window.__coach = {S, B, useSource, voiceAllowed, dbgEarly:()=>{ const img=pctx.getImageData(0,0,pc.width,pc.height), k=pc.width/S.srcW; return (S.holeList||[]).filter(h=>h.rail==="-").map(h=>[h.col, +(holeCoverOf(img,k,h,S.rect.gain)||0).toFixed(2), skinNear(S.rect,h.col-1,holeY(h))]).filter(x=>x[1]>0.3||x[2]); }, bands(colour,y){ const d=[]; bandCols(S.rect,S.ref,colour,y-0.42,y+0.42,exclusionZones(),d); return d; }, setTaps(t,r){ S.taps=t; S.H=B.boardFromTaps(S.cols,t); S.rails=r; renderSetup(); }, done(){ $('setupDone').click(); }, enterStep, gateEval, quad:()=>quad(0)};
 })();
