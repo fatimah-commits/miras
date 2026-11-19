@@ -69,6 +69,7 @@ const MSG = {
   led_low_conf:['لم أتمكن من التعرف على اللمبة','أرى شيئاً في مكان اللمبة لكني لست متأكداً ما هو. لا أخمّن، ولا أعدّها مؤكدة. قرّب الكاميرا أو زد الإضاءة، أو يؤكدها المدرب.','لم أتمكن من التعرف على هذه القطعة.'],
   trainer_ok:['أكّده المدرب','',''], trainer_needed:['يحتاج تأكيد المدرب','الكاميرا لا ترى هذا. يتحقق منه المدرب بعينه ثم يؤكّد بحسابه.',''],
   nocv:['التتبع غير متاح','',''],
+  view_noisy:['الصورة غير واضحة بما يكفي للحكم','الفتحات تتغير في الصورة من لحظة لأخرى (إضاءة تومض، أو تصوير شاشة بدل لوحة حقيقية). لا أحكم بصح أو خطأ حتى تثبت.',''],
   resistor_shorted:['خطأ: رجلا المقاومة في فتحات متصلة ببعض','الرجلان في الشريط نفسه، فالتيار يتجاوز المقاومة ولا يمر خلالها. انقل رجلاً إلى خط الموجب (+).',''],
   resistor_across_rails:['خطأ: المقاومة بين خط الموجب وخط السالب','التيار يمر في المقاومة وحدها ولا يصل إلى اللمبة. اترك رجلاً في خط الموجب، وانقل الثانية إلى أي فتحة داخل اللوحة.',''],
   resistor_no_rail:['خطأ: المقاومة غير موصولة بخط الموجب','ولا رجل في خط الموجب (+)، فلن يصل التيار. ضع رجلاً في خط الموجب، والثانية في أي فتحة داخل اللوحة.',''],
@@ -91,6 +92,27 @@ const msg = c => { const m = MSG[c] || [c,'','']; const col = S.parts && S.parts
 function resColLabel(){ const P=S.place&&S.place.resistor; return P && P.hole ? String(P.hole.col) : ''; }
 
 const DO_DONT = {"prep": ["افصل كيبل USB، واترك اللوحة فارغة. ثبّت الآيباد بحيث تظهر اللوحة كاملة.", "لا توصل الكهرباء أثناء التركيب، ولا تحرّك اللوحة نفسها بعد الضبط."], "resistor": ["رجل في خط الموجب (+)، والثانية في أي فتحة داخل اللوحة. اضغطها حتى تثبت، ثم أبعد يدك.", "لا تضع أي رجل في خط السالب (−)، ولا الرجلين في العمود نفسه."], "led": ["الرجل الطويلة في إحدى الفتحات الخضراء، والقصيرة في أي فتحة من خط السالب (−).", "لا تضع القصيرة في خط الموجب (+)، ولا تعبر باللمبة المجرى الأوسط."], "red": ["من منفذ 5V إلى أي فتحة في خط الموجب (+).", "لا تضعه في خط السالب (−)."], "black": ["من منفذ GND إلى أي فتحة في خط السالب (−).", "لا تضعه في خط الموجب (+): هذا قصر يضر الأردوينو."]};
+/* ---------------- the lesson (Nov 19): what a trainer says at each step ----------------
+   why  = the reason in one or two sentences (the physics of THIS circuit: red LED about 2 V, 5 V supply, 220 Ω).
+   quiz = one quick question; the FIRST answer is recorded for the trainer's assessment. */
+const LESSON = {
+  prep:{why:'أي توصيل والكهرباء شغّالة قد يسبب قصراً. القاعدة: ركّب والكيبل مفصول، وشغّل بعد الفحص فقط.',
+    quiz:{q:'لماذا نفصل كيبل USB قبل التركيب؟', a:['حتى لا يحدث قصر أثناء التركيب','حتى تعمل الكاميرا','حتى تضيء اللمبة أقوى'], ok:0}},
+  resistor:{why:'اللمبة تتحمل تياراً صغيراً (نحو 20 ملي أمبير). الأردوينو يعطي 5 فولت، وبدون مقاومة يمر تيار أكبر فتتلف. مقاومة 220 أوم تجعل التيار نحو 14 ملي أمبير.',
+    quiz:{q:'ما وظيفة المقاومة في هذه الدائرة؟', a:['تحدّ من التيار حتى لا تتلف اللمبة','ترفع الجهد','تخزّن الكهرباء'], ok:0}},
+  led:{why:'اللمبة لها اتجاه: التيار يدخل من الرجل الطويلة ويخرج من القصيرة. فتحات العمود الواحد الخمس متصلة، فإذا وُضعت الطويلة في عمود المقاومة صارت متصلة بها.',
+    quiz:{q:'أي رجل في اللمبة تكون جهة الموجب (مع المقاومة)؟', a:['الرجل الطويلة','الرجل القصيرة','لا فرق'], ok:0}},
+  red:{why:'منفذ 5V هو مصدر الطاقة. نوصله بخط الموجب فيصل الجهد إلى كل فتحات هذا الخط.',
+    quiz:{q:'السلك الأحمر من منفذ 5V يذهب إلى أي خط؟', a:['خط الموجب (+)','خط السالب (−)','أي خط'], ok:0}},
+  black:{why:'GND هو طريق الرجوع. بدونه لا يكتمل المسار ولا تضيء اللمبة. ولو وُضع في خط الموجب التقى 5V بـ GND مباشرة: قصر.',
+    quiz:{q:'لو وُضع السلك الأسود (GND) في خط الموجب، ماذا يحدث؟', a:['قصر كهربائي قد يضر الأردوينو','تضيء اللمبة أقوى','لا يحدث شيء'], ok:0}},
+  gate:{why:'تضيء اللمبة فقط إذا وُجد مسار مغلق: من 5V إلى خط الموجب، ثم المقاومة، ثم اللمبة، ثم خط السالب، ثم GND.',
+    quiz:{q:'ما الذي يلزم حتى تضيء اللمبة؟', a:['مسار مغلق من 5V إلى GND يمر بالمقاومة ثم اللمبة','أن يكون السلكان في الخط نفسه','أن تكون اللمبة قريبة من الأردوينو'], ok:0}}
+};
+/* the golden rules of the breadboard; every error points to the rule it breaks */
+const RULES = ['ركّب والكهرباء مفصولة، وشغّل بعد الفحص فقط.','فتحات العمود الواحد (الخمس) متصلة، والمجرى الأوسط يفصل الجهتين.','الأحمر للموجب (5V) والأسود للسالب (GND)، ولا يلتقيان أبداً.','لا لمبة بدون مقاومة، والرجل الطويلة جهة الموجب.','التيار يحتاج مساراً مغلقاً: من 5V إلى GND.'];
+const RULE_OF = {short:2, black_in_plus:2, red_in_minus:2, early_red_minus:2, early_black_plus:2, no_resistor:3, led_short_in_plus:3, early_led_plus:3, led_reversed:3,
+  led_other_half:1, led_not_series:1, resistor_shorted:1, led_shorted:1, led_open:4, resistor_no_rail:4, resistor_across_rails:4, resistor_in_minus:4, early_resistor_minus:4};
 const STEPS = [
   {id:'prep', t:'التجهيز', text:'افصل كيبل USB عن الأردوينو. ضع الأردوينو تحت اللوحة، واترك اللوحة فارغة.', say:'قبل البدء، افصل كيبل يو إس بي عن الأردوينو، واترك اللوحة فارغة.'},
   {id:'resistor', t:'تركيب المقاومة', text:'رجل في أي فتحة من خط الموجب (+)، والرجل الثانية في أي فتحة داخل اللوحة (أي عمود). الدائرة الصفراء مجرد اقتراح. لا تضعها في خط السالب (−).', say:'ضع المقاومة على اللوحة.'},
@@ -314,9 +336,17 @@ function holeCoverOf(img, k, h, gain){ // 0 = hole looks as at calibration, 1 = 
   return Math.max(0, 1-dark/r.dark);
 }
 const HOLE_COVERED = 0.45;
+/* A hole counts as covered only after it stayed covered for COVER_FRAMES still frames in a row, and the picture
+   is "noisy" when many holes flip between covered and open from frame to frame (a screen filmed by the camera,
+   flickering light, a blurred picture). Then nothing is judged: no "correct" and no "error" out of noise. */
+const COVER_FRAMES = 6, NOISE_FLIPS = 3.5;
 function coverAll(img, k, gain){
-  const m=new Map();
-  for(const h of (S.holeList||[])){ const c=holeCoverOf(img,k,h,gain); if(c!=null && c>HOLE_COVERED) m.set(B.holeKey(h),{h, cover:+c.toFixed(2)}); }
+  const raw=new Set(), m=new Map(), N=S.covN||(S.covN=new Map()), prev=S.covRaw||new Set();
+  for(const h of (S.holeList||[])){ const c=holeCoverOf(img,k,h,gain), key=B.holeKey(h);
+    if(c!=null && c>HOLE_COVERED){ raw.add(key); N.set(key,(N.get(key)||0)+1); if(N.get(key)>=COVER_FRAMES) m.set(key,{h, cover:+c.toFixed(2)}); }
+    else N.delete(key); }
+  let flips=0; for(const x of raw) if(!prev.has(x)) flips++; for(const x of prev) if(!raw.has(x)) flips++;
+  S.covRaw=raw; S.flipAvg = 0.8*(S.flipAvg||0) + 0.2*flips; S.coverNoisy = S.flipAvg > NOISE_FLIPS;
   return m;
 }
 /* legs of the part being placed now: holes covered now that were not covered when the step began */
@@ -393,13 +423,14 @@ function skinNear(R, x, y){ // a finger (skin colour that is new / still moving)
 function earlyPart(R, img, k){
   const id=S.step&&S.step.id, bad = id==='resistor' ? '-' : id==='led' ? '+' : null; if(!bad || S.mode==='test') return null;
   for(const h of (S.holeList||[])){ if(h.rail!==bad) continue; const key=B.holeKey(h); if(S.stepBase && S.stepBase.has(key)) continue;
-    const c=holeCoverOf(img,k,h,R.gain); if(c!=null && c>0.6 && !skinNear(R,h.col-1,holeY(h))) return {h, code: id==='resistor' ? 'early_resistor_minus' : 'early_led_plus'}; }
+    const c=holeCoverOf(img,k,h,R.gain); if(c!=null && c>0.75 && !skinNear(R,h.col-1,holeY(h))) return {h, code: id==='resistor' ? 'early_resistor_minus' : 'early_led_plus'}; }
   return null;
 }
 function evidence(R, img, k){
   const ev={view:S.view, railEnds:railEnds(R)};
-  if(ev.view==='hand' || ev.view==='moving') ev.earlyPart=earlyPart(R,img,k);
-  if(ev.view==='ok'){ S.cov=coverAll(img,k,R.gain); S.place=placeParts(S.cov); }
+  if(ev.view==='hand') ev.earlyPart=earlyPart(R,img,k);   // not while the camera itself moves: blur lightens holes
+  if(ev.view==='ok'){ S.cov=coverAll(img,k,R.gain); S.place = S.coverNoisy ? {resistor:{state:'unknown',code:'view_noisy'}, led:{state:'unknown',code:'view_noisy'}} : placeParts(S.cov); }
+  else { S.covN=new Map(); S.covRaw=null; }   // a hand or motion restarts the count: legs are judged on a calm picture only
   ev.place=S.place||{};
   ev.resistor=partEvidence('resistor'); ev.led=partEvidence('led');
   // what the pre-power check must block: confirmed danger cannot be confirmed away; other wrong placements are
@@ -553,7 +584,7 @@ async function startCam(){
     await v.play();
     $('recNote').hidden=false;
     useSource(v,'cam');
-  }catch(e){ $('loadState').textContent='ما قدرت أفتح الكاميرا: '+e.message+'. يمكن التجربة على فيديو مسجّل.'; }
+  }catch(e){ $('loadState').textContent='ما قدرت أفتح الكاميرا: '+e.message+'. اسمح للمتصفح باستخدام الكاميرا من إعدادات الآيباد، ثم أعد المحاولة.'; }
 }
 function useSource(el, kind){
   S.src=el; S.kind=kind;
@@ -563,8 +594,8 @@ function useSource(el, kind){
   newSession(); enterSetup(); if(!S.loop){ S.loop=true; requestAnimationFrame(frame); }
 }
 $('camBtn').onclick=()=>{ unlock(); startCam(); };
-$('vidPick').onchange=e=>{ unlock(); const f=e.target.files[0]; if(!f) return; const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.loop=true; v.src=URL.createObjectURL(f); v.onloadeddata=()=>{ v.play(); useSource(v,'video'); }; };
-$('imgPick').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const im=new Image(); im.onload=()=>useSource(im,'image'); im.src=URL.createObjectURL(f); };
+if($('vidPick')) $('vidPick').onchange=e=>{ unlock(); const f=e.target.files[0]; if(!f) return; const v=document.createElement('video'); v.playsInline=true; v.muted=true; v.loop=true; v.src=URL.createObjectURL(f); v.onloadeddata=()=>{ v.play(); useSource(v,'video'); }; };
+if($('imgPick')) $('imgPick').onchange=e=>{ const f=e.target.files[0]; if(!f) return; const im=new Image(); im.onload=()=>useSource(im,'image'); im.src=URL.createObjectURL(f); };
 
 /* ---------------- start screen controls ---------------- */
 function seg(id, key, cb){ $(id).querySelectorAll('button').forEach(b=>b.onclick=()=>{ $(id).querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',x===b)); S[key]= key==='cols'?+b.dataset.v:b.dataset.v; cb&&cb(); }); }
@@ -726,6 +757,7 @@ function enterStep(i){
   $('gateBox').hidden = S.step.id!=='gate'; $('powerBox').hidden = S.step.id!=='power';
   $('ledDiag').hidden = S.step.id!=='led';
   $('usbChk').hidden = S.step.id!=='prep';
+  showLesson(S.step.id);
   const dd = S.mode==='train' && DO_DONT[S.step.id]; $('doDont').hidden=!dd; if(dd){ $('doTxt').textContent=dd[0]; $('dontTxt').textContent=dd[1]; }
   $('alert').hidden=true; S.earlyHole=null;
   $('manualBox').hidden=true; $('nextBtn').hidden = S.step.id!=='prep'; $('finishBuild').hidden=true;
@@ -746,8 +778,52 @@ function setState(st,title,why,keepAlert){ const e=$('stepState'); e.className='
 /* big card on the camera picture itself: what is wrong and how to fix it, while it is wrong (Nov 19) */
 const ICON={bad:'✕',warn:'!',ok:'✓',unknown:'…'};
 function alertCard(st,title,why){ const a=$('alert'); if(!a) return;
-  if(st!=='bad' && st!=='warn' && st!=='ok'){ a.hidden=true; return; }
-  a.className='alert '+st; a.innerHTML=`<b class="ic">${ICON[st]}</b><div><b>${esc(title)}</b>${why?`<span>${esc(why)}</span>`:''}</div>`; a.hidden=false; }
+  $('stepState').hidden = (st==='bad'||st==='warn'||st==='ok');
+  if(st!=='bad' && st!=='warn' && st!=='ok'){ a.hidden=true; markRule(undefined); return; }
+  const c=S.committed&&S.committed.code, ri=(st==='bad'||st==='warn') ? RULE_OF[S.early||c] : undefined;
+  a.className='alert '+st; a.innerHTML=`<b class="ic">${ICON[st]}</b><div><b>${esc(title)}</b>${why?`<span>${esc(why)}</span>`:''}${ri!=null?`<span class="rule">القاعدة ${ri+1}: ${esc(RULES[ri])}</span>`:''}</div>`; a.hidden=false;
+  markRule(ri); }
+function markRule(ri){ document.querySelectorAll('#rules li').forEach((li,i)=>li.classList.toggle('hit', i===ri)); }
+function showLesson(id){
+  const L = S.mode==='train' && LESSON[id];
+  $('whyBox').hidden=!L; $('quiz').hidden=!(L&&L.quiz);
+  if(!L) return;
+  $('whyTxt').textContent=L.why;
+  const Q=L.quiz; S.quizDone = S.quizDone||{};
+  $('quizQ').textContent=Q.q; $('quizFb').textContent=''; $('quizFb').className='mut';
+  $('quizA').innerHTML=Q.a.map((t,i)=>`<button class="btn ghost small" data-i="${i}">${esc(t)}</button>`).join('');
+  const lock=()=>$('quizA').querySelectorAll('button').forEach(x=>{ x.disabled=true; if(+x.dataset.i===Q.ok) x.classList.add('right'); });
+  $('quizA').querySelectorAll('button').forEach(b=>b.onclick=()=>{ const i=+b.dataset.i, right=i===Q.ok;
+    if(!S.quizDone[id]){ S.quizDone[id]=right?'right':'wrong'; log('quiz',{step:id, right}); }
+    lock(); if(!right) b.classList.add('wrong');
+    $('quizFb').textContent = right ? 'إجابة صحيحة.' : 'الإجابة الصحيحة: '+Q.a[Q.ok]+'.'; $('quizFb').className = right ? 'ok-t' : 'bad-t'; });
+  if(S.quizDone[id]) lock();
+}
+/* the current path, drawn as a loop: 5V → + → resistor → strip → LED → − → GND. Each piece takes the state the
+   camera confirmed (green right, red wrong, orange unsure, grey not seen): the trainee sees WHERE the loop is broken. */
+const PATH=[{k:'red',t:'السلك الأحمر 5V'},{k:'resistor',t:'المقاومة'},{k:'led',t:'اللمبة'},{k:'black',t:'السلك الأسود GND'}];
+function pathStates(ev){
+  const E=(ev&&ev.railEnds)||{}, P=S.place||{}, st={};
+  st.red = E.red==='+' ? 'ok' : E.red==='-' ? 'bad' : E.red==='unclear' ? 'warn' : 'none';
+  st.black = E.black==='-' ? 'ok' : E.black==='+' ? 'bad' : E.black==='unclear' ? 'warn' : 'none';
+  for(const k of ['resistor','led']){ const j=P[k]; st[k] = !j ? 'none' : j.state==='unknown' ? (S.parts&&S.parts[k]&&S.parts[k].legs ? 'warn' : 'none') : j.state; }
+  return st;
+}
+function renderPath(ev){
+  if(S.view!=='ok' || !$('pathSvg')) return;   // keep the last calm picture's verdict while a hand is on the board
+  const st=pathStates(ev), key=JSON.stringify(st); if(key===S.pathKey) return; S.pathKey=key;
+  const C={ok:'#3ddc84',bad:'#ff4d4d',warn:'#ff8c1a',none:'#56705f'};
+  const seg=(x1,y1,x2,y2,c)=>`<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="6"/>`;
+  let g=seg(14,30,105,30,C[st.red])+seg(105,30,195,30,C[st.resistor])+seg(195,30,286,30,C[st.led])+seg(286,27,286,100,C[st.led])+seg(286,100,14,100,C[st.black])+seg(14,103,14,27,'#56705f');
+  g+=`<rect x="128" y="21" width="44" height="18" fill="#0f4a34" stroke="${C[st.resistor]}" stroke-width="3"/><polygon points="226,18 226,42 246,30" fill="${C[st.led]}"/><line x1="248" y1="18" x2="248" y2="42" stroke="${C[st.led]}" stroke-width="4"/>`;
+  g+=`<text x="22" y="52" font-size="12" fill="#f1f4ec">5V</text><text x="22" y="92" font-size="12" fill="#f1f4ec">GND</text><text x="150" y="58" font-size="12" fill="#f1f4ec" text-anchor="middle">المقاومة</text><text x="236" y="58" font-size="12" fill="#f1f4ec" text-anchor="middle">اللمبة</text><text x="60" y="22" font-size="11" fill="#b9cbbe" text-anchor="middle">الأحمر · خط +</text><text x="150" y="92" font-size="11" fill="#b9cbbe" text-anchor="middle">خط − · الأسود</text>`;
+  $('pathSvg').innerHTML=g;
+  const broken=PATH.filter(p=>st[p.k]==='bad'), open=PATH.filter(p=>st[p.k]!=='ok');
+  $('pathTxt').textContent = !open.length ? 'المسار مغلق من 5V إلى GND: يمكن أن يمر التيار. بقي فحص ما قبل التشغيل.'
+    : broken.length ? 'المسار فيه خطأ عند: '+broken.map(p=>p.t).join('، ')+'.'
+    : 'المسار لم يكتمل بعد. ينقص: '+open.map(p=>p.t).join('، ')+'.';
+  $('pathTxt').className = !open.length ? 'ok-t' : broken.length ? 'bad-t' : 'mut';
+}
 $('backBtn').onclick=()=>{ if(!S.step || S.step.id==='power' || S.stepIdx<1) return;
   let i=S.stepIdx-1; if(S.mode==='test' && S.step.id==='gate') i=STEPS.findIndex(s=>s.id==='resistor');
   if(S.mode==='test' && S.step.id==='resistor') i=0;
@@ -767,9 +843,10 @@ function evalStep(ev){
   // early warning (experimental): only while view is not yet stable
   if(ev.view!=='ok'){
     const w = B.earlyWarning(id, ev.rawEnds) || (ev.earlyPart ? ev.earlyPart.code : null);
-    S.earlyN = w ? S.earlyN+1 : 0;
+    const hk = ev.earlyPart ? B.holeKey(ev.earlyPart.h) : null;
+    S.earlyN = w && (!hk || hk===S.earlyKey) ? S.earlyN+1 : (w ? 1 : 0); S.earlyKey=hk;   // the same hole, frame after frame
     S.earlyHole = w && ev.earlyPart && ev.earlyPart.code===w ? ev.earlyPart.h : null;
-    if(w && S.earlyN>=3 && S.early!==w){ S.early=w; log('early',{code:w}); const m=msg(w); setState('warn',m[0],m[1]); banner(m[0],'warn'); say(m[2],false,w); }
+    if(w && S.earlyN>=(hk?5:3) && S.early!==w){ S.early=w; log('early',{code:w}); const m=msg(w); setState('warn',m[0],m[1]); say(m[2],false,w); }
     else if(!S.early){ const v=msg(ev.view); const keep=S.committed&&S.committed.state==='bad'; setState('unknown',v[0],v[1],keep); }
     S.cand=null; return;
   }
@@ -780,9 +857,9 @@ function evalStep(ev){
   if(S.committed && S.committed.key===key) { maybeManual(j,now); return; }
   S.committed={key, code:j.code, state:j.state};
   const m=msg(j.code); setState(j.state==='unknown'?'unknown':j.state, m[0], m[1]);
-  if(j.state==='bad'){ log('error',{code:j.code, step:id}); banner(m[0],'bad'); say(m[2],false,j.code); }
+  if(j.state==='bad'){ log('error',{code:j.code, step:id}); say(m[2],false,j.code); }
   else if(j.state==='warn'){ log('suspect',{code:j.code, step:id}); say(m[2],false,j.code); }
-  else if(j.state==='ok'){ log('ok',{code:j.code, step:id}); banner(m[0],'ok'); say(m[2],false,j.code); $('manualBox').hidden=true; setTimeout(()=>{ if(S.session && S.phase!=='done' && S.step && S.step.id===id && S.committed && S.committed.state==='ok') advance(); },1600); }
+  else if(j.state==='ok'){ log('ok',{code:j.code, step:id}); say(m[2],false,j.code); $('manualBox').hidden=true; setTimeout(()=>{ if(S.session && S.phase!=='done' && S.step && S.step.id===id && S.committed && S.committed.state==='ok') advance(); },1600); }
   if(j.state==='ok'||j.state==='bad') S.unknownSince=now;
   maybeManual(j,now);
 }
@@ -910,10 +987,29 @@ function finish(lit){
     (backs?`<tr><th>مرات الرجوع خطوة</th><td>${backs}</td></tr>`:'')+
     `<tr><th>مرات منع التشغيل</th><td>${blocked}</td></tr>`+`<tr><th>تأكيدات المدرب (بحسابه)</th><td>${man}</td></tr>`+(ovr?`<tr><th>تجاوزات قديمة</th><td>${ovr}</td></tr>`:'')+`</table>`+
     (lit?`<p class="mut">إضاءة اللمبة سُجّلت بجواب من الجهاز نفسه، ولم تتحقق منها الكاميرا.</p>`:'');
+  assessment(S.session, lit);
   hush(); S.session=null; S.phase='done'; $('work').hidden=true; $('result').hidden=false; renderReport();
   try{ S.src && S.src.srcObject && S.src.srcObject.getTracks().forEach(t=>t.stop()); }catch(e){}
   $('recNote').hidden=true;
   try{ S.src && S.src.parentNode && S.src.remove(); }catch(e){} S.src=null; S.loop=false; trackFree();
+}
+/* the trainer's assessment of one session: the same score the platform saves (app/core/circuit.js scoreOf,
+   same weights as the simulation), plus understanding (first answers to the step questions) and the rules
+   that the trainee's errors broke. Nothing is invented: every line comes from this session's own events. */
+async function assessment(sess, lit){
+  const el=$('resAssess'); if(!el) return; el.innerHTML='';
+  const ev=sess.events, errs=ev.filter(e=>e.type==='error'), quiz=ev.filter(e=>e.type==='quiz');
+  let score=null;
+  try{ const [{scoreOf},{CAM_WEIGHT_AS}]=await Promise.all([import('../app/core/circuit.js'), import('../app/core/camcodes.js')]);
+    score = lit ? scoreOf(errs.map(e=>({kind:'error', code:CAM_WEIGHT_AS[e.code]||e.code}))) : null; }catch(e){}
+  const broke=[...new Set(errs.map(e=>RULE_OF[e.code]).filter(x=>x!=null))].sort();
+  const right=quiz.filter(q=>q.right).length;
+  el.innerHTML = `<div class="kpis">
+    <div class="kpi"><b>${score==null?'—':score}</b><span>${score==null?'لا درجة: المهارة لم تكتمل':'الدرجة من 100 (الأخطاء المؤكدة)'}</span></div>
+    <div class="kpi"><b>${quiz.length?right+' / '+quiz.length:'—'}</b><span>أسئلة الفهم (أول إجابة)</span></div>
+    <div class="kpi"><b>${errs.length}</b><span>خطأ مؤكد</span></div></div>`+
+    (broke.length ? `<h3>قوانين تحتاج مراجعة</h3><ol class="rules">${broke.map(i=>`<li value="${i+1}">${esc(RULES[i])}</li>`).join('')}</ol>` : (lit ? '<p class="ok-t">لم يُكسر أي قانون من القوانين الذهبية في هذه الجلسة.</p>' : ''))+
+    (quiz.some(q=>!q.right) ? `<p class="mut">أسئلة أخطأ فيها المتدرب أول مرة: ${quiz.filter(q=>!q.right).map(q=>esc((LESSON[q.step]||{}).quiz ? LESSON[q.step].quiz.q : q.step)).join('، ')}</p>` : '');
 }
 $('againBtn').onclick=()=>{ $('result').hidden=true; $('start').hidden=false; };
 
@@ -981,11 +1077,11 @@ function frame(ts){
     if(S.step && S.step.id==='gate') gateEval(ev); else if(S.step) evalStep(ev);
     if(S.step && S.step.id==='power' && ev.view==='ok'){ const R2=ev.railEnds; if(R2.red&&R2.black&&R2.red===R2.black&&R2.red!=='unclear'){ if(!S.powerAlarm){ S.powerAlarm=true; log('error',{code:'short',step:'power'}); banner('افصل الكيبل فوراً: قصر كهربائي','bad'); say('افصل الكيبل فوراً. يوجد قصر كهربائي.',true,'power_short'); } } else S.powerAlarm=false; }
   }
-  drawOverlay(ev, ts);
+  drawOverlay(ev, ts); renderPath(ev);
   const t=Math.round((performance.now()-S.t0)/1000); $('timer').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
   $('tech').textContent=`التتبع: ${S.cvReady?(S.track.ok?`يعمل (${S.track.inl||0} نقطة)`:'ضائع'):'غير متاح (كاميرا ثابتة فقط)'} · النموذج: ${S.detMs} ملّي ثانية · ${S.fps} إطار/ث · حركة ${(100*(S.motion||0)).toFixed(1)}٪ · جلد ${(100*(S.skin||0)).toFixed(1)}٪ · الصورة: ${({ok:'ثابتة',moving:'تتحرك',hand:'يد',lost:'ضائعة'})[S.view]||S.view}${S.reachDbg?` · فتحات (+ ${S.reachDbg.r.plus}/${S.reachDbg.l.plus}، − ${S.reachDbg.r.minus}/${S.reachDbg.l.minus})`:''}`;
 }
-function chip(t,cls){ const c=$('chip'); c.textContent=t; c.className='chip '+(cls||''); }
+function chip(t,cls){ const c=$('chip'); c.textContent=t; c.className='chip '+(cls||''); c.hidden=!t; }
 
 /* ---------------- drawing ---------------- */
 /* colours (Nov 19): yellow = where to put it, green = confirmed right, orange = suspicion, red = confirmed error,
@@ -1018,8 +1114,13 @@ function legDot(h, color, cross){ const y=h.rail?(h.rail==='+'?S.rails.plus:S.ra
 function strip(net, color, text){ const hs=B.netHoles(net,S.cols); if(!hs.length||net[0]==='R') return; const x=hs[0].col-1, y0=B.rowY(hs[0].row), y1=B.rowY(hs[hs.length-1].row);
   poly([toImg(x-0.45,y0-0.45),toImg(x+0.45,y0-0.45),toImg(x+0.45,y1+0.45),toImg(x-0.45,y1+0.45)]); ctx.fillStyle='rgba(61,220,132,.22)'; ctx.fill(); ctx.strokeStyle=color; ctx.lineWidth=lw()*1.3; ctx.stroke();
   if(text) label(text, x, y1+(y1<5?1.6:-1.6)+ (y0<5?0:0), color); }
-function forbid(rail, text){ const y=rail==='+'?S.rails.plus:S.rails.minus; ctx.setLineDash([lw()*3,lw()*3]); railSeg(y,-0.5,S.cols-0.5,COL.bad,'rgba(255,77,77,.10)'); ctx.setLineDash([]);
-  const x=Math.max(1,Math.round(S.cols*0.75)); label('✕ '+text, x, y+(y<0?-1.7:1.7), COL.bad); }
+function forbid(rail){ const y=rail==='+'?S.rails.plus:S.rails.minus; ctx.setLineDash([lw()*3,lw()*3]); railSeg(y,-0.5,S.cols-0.5,COL.bad,'rgba(255,77,77,.10)'); ctx.setLineDash([]); railTag(rail,'✕ لا',COL.bad,true); }
+/* a short tag beside the rail, past column 1 (off the holes), so nothing covers the board */
+function railTag(rail, text, color, far){ const y=rail==='+'?S.rails.plus:S.rails.minus, L=lw(), off=(x,yy)=>{ const q=toImg(x,yy); return q[0]<L*40||q[0]>cvs.width-L*40||q[1]<0||q[1]>cvs.height; };
+  // the 'where' tag sits past column 1 and the 'not here' tag past the last column, so the two never overlap
+  let xb = far ? S.cols+0.6 : -1.6; if(off(xb,y)) xb = far ? -1.6 : S.cols+0.6; let [px,py]=toImg(xb,y); const end = xb>0;   // column 1 at the picture edge: tag the other end
+  ctx.save(); ctx.font=`700 ${Math.round(L*6.5)}px "IBM Plex Sans Arabic",sans-serif`; ctx.direction='rtl'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  const w=ctx.measureText(text).width+L*5, x=end ? Math.min(px, cvs.width-w) : px-w; ctx.fillStyle='rgba(0,0,0,.75)'; ctx.fillRect(x,py-L*4.5,w,L*9); ctx.fillStyle=color; ctx.fillText(text,x+L*2.5,py); ctx.restore(); }
 function drawOverlay(ev, ts){
   const st = S.view!=='ok' ? 'unknown' : (S.committed ? S.committed.state : 'unknown');
   const color = S.view==='lost' ? COL.unknown : (S.step && ['gate','power'].includes(S.step.id) ? (S.gate&&S.gate.pass?COL.ok:S.gate&&S.gate.danger?COL.bad:COL.warn) : COL[st]);
@@ -1028,7 +1129,6 @@ function drawOverlay(ev, ts){
   ctx.setLineDash(S.view==='lost'?[L*4,L*4]:[]); ctx.strokeStyle=color; poly(quad(0.8)); ctx.stroke(); ctx.setLineDash([]);
   railSeg(S.rails.plus,-0.5,S.cols-0.5,'rgba(255,93,93,.8)','rgba(255,93,93,.10)');
   railSeg(S.rails.minus,-0.5,S.cols-0.5,'rgba(90,147,255,.8)','rgba(90,147,255,.10)');
-  const pv=toImg(-1.2,S.rails.plus), mv=toImg(-1.2,S.rails.minus); ctx.font=`700 ${Math.round(L*9)}px sans-serif`; ctx.textAlign='center'; ctx.fillStyle='#ff5d5d'; ctx.fillText('+',pv[0],pv[1]+L*3); ctx.fillStyle='#5a93ff'; ctx.fillText('−',mv[0],mv[1]+L*3);
   if(S.view==='lost'){ const long = S.lostFrom && performance.now()-S.lostFrom>8000; chip(long ? 'لم أجد اللوحة بعد: ثبّت الجهاز فوقها، أو اضغط «إعادة ضبط اللوحة»' : 'أبحث عن اللوحة… ثبّت الجهاز لحظة','warn'); return; }
   // guidance (training mode only). Nothing is tied to one column: column 10 is only a suggestion ring.
   const id=S.step&&S.step.id, T=B.targets(S.cols), C=T.col-1;
@@ -1036,14 +1136,13 @@ function drawOverlay(ev, ts){
   const railY = r => r==='+' ? S.rails.plus : S.rails.minus, away = r => railY(r)+(railY(r)<0?-1.7:1.7);
   const rp=S.parts&&S.parts.resistor, rj=S.place&&S.place.resistor, resNet = rj && rj.state==='ok' ? rj.net : null;
   // the resistor's 5 connected holes stay lit in green after it is confirmed: this is what "connected" means
-  if(resNet && id!=='resistor') strip(resNet, COL.ok, id==='led' ? 'الطويلة هنا (أي فتحة خضراء)' : '');
+  if(resNet && id!=='resistor') strip(resNet, COL.ok, '');
   if(S.mode==='train' && id){
-    if(id==='resistor'){ railSeg(S.rails.plus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.18)'); label('رجل هنا (أي فتحة في +)',C,away('+'),tc);
-      holeRing(C,0,tc,ts); label('والثانية داخل اللوحة، مثلاً هنا',C,5.6,tc); forbid('-','ليس هنا'); }
-    if(id==='led'){ railSeg(S.rails.minus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.18)'); label('القصيرة هنا (أي فتحة في −)',C+3,away('-'),tc); forbid('+','ليس هنا');
-      if(!resNet){ holeRing(C,2,tc,ts); label('الطويلة مع المقاومة',C,6.2,tc); } }
-    if(id==='red'){ railSeg(S.rails.plus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.22)'); label('الأحمر 5V في أي فتحة هنا',C,away('+'),tc); forbid('-','ليس هنا'); }
-    if(id==='black'){ railSeg(S.rails.minus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.22)'); label('الأسود GND في أي فتحة هنا',C,away('-'),tc); forbid('+','ليس هنا: قصر'); }
+    if(id==='resistor'){ railSeg(S.rails.plus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.18)'); railTag('+','رجل هنا',tc); holeRing(C,0,tc,ts); forbid('-'); }
+    if(id==='led'){ railSeg(S.rails.minus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.18)'); railTag('-','القصيرة هنا',tc); forbid('+');
+      if(!resNet) holeRing(C,2,tc,ts); }
+    if(id==='red'){ railSeg(S.rails.plus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.22)'); railTag('+','الأحمر هنا',tc); forbid('-'); }
+    if(id==='black'){ railSeg(S.rails.minus,-0.5,S.cols-0.5,tc,'rgba(255,210,63,.22)'); railTag('-','الأسود هنا',tc); forbid('+'); }
   }
   // the legs the camera found, at their real holes: green = right place, red = wrong place (with a cross)
   if(S.view==='ok' && S.mode==='train'){
@@ -1063,16 +1162,17 @@ function drawOverlay(ev, ts){
   for(const d of (performance.now()-S.detAt<DET_MAX_AGE?S.dets:[])) if((d.cls==='resistor'||d.cls==='led') && onBoard(d)){
     // uncertainty mode: below the gate confidence the part is not named, it is shown as not recognised
     const sure=d.s>=B.GATE_MIN_CONF; ctx.strokeStyle=!sure?COL.warn:d.cls==='led'?'#ff4fd8':'#7CFC00'; ctx.lineWidth=L*0.8; ctx.setLineDash(sure?[]:[L*3,L*2]); ctx.strokeRect(d.x1,d.y1,d.x2-d.x1,d.y2-d.y1); ctx.setLineDash([]);
-    const t=sure?(d.cls==='led'?'اللمبة':'المقاومة'):'لم أتمكن من التعرف عليها', fs=Math.max(13,L*6.5); ctx.save(); ctx.font=`600 ${fs}px "Readex Pro",sans-serif`; ctx.textBaseline='top'; ctx.direction='rtl'; ctx.textAlign='left';
+    if(!sure) continue;   // an unsure box stays a thin dashed outline, without a label over the board
+    const t=d.cls==='led'?'اللمبة':'المقاومة', fs=Math.max(13,L*6.5); ctx.save(); ctx.font=`600 ${fs}px "Readex Pro",sans-serif`; ctx.textBaseline='top'; ctx.direction='rtl'; ctx.textAlign='left';
     const tw=ctx.measureText(t).width, ty=Math.max(0,d.y1-fs-6); ctx.fillStyle=ctx.strokeStyle; ctx.fillRect(d.x1,ty,tw+10,fs+6); ctx.fillStyle='#0b2a1f'; ctx.fillText(t,d.x1+5,ty+3); ctx.restore(); }
   // chip
+  // the chip says only what the camera is doing; what is right or wrong is said once, in the card
   if(S.view==='hand') chip('اليد فوق اللوحة: أنتظر','warn');
-  else if(S.view==='moving') chip(S.early?msg(S.early)[0]:'الصورة تتحرك: أنتظر','warn');
+  else if(S.view==='moving') chip('الصورة تتحرك: أنتظر','warn');
   else if(id==='gate') chip(S.gate&&S.gate.pass?'اجتاز الفحص: يمكن التشغيل':S.gate&&S.gate.danger?'ممنوع التشغيل: خطأ خطير':'ممنوع التشغيل حتى يكتمل الفحص', S.gate&&S.gate.pass?'ok':S.gate&&S.gate.danger?'bad':'warn');
   else if(id==='power') chip('التشغيل: راقب اللمبة','ok');
   else if(S.mode==='test') chip('وضع الاختبار: لا إرشاد','');
-  else if(S.committed) chip(msg(S.committed.code)[0], S.committed.state==='unknown'?'warn':S.committed.state);
-  else chip('أفحص…','');
+  else chip('','');
 }
 
 /* test hook for automated checks (no effect on users) */

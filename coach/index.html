@@ -47,10 +47,10 @@ p{margin:6px 0}
 @media (max-width:900px){.grid{grid-template-columns:1fr}}
 .stage{position:relative;background:#000;border:2px solid var(--edge);min-height:200px}
 .stage canvas{display:block;width:100%;height:auto;touch-action:none;position:relative;z-index:1}
-.recnote{position:absolute;bottom:8px;inset-inline-start:8px;inset-inline-end:8px;padding:6px 12px;font-weight:700;font-size:.9rem;background:rgba(0,0,0,.78);color:#fff;border-inline-start:5px solid #e5484d;pointer-events:none;z-index:3}.recnote::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:#e5484d;margin-inline-end:8px}
+.recnote{position:absolute;top:8px;inset-inline-end:8px;max-width:46%;padding:3px 10px;font-weight:600;font-size:.78rem;background:rgba(0,0,0,.78);color:#fff;border-inline-start:5px solid #e5484d;pointer-events:none;z-index:3}.recnote::before{content:"";display:inline-block;width:10px;height:10px;border-radius:50%;background:#e5484d;margin-inline-end:8px}
 .chip{position:absolute;top:8px;inset-inline-start:8px;padding:5px 12px;font-weight:700;font-size:.95rem;background:rgba(0,0,0,.7);border-inline-start:5px solid var(--dim);pointer-events:none}
 .chip.ok{border-color:var(--ok);color:var(--ok)}.chip.bad{border-color:var(--bad);color:var(--bad)}.chip.warn{border-color:var(--warn);color:var(--warn)}
-.banner{position:absolute;inset-inline:8px;bottom:8px;padding:10px 14px;font-weight:700;background:rgba(5,25,17,.88);pointer-events:none;border-inline-start:6px solid var(--gold)}
+.banner{position:absolute;inset-inline:8px;top:44px;padding:10px 14px;font-weight:700;background:rgba(5,25,17,.88);pointer-events:none;border-inline-start:6px solid var(--gold)}
 .banner.ok{border-color:var(--ok)}.banner.bad{border-color:var(--bad);background:rgba(60,8,6,.9)}.banner.warn{border-color:var(--warn)}
 .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--dim)}
 .side{display:flex;flex-direction:column;gap:12px}
@@ -76,14 +76,18 @@ th{color:var(--dim);font-weight:500}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--dim)}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-inline-end:6px;vertical-align:middle}
 .legend .g::before{background:var(--ok)}.legend .y::before{background:var(--warn)}.legend .r::before{background:var(--bad)}.legend .t::before{background:var(--target)}.legend .u::before{background:var(--unk)}
-.alert{position:absolute;top:48px;inset-inline:8px;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:rgba(5,20,14,.9);border:3px solid var(--unk);z-index:4;pointer-events:none;font-size:1.05rem;line-height:1.5}
-.alert .ic{flex:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#08130e;background:var(--unk)}
+.alert{position:absolute;bottom:8px;inset-inline:8px;display:flex;gap:12px;align-items:flex-start;padding:8px 12px;background:rgba(5,20,14,.88);border:3px solid var(--unk);z-index:4;pointer-events:none;font-size:1rem;line-height:1.45}
+.alert .ic{flex:none;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#08130e;background:var(--unk)}
 .alert span{display:block;font-weight:500;font-size:.95rem;opacity:.95;margin-top:2px}
 .alert.bad{border-color:var(--bad);background:rgba(70,6,6,.92);animation:pulse 1s ease-in-out infinite alternate}.alert.bad .ic{background:var(--bad)}.alert.bad>div>b{color:#ffb3b3}
 .alert.warn{border-color:var(--warn)}.alert.warn .ic{background:var(--warn)}.alert.warn>div>b{color:var(--warn)}
 .alert.ok{border-color:var(--ok)}.alert.ok .ic{background:var(--ok)}.alert.ok>div>b{color:var(--ok)}
 @keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,77,77,.0)}to{box-shadow:0 0 0 6px rgba(255,77,77,.45)}}
 @media (prefers-reduced-motion:reduce){.alert.bad{animation:none}}
+.alert .rule{color:var(--gold);font-weight:600;font-size:.88rem}
+.rules{margin:4px 0;padding-inline-start:22px;font-size:.9rem}.rules li{padding:3px 4px;margin:2px 0}.rules li.hit{background:var(--bad-bg);color:#ffd0d0;outline:2px solid var(--bad)}
+.why{margin:8px 0;border:1px solid var(--edge);padding:6px 10px;font-size:.92rem}.why summary{cursor:pointer;color:var(--gold);font-weight:600}
+.quiz{margin:8px 0;border:1px solid var(--gold);padding:8px 10px;font-size:.92rem}.quiz .row{margin-top:6px}.quiz .btn.right{background:var(--ok);color:#06210f;opacity:1}.quiz .btn.wrong{background:var(--bad);color:#fff;opacity:1}
 .dodont{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;font-size:.88rem}.dodont div{border:1px solid var(--edge);padding:8px}.dodont b{display:block;margin-bottom:2px}.dodont .do b{color:var(--ok)}.dodont .dont b{color:var(--bad)}
 .diag{background:#f3efe4;display:block;width:100%;max-width:300px;margin:6px 0}
 .tech{font-size:.78rem;color:var(--dim);font-variant-numeric:tabular-nums}
@@ -115,8 +119,6 @@ th{color:var(--dim);font-weight:500}
   </div>
   <div class="row" style="margin-top:14px">
    <button class="btn" id="camBtn">تشغيل الكاميرا الخلفية</button>
-   <label class="btn ghost file">تجربة على فيديو مسجّل<input type="file" id="vidPick" accept="video/*"></label>
-   <label class="btn ghost file">تجربة على صورة<input type="file" id="imgPick" accept="image/*"></label>
   </div>
   <p class="tech" id="loadState">جاري تحميل النموذج والرؤية الحاسوبية…</p>
   <div class="card" style="background:rgba(0,0,0,.18);margin-top:10px">
@@ -135,9 +137,9 @@ th{color:var(--dim);font-weight:500}
  <section id="work" hidden>
   <div class="grid">
    <div>
-    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip">…</div><div class="alert" id="alert" role="alert" hidden></div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div><div class="recnote" id="recNote" role="status" hidden>تنبيه: الكاميرا تعمل وتصوّر الآن. تُحلَّل الصورة داخل الجهاز فقط، ولا تُحفظ ولا تُرسل.</div></div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip" hidden></div><div class="alert" id="alert" role="alert" hidden></div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div><div class="recnote" id="recNote" role="status" hidden>الكاميرا تعمل وتصوّر الآن، والتحليل داخل الجهاز فقط (لا تُحفظ ولا تُرسل).</div></div>
     <div class="legend" style="margin-top:8px"><span class="t">أصفر: ضعها هنا (أي فتحة في المكان المضيء)</span><span class="g">أخضر: صحيح ومؤكد</span><span class="y">برتقالي: اشتباه</span><span class="r">أحمر: خطأ، أصلحه</span><span class="u">رمادي: لا أرى بوضوح</span></div>
-    <p class="tech" id="tech"></p>
+    <details class="tech"><summary>معلومات تقنية للمدرب</summary><p class="tech" id="tech"></p></details>
    </div>
    <aside class="side">
     <div class="card">
@@ -179,6 +181,12 @@ th{color:var(--dim);font-weight:500}
       <label class="chk" id="usbChk" hidden><input type="checkbox" id="usbOff"> <span>كيبل USB مفصول عن الأردوينو الآن.</span></label>
      </div>
 
+     <!-- lesson: why + one quick question (training mode) -->
+     <div id="lessonBox">
+      <details id="whyBox" class="why" open hidden><summary>لماذا هذه الخطوة؟</summary><p id="whyTxt"></p></details>
+      <div id="quiz" class="quiz" hidden><b id="quizQ"></b><div class="row" id="quizA"></div><p id="quizFb" class="mut" role="status"></p></div>
+     </div>
+
      <!-- gate -->
      <div id="gateBox" hidden>
       <h3>فحص ما قبل التشغيل</h3>
@@ -212,10 +220,19 @@ th{color:var(--dim);font-weight:500}
       <button class="btn ghost small" id="endBtn">إنهاء الجلسة</button>
      </div>
     </div>
-    <div class="card">
-     <h3>ما الذي يتحقق منه النظام فعلاً؟</h3>
-     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة والقصر بينهما، والفتحات التي دخلت فيها أرجل المقاومة واللمبة (بمقارنتها بصورة اللوحة وهي فارغة)، ثم هل التوصيل صحيح كهربائياً في <b>أي عمود</b>. ونموذج ذكاء اصطناعي مدرَّب يتعرف على القطع.<br><b>تأكيد المدرب بحسابه:</b> قيمة المقاومة، واتجاه أرجل اللمبة، وعدم وجود أسلاك إضافية، وأي قطعة لم تتأكد منها الكاميرا. يتحقق الخادم من أن الحساب حساب مدرب.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ومعرفة أي رجلي اللمبة هي الطويلة. الفحص إرشاد على الشاشة، والكيبل يوصله شخص.</p>
+    <div class="card" id="pathCard">
+     <h3>مسار التيار</h3>
+     <svg id="pathSvg" viewBox="0 0 300 118" class="diag" style="background:transparent;max-width:100%" role="img" aria-label="مسار التيار من 5V إلى GND"></svg>
+     <p id="pathTxt" class="mut">يكتمل المسار خطوة بخطوة: كل قطعة تتأكد منها الكاميرا تصير خضراء.</p>
     </div>
+    <div class="card">
+     <h3>القوانين الذهبية للوحة التجارب</h3>
+     <ol id="rules" class="rules"><li>ركّب والكهرباء مفصولة، وشغّل بعد الفحص فقط.</li><li>فتحات العمود الواحد (الخمس) متصلة، والمجرى الأوسط يفصل الجهتين.</li><li>الأحمر للموجب (5V) والأسود للسالب (GND)، ولا يلتقيان أبداً.</li><li>لا لمبة بدون مقاومة، والرجل الطويلة جهة الموجب.</li><li>التيار يحتاج مساراً مغلقاً: من 5V إلى GND.</li></ol>
+    </div>
+    <details class="card">
+     <summary><b>ما الذي يتحقق منه النظام فعلاً؟</b></summary>
+     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة والقصر بينهما، والفتحات التي دخلت فيها أرجل المقاومة واللمبة (بمقارنتها بصورة اللوحة وهي فارغة)، ثم هل التوصيل صحيح كهربائياً في <b>أي عمود</b>. ونموذج ذكاء اصطناعي مدرَّب يتعرف على القطع.<br><b>تأكيد المدرب بحسابه:</b> قيمة المقاومة، واتجاه أرجل اللمبة، وعدم وجود أسلاك إضافية، وأي قطعة لم تتأكد منها الكاميرا. يتحقق الخادم من أن الحساب حساب مدرب.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ومعرفة أي رجلي اللمبة هي الطويلة. الفحص إرشاد على الشاشة، والكيبل يوصله شخص.</p>
+    </details>
    </aside>
   </div>
  </section>
@@ -223,6 +240,7 @@ th{color:var(--dim);font-weight:500}
  <!-- result -->
  <section class="card" id="result" hidden>
   <h2 id="resTitle"></h2>
+  <div id="resAssess"></div>
   <div id="resBody"></div>
   <p class="mut" id="resSave" role="status"></p>
   <div class="row" style="margin-top:12px"><button class="btn" id="againBtn">جلسة جديدة</button><a class="btn ghost" href="../app/" style="text-decoration:none">العودة إلى مراس</a><a class="btn ghost" href="#report" id="toReport2" style="text-decoration:none">تقرير حماية الأدوات</a></div>
@@ -239,8 +257,8 @@ th{color:var(--dim);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.wasm.min.js"></script>
 <script src="../app/vendor/supabase-2.119.0.js"></script>
 <script src="../app/config.js"></script>
-<script src="board.js?v=7"></script>
+<script src="board.js?v=8"></script>
 <script src="autocal.js?v=1"></script>
-<script src="coach.js?v=13"></script>
+<script src="coach.js?v=14"></script>
 </body>
 </html>
