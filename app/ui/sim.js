@@ -62,6 +62,8 @@ export async function simView(el, app, modeArg){
   steps = steps.filter(c => STEPS.some(s=>s.code===c));
   if(!steps.length) steps = STEPS.map(s=>s.code);   // الزائر أو تعذّر التحميل: خطوات الدرس الافتراضية
   let idx = 0, items = initialItems(), lit = false, flagged = null, ended = false;
+  // الصوت لهذه الشاشة فقط: بعد مغادرتها لا يُشغَّل أي مقطع (حتى لو بقي مؤقت معلّق)
+  let alive = true; const say = k => { if(alive) app.voice.say(k); };
 
   el.innerHTML = `
     <div class="row" style="justify-content:space-between"><h1>${mode==='train'?'تدريب':'اختبار'} · تغذية لوحة التجارب</h1>
@@ -93,7 +95,7 @@ export async function simView(el, app, modeArg){
     $('#title').textContent = title;
     $('#check').textContent = code==='power' ? 'توصيل USB' : 'تحقق';
     setState('', code==='power' ? 'سيُفحص التوصيل كاملاً قبل تشغيل الكهرباء.' : 'عند الانتهاء اضغط تحقق.');
-    app.voice.say(key);
+    say(key);
     draw();
   }
 
@@ -103,11 +105,11 @@ export async function simView(el, app, modeArg){
     const r = step.check(toState(items));
     if(r.ok){
       att.log(code, 'ok', r.code);
-      if(code==='power'){ lit = true; draw(); setState('ok', REASONS.lit); app.voice.say('lit'); return finish(true); }
+      if(code==='power'){ lit = true; draw(); setState('ok', REASONS.lit); say('lit'); return finish(true); }
       const note = mode==='train' && r.color ? colorNote(code==='red'?'5V':'GND', r.color) : null;
       setState('ok', REASONS.ok + (note ? ' ' + REASONS[note] : ''));
-      app.voice.say(note || 'ok');
-      setTimeout(()=>{ if(!ended) enter(idx+1); }, note ? 2200 : 900);
+      say(note || 'ok');
+      setTimeout(()=>{ if(!ended && alive) enter(idx+1); }, note ? 2200 : 900);
       return;
     }
     att.log(code, 'error', r.code);
@@ -115,10 +117,10 @@ export async function simView(el, app, modeArg){
     if(r.danger || r.code==='short'){ svg.classList.remove('danger'); void svg.offsetWidth; svg.classList.add('danger'); }
     if(mode==='train' || r.danger || r.code==='short'){
       setState(r.danger||r.code==='short' ? 'bad' : 'warn', REASONS[r.code] || r.code);
-      app.voice.say(r.code in app.voice.PHRASES ? r.code : 'test_wrong');
+      say(r.code in app.voice.PHRASES ? r.code : 'test_wrong');
     } else {
       setState('bad', 'غير صحيح. حاول مرة أخرى.');
-      app.voice.say('test_wrong');
+      say('test_wrong');
     }
     draw();
   }
@@ -137,7 +139,7 @@ export async function simView(el, app, modeArg){
       <div class="row"><button class="btn" id="again">محاولة جديدة</button>${res.guest ? '<a class="btn ghost" href="#/signup">أنشئ حساباً لحفظ نتائجك</a>' : ''}<a class="link" href="#/home">العودة إلى التدريب</a></div>`;
     const qb = $('#quitBox'); if(qb) qb.hidden = true;
     panel.querySelector('#again').onclick = () => simView(el, app, modeArg);
-    if(!completed) app.voice.say('incomplete');   // عند الإكمال نُبقي جملة "أضاءت اللمبة" دون قطعها
+    if(!completed) say('incomplete');   // عند الإكمال نُبقي جملة "أضاءت اللمبة" دون قطعها
   }
 
   // ---------- الرسم ----------
@@ -244,5 +246,5 @@ export async function simView(el, app, modeArg){
   const rot = () => { $('#rot').hidden = !(innerWidth < 600 && innerHeight > innerWidth); draw(); };
   addEventListener('resize', rot); rot();
   enter(0);
-  return () => { removeEventListener('resize', rot); app.voice.stop(); };
+  return () => { alive = false; removeEventListener('resize', rot); app.voice.stop(); };
 }

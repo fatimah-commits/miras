@@ -10,7 +10,7 @@
 :root{
   --ink:#0b3b29; --bench:#0f4a34; --raise:#165a41; --edge:#2b6b50;
   --paper:#f1f4ec; --dim:#b9cbbe; --gold:#e2b54e; --gold-ink:#2a1e00;
-  --ok:#47d78f; --ok-bg:rgba(71,215,143,.14); --bad:#ff5a4a; --bad-bg:rgba(255,93,93,.16); --warn:#ffc75a; --warn-bg:rgba(255,199,90,.15);
+  --ok:#3ddc84; --ok-bg:rgba(71,215,143,.14); --bad:#ff4d4d; --bad-bg:rgba(255,93,93,.16); --warn:#ff8c1a; --warn-bg:rgba(255,140,26,.16); --unk:#c9d3cc; --target:#ffd23f;
   --plus:#ff5d5d; --minus:#5a93ff;
   --f-display:"Readex Pro","IBM Plex Sans Arabic",Tahoma,sans-serif; --f-body:"IBM Plex Sans Arabic",Tahoma,sans-serif;
   color-scheme:dark;
@@ -55,7 +55,7 @@ p{margin:6px 0}
 .ph{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:20px;color:var(--dim)}
 .side{display:flex;flex-direction:column;gap:12px}
 .state{padding:10px 12px;font-weight:700;border-inline-start:6px solid var(--dim);background:rgba(0,0,0,.18);margin:8px 0}
-.state.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}.state.bad{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}.state.warn,.state.unknown{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}
+.state.ok{border-color:var(--ok);color:var(--ok);background:var(--ok-bg)}.state.bad{border-color:var(--bad);color:var(--bad);background:var(--bad-bg)}.state.warn{border-color:var(--warn);color:var(--warn);background:var(--warn-bg)}.state.unknown{border-color:var(--unk);color:var(--paper);background:rgba(255,255,255,.06)}
 .state small{display:block;font-weight:500;color:var(--paper);opacity:.9;margin-top:2px}
 .tform{border:1px solid var(--gold);padding:12px;margin-top:8px;background:rgba(0,0,0,.2)}
 .fld{display:block;margin:8px 0;font-size:.92rem}.fld input{display:block;width:100%;font:inherit;padding:9px;margin-top:3px;background:#0a2e20;color:var(--paper);border:1px solid var(--edge);min-height:44px}
@@ -75,7 +75,16 @@ th{color:var(--dim);font-weight:500}
 .kpi{border:1px solid var(--edge);padding:10px}.kpi b{display:block;font-size:1.6rem;font-family:var(--f-display);font-variant-numeric:tabular-nums}.kpi span{color:var(--dim);font-size:.85rem}
 .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:.85rem;color:var(--dim)}
 .legend span::before{content:"";display:inline-block;width:10px;height:10px;margin-inline-end:6px;vertical-align:middle}
-.legend .g::before{background:var(--ok)}.legend .y::before{background:var(--warn)}.legend .r::before{background:var(--bad)}.legend .t::before{background:var(--gold)}
+.legend .g::before{background:var(--ok)}.legend .y::before{background:var(--warn)}.legend .r::before{background:var(--bad)}.legend .t::before{background:var(--target)}.legend .u::before{background:var(--unk)}
+.alert{position:absolute;top:48px;inset-inline:8px;display:flex;gap:12px;align-items:flex-start;padding:12px 14px;background:rgba(5,20,14,.9);border:3px solid var(--unk);z-index:4;pointer-events:none;font-size:1.05rem;line-height:1.5}
+.alert .ic{flex:none;width:38px;height:38px;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#08130e;background:var(--unk)}
+.alert span{display:block;font-weight:500;font-size:.95rem;opacity:.95;margin-top:2px}
+.alert.bad{border-color:var(--bad);background:rgba(70,6,6,.92);animation:pulse 1s ease-in-out infinite alternate}.alert.bad .ic{background:var(--bad)}.alert.bad>div>b{color:#ffb3b3}
+.alert.warn{border-color:var(--warn)}.alert.warn .ic{background:var(--warn)}.alert.warn>div>b{color:var(--warn)}
+.alert.ok{border-color:var(--ok)}.alert.ok .ic{background:var(--ok)}.alert.ok>div>b{color:var(--ok)}
+@keyframes pulse{from{box-shadow:0 0 0 0 rgba(255,77,77,.0)}to{box-shadow:0 0 0 6px rgba(255,77,77,.45)}}
+@media (prefers-reduced-motion:reduce){.alert.bad{animation:none}}
+.dodont{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:8px 0;font-size:.88rem}.dodont div{border:1px solid var(--edge);padding:8px}.dodont b{display:block;margin-bottom:2px}.dodont .do b{color:var(--ok)}.dodont .dont b{color:var(--bad)}
 .diag{background:#f3efe4;display:block;width:100%;max-width:300px;margin:6px 0}
 .tech{font-size:.78rem;color:var(--dim);font-variant-numeric:tabular-nums}
 </style>
@@ -110,15 +119,24 @@ th{color:var(--dim);font-weight:500}
    <label class="btn ghost file">تجربة على صورة<input type="file" id="imgPick" accept="image/*"></label>
   </div>
   <p class="tech" id="loadState">جاري تحميل النموذج والرؤية الحاسوبية…</p>
-  <p class="mut">التجهيز: الآيباد ثابت فوق اللوحة على حامل، الأردوينو <b>تحت</b> اللوحة في الصورة، وكيبل USB <b>مفصول</b>. تُستخدم خطوط الطاقة القريبة من الأردوينو. الصور تُحلَّل داخل الجهاز ولا تُرسل لأي خادم.</p>
+  <div class="card" style="background:rgba(0,0,0,.18);margin-top:10px">
+   <h3>قبل تشغيل الكاميرا</h3>
+   <ol style="margin:4px 0;padding-inline-start:22px">
+    <li>اللوحة <b>فارغة</b>، وكيبل USB <b>مفصول</b>.</li>
+    <li>ثبّت الآيباد على حامل فوق اللوحة (من فوق أو بميلان خفيف). المهم أن تظهر اللوحة <b>كاملة</b> في الصورة.</li>
+    <li>الأردوينو بجانب اللوحة من جهة خطي الطاقة اللذين ستستخدمهما.</li>
+    <li>إذا اهتز الآيباد: انتظر ثانيتين، الإرشادات ترجع وحدها. وإن احتجت «إعادة ضبط اللوحة» فالجلسة لا تبدأ من جديد.</li>
+   </ol>
+   <p class="mut">الصور تُحلَّل داخل الجهاز ولا تُرسل لأي خادم.</p>
+  </div>
  </section>
 
  <!-- work -->
  <section id="work" hidden>
   <div class="grid">
    <div>
-    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip">…</div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div><div class="recnote" id="recNote" role="status" hidden>تنبيه: الكاميرا تعمل وتصوّر الآن. تُحلَّل الصورة داخل الجهاز فقط، ولا تُحفظ ولا تُرسل.</div></div>
-    <div class="legend" style="margin-top:8px"><span class="t">المكان المطلوب</span><span class="g">تم التأكد</span><span class="y">اشتباه أو لا أرى بوضوح</span><span class="r">خطأ مؤكد</span></div>
+    <div class="stage" id="stage"><canvas id="cv"></canvas><div class="chip" id="chip">…</div><div class="alert" id="alert" role="alert" hidden></div><div class="banner" id="banner" hidden></div><div class="ph" id="ph" hidden></div><div class="recnote" id="recNote" role="status" hidden>تنبيه: الكاميرا تعمل وتصوّر الآن. تُحلَّل الصورة داخل الجهاز فقط، ولا تُحفظ ولا تُرسل.</div></div>
+    <div class="legend" style="margin-top:8px"><span class="t">أصفر: ضعها هنا (أي فتحة في المكان المضيء)</span><span class="g">أخضر: صحيح ومؤكد</span><span class="y">برتقالي: اشتباه</span><span class="r">أحمر: خطأ، أصلحه</span><span class="u">رمادي: لا أرى بوضوح</span></div>
     <p class="tech" id="tech"></p>
    </div>
    <aside class="side">
@@ -139,6 +157,7 @@ th{color:var(--dim);font-weight:500}
      <div id="stepBox" hidden>
       <h3 id="stepTitle"></h3>
       <p id="stepText"></p>
+      <div class="dodont" id="doDont" hidden><div class="do"><b>افعل</b><span id="doTxt"></span></div><div class="dont"><b>لا تفعل</b><span id="dontTxt"></span></div></div>
       <svg class="diag" id="ledDiag" viewBox="0 0 300 110" hidden aria-hidden="true">
        <rect x="0" y="0" width="300" height="110" fill="#f3efe4"/>
        <path d="M120 14 a18 18 0 0 1 36 0 v26 h-36z" fill="#d93025"/><rect x="152" y="14" width="4" height="26" fill="#a11"/>
@@ -195,7 +214,7 @@ th{color:var(--dim);font-weight:500}
     </div>
     <div class="card">
      <h3>ما الذي يتحقق منه النظام فعلاً؟</h3>
-     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة، والقصر بينهما، ووجود المقاومة واللمبة قرب مكانهما (نموذج ذكاء اصطناعي مدرَّب).<br><b>تأكيد المدرب بحسابه:</b> قيمة المقاومة، واتجاه أرجل اللمبة، وعدم وجود أسلاك إضافية، وأي قطعة لم تتأكد منها الكاميرا. يتحقق الخادم من أن الحساب حساب مدرب.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ورؤية الفتحة الدقيقة لكل رجل. الفحص إرشاد على الشاشة، والكيبل يوصله شخص.</p>
+     <p class="mut"><b>الكاميرا:</b> مكان اللوحة، طرفا السلكين الأحمر والأسود في خطي الطاقة والقصر بينهما، والفتحات التي دخلت فيها أرجل المقاومة واللمبة (بمقارنتها بصورة اللوحة وهي فارغة)، ثم هل التوصيل صحيح كهربائياً في <b>أي عمود</b>. ونموذج ذكاء اصطناعي مدرَّب يتعرف على القطع.<br><b>تأكيد المدرب بحسابه:</b> قيمة المقاومة، واتجاه أرجل اللمبة، وعدم وجود أسلاك إضافية، وأي قطعة لم تتأكد منها الكاميرا. يتحقق الخادم من أن الحساب حساب مدرب.<br><b>غير متاح:</b> قطع الكهرباء آلياً، ومعرفة أي رجلي اللمبة هي الطويلة. الفحص إرشاد على الشاشة، والكيبل يوصله شخص.</p>
     </div>
    </aside>
   </div>
@@ -219,8 +238,8 @@ th{color:var(--dim);font-weight:500}
 <script src="https://cdn.jsdelivr.net/npm/onnxruntime-web@1.26.0/dist/ort.wasm.min.js"></script>
 <script src="../app/vendor/supabase-2.119.0.js"></script>
 <script src="../app/config.js"></script>
-<script src="board.js?v=6"></script>
+<script src="board.js?v=7"></script>
 <script src="autocal.js?v=1"></script>
-<script src="coach.js?v=11"></script>
+<script src="coach.js?v=12"></script>
 </body>
 </html>
