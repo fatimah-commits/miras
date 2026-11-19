@@ -284,6 +284,7 @@ function judgeStep(step, ev){
     case 'resistor': {
       const r = ev.resistor||{}, P = ev.place && ev.place.resistor;
       // the legs themselves (any column): a wrong placement is an error, a right one is confirmed
+      if(P && P.code==='view_noisy') return {state:'unknown', code:'view_noisy'};
       if(P && P.state==='bad') return {state:'bad', code:P.code, at:P.at};
       if(P && P.state==='ok') return {state:'ok', code:'resistor_ok', net:P.net};
       if(ev.reach && ev.reach.resistor==='wrong') return {state:'bad', code:'resistor_in_minus'};
@@ -295,6 +296,7 @@ function judgeStep(step, ev){
     }
     case 'led': {
       const l = ev.led||{}, P = ev.place && ev.place.led;
+      if(P && P.code==='view_noisy') return {state:'unknown', code:'view_noisy'};
       if(P && P.state==='bad') return {state:'bad', code:P.code, at:P.at};
       if(P && P.state==='ok') return {state:'ok', code:'led_ok'};
       if(P && P.state==='warn') return {state:'warn', code:P.code, at:P.at};
