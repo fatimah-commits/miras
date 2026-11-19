@@ -172,6 +172,7 @@ function judgeStep(step, ev){
   switch(step){
     case 'resistor': {
       const r = ev.resistor||{};
+      if(ev.reach && ev.reach.resistor==='wrong') return {state:'bad', code:'resistor_in_minus'};
       if(r.seen && !confident(r)) return {state:'unknown', code:'resistor_low_conf'};
       if(r.seen && r.near) return {state:'ok', code: ev.targetChanged&&ev.targetChanged.resistor ? 'resistor_ok_hole' : 'resistor_ok'};
       if(r.seen && !r.near) return {state:'warn', code:'resistor_far'};
@@ -179,6 +180,7 @@ function judgeStep(step, ev){
     }
     case 'led': {
       const l = ev.led||{};
+      if(ev.reach && ev.reach.led==='wrong') return {state:'bad', code:'led_short_in_plus'};
       if(l.seen && !confident(l)) return {state:'unknown', code:'led_low_conf'};
       if(l.seen && l.near) return {state:'ok', code:'led_ok'};
       if(l.seen && !l.near) return {state:'warn', code:'led_far'};
@@ -264,8 +266,9 @@ function safetyGate(ev, confirmation, opts){
     if(R.red==='+' && R.black==='-') return {state:'ok', code:'wires_ok'};
     return {state:'unknown', code:'wires_unclear'};
   });
-  cam('resistor', () => partLine(ev.resistor, 'resistor', min));
-  cam('led', () => partLine(ev.led, 'led', min));
+  const reach = ev.reach||{};
+  cam('resistor', () => reach.resistor==='wrong' ? {state:'bad', code:'resistor_in_minus'} : partLine(ev.resistor, 'resistor', min));
+  cam('led', () => reach.led==='wrong' ? {state:'bad', code:'led_short_in_plus'} : partLine(ev.led, 'led', min));
   for(const id of TRAINER_LINES){
     if(v) L.push({id, src:'trainer', state:'unknown', code:v.code, fix:'wait'});
     else if(byTrainer.has(id)) L.push({id, src:'trainer', state:'ok', code:'trainer_ok'});
