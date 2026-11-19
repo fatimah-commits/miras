@@ -1,13 +1,14 @@
 // مراس: الشاشات (عرض فقط). المنطق في core/.
 import { REASONS } from '../core/circuit.js';
 import { toCSV } from '../core/data.js';
+import { CAM_NAMES } from '../core/camcodes.js';
 
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 const num = n => n==null ? '—' : new Intl.NumberFormat('ar-SA').format(n);
 const date = t => t ? new Date(t).toLocaleString('ar-SA-u-ca-gregory', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' }) : '—';
 const dur = s => s==null ? '—' : `${num(Math.floor(s/60))}:${String(Math.round(s%60)).padStart(2,'0').replace(/\d/g,d=>'٠١٢٣٤٥٦٧٨٩'[d])}`;
 const MODE = { 'sim-train':'محاكاة · تدريب', 'sim-test':'محاكاة · اختبار', 'cam-train':'كاميرا · تدريب', 'cam-test':'كاميرا · اختبار' };
-export const errName = c => (REASONS[c] || c).replace(/[:.].*$/, '');
+export const errName = c => (REASONS[c] || CAM_NAMES[c] || c).replace(/[:.].*$/, '');
 const redirect = () => location.origin + location.pathname;
 
 function form(el, html, onSubmit){
@@ -95,7 +96,7 @@ export const views = {
     const isGuest = !app.me;
     const list = isGuest ? [] : await app.data.myAttempts();
     const done = list.filter(a=>a.completed), best = done.length ? Math.max(...done.map(a=>a.score)) : null;
-    const pend = isGuest ? 0 : app.data.pending();
+    const pend = isGuest ? 0 : await app.data.pendingMine();
     let kind = app.store.get('practiceKind') === 'cam' ? 'cam' : 'sim';
     const href = (k, m) => k==='cam' ? `../coach/?mode=${m}` : `#/sim/${m}`;
     el.innerHTML = `
