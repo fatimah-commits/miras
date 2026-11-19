@@ -45,6 +45,8 @@ const MSG = {
   resistor_ok_hole:['تم التأكد: المقاومة في مكانها','النموذج رأى المقاومة، وتغيّرت الفتحة المطلوبة. قيمتها تؤكَّد يدوياً قبل التشغيل.','ممتاز، تم التأكد من هذه الخطوة.'],
   resistor_far:['اشتباه: المقاومة ليست في العمود المطلوب','النموذج رأى المقاومة بعيداً عن المكان المضيء. انقلها إلى العمود المحدد.','انتبه، هذا الصف غير صحيح. ضع المقاومة في المكان المضيء.'],
   resistor_unseen:['لا أرى المقاومة بعد','ضعها في المكان المضيء. إن كانت موضوعة ولم تظهر، فالنموذج لم يتعرف عليها.',''],
+  resistor_in_minus:['خطأ: رجل المقاومة في خط السالب','رجل المقاومة يجب أن تكون في خط الموجب (+). في خط السالب لن تضيء اللمبة.','انتبه، المقاومة في الخط المعاكس. انقل رجلها إلى خط الموجب.'],
+  led_short_in_plus:['خطأ: رجل اللمبة القصيرة في خط الموجب','الرجل القصيرة مكانها خط السالب (−). في خط الموجب لن تضيء اللمبة.','انتبه، رجل اللمبة القصيرة في الخط المعاكس. انقلها إلى خط السالب.'],
   led_ok:['تم التأكد: اللمبة في مكانها','النموذج رأى اللمبة قرب المكان المطلوب. اتجاه الأرجل يؤكَّد يدوياً.','ممتاز، تم التأكد من هذه الخطوة.'],
   led_far:['اشتباه: اللمبة ليست في مكانها','النموذج رأى اللمبة بعيداً عن المكان المضيء.','انتبه، هذا المكان غير صحيح. ضع اللمبة في المكان المضيء.'],
   led_unseen:['لا أرى اللمبة بعد','ضعها في المكان المضيء.',''],
@@ -94,7 +96,7 @@ const REC_FOR = { // message code or step id -> clip
   red_in_minus:'wrong_rail', short:'short', lost:'board_lost', hand:'hand_in_view', moving:'cam_moving', early_red_minus:'wrong_rail',
   'step:prep':'usb_unplug', 'step:resistor':'resistor_missing', 'step:led':'led_missing', 'step:gate':'usb_locked', 'step:power':'usb_ok',
   calib_ok:'calib_ok', cam_aim:'cam_aim', led_reversed:'led_reversed', mode_test:'mode_test', power_short:'short',
-  resistor_far:'test_wrong', led_far:'test_wrong', black_in_plus:'wrong_rail', early_black_plus:'wrong_rail',
+  resistor_far:'test_wrong', led_far:'test_wrong', resistor_in_minus:'wrong_rail', led_short_in_plus:'wrong_rail', black_in_plus:'wrong_rail', early_black_plus:'wrong_rail',
   resistor_low_conf:'cannot_verify', led_low_conf:'cannot_verify', gate_block:'usb_locked',
   'step:red':'@voice/wire_red.mp3', 'step:black':'@voice/wire_black.mp3' };   // '@' = a clip cut from the same recordings, stored in coach/voice
 const voiceEl = new Audio();
@@ -228,13 +230,21 @@ function railEnds(R){
   }
   return out;
 }
+/* A hand is skin-coloured AND new. Something skin-coloured that stays still (a beige resistor body, the wooden
+   table at the board edge) stops counting after ~1.2 s, unless it covers a large part of the board.
+   A frame where the overlay itself was corrected (drift correction / board found again) is not camera motion. */
+const SKIN_STILL_FRAMES = 30, SKIN_BIG = 0.06;
 function viewOf(R){
   if(!S.track.ok) return 'lost';
-  let skin=0, mov=0, tot=0; const pg=S.prevGray;
-  for(let o=0;o<R.n;o++){ if(R.map[o]<0) continue; tot++; if((R.cls[o]&4) && R.cls[o]!==128 && !S.ref.skin[o]) skin++; if(pg && Math.abs(R.gray[o]-pg[o])>30) mov++; }
+  if(!S.skinAge || S.skinAge.length!==R.n) S.skinAge=new Uint8Array(R.n);
+  const jump=S.hJump; S.hJump=false;
+  let skin=0, skinAll=0, mov=0, tot=0; const pg=jump?null:S.prevGray, A=S.skinAge;
+  for(let o=0;o<R.n;o++){ if(R.map[o]<0) continue; tot++;
+    if((R.cls[o]&4) && R.cls[o]!==128 && !S.ref.skin[o]){ skinAll++; if(A[o]<255) A[o]++; if(A[o]<SKIN_STILL_FRAMES) skin++; } else A[o]=0;
+    if(pg && Math.abs(R.gray[o]-pg[o])>30) mov++; }
   const now=performance.now();
   S.skin = tot? skin/tot : 0; S.motion = tot? mov/tot : 0;
-  if(S.skin>0.015){ S.lastMove=now; return 'hand'; }
+  if(S.skin>0.015 || (tot && skinAll/tot>SKIN_BIG)){ S.lastMove=now; return 'hand'; }
   if(S.motion>0.02){ S.lastMove=now; return 'moving'; }
   if(now-S.lastMove<STABLE_MS) return 'moving';
   return 'ok';
@@ -243,6 +253,42 @@ function holeChanged(R, x, y){
   const r=Math.max(2,Math.round(R.P*0.35)), ci=bx2i(R,x), cj=by2j(R,y); let s=0, n=0;
   for(let j=cj-r;j<=cj+r;j++) for(let i=ci-r;i<=ci+r;i++){ if(i<0||j<0||i>=R.RW||j>=R.RH) continue; const o=j*R.RW+i; s+=Math.abs(R.gray[o]-S.ref.gray[o]); n++; }
   return n && s/n>28;
+}
+/* Which power rail does a part reach near its target? Each rail hole near the target is looked at in the full
+   camera picture and compared with the calibration picture: a hole is a small dark spot, and a leg in it (or the
+   part over it) covers that dark spot. Counting dark pixels (not comparing pixel by pixel) keeps this steady
+   when the overlay is off by a fraction of a hole.
+   Returns 'right', 'wrong' (it reaches the other rail) or null (nothing clear). Only a still view is judged. */
+function holePatch(img, k, x, y){
+  const Hp=B.scaleH(S.H,k), d=img.data, W=pc.width, Hh=pc.height, out=[];
+  for(let dy=-0.4;dy<=0.4001;dy+=0.1) for(let dx=-0.6;dx<=0.6001;dx+=0.1){
+    const q=B.apply(Hp,x+dx,y+dy), u=Math.round(q[0]), v=Math.round(q[1]);
+    if(u<0||v<0||u>=W||v>=Hh){ out.push(-1); continue; }
+    const o=(v*W+u)*4; out.push((d[o]*77+d[o+1]*150+d[o+2]*29)>>8); }
+  return out;
+}
+function reachCols(){ const C=B.targets(S.cols).col-1; return [C-1,C,C+1,C+2,C+3,C+4]; }
+function captureHoles(img, k){
+  S.holeRef={};
+  for(const x of reachCols()) for(const rail of ['plus','minus']){
+    const p=holePatch(img,k,x,S.rails[rail]), v=p.filter(a=>a>=0).sort((a,b)=>a-b); if(v.length<40) continue;
+    const thr=v[Math.floor(v.length*0.5)]*0.6, dark=p.filter(a=>a>=0&&a<thr).length;
+    if(dark>=3) S.holeRef[x+'|'+rail]={thr, dark};
+  }
+}
+function holeCover(img, k, x, rail, gain){ // 0 = hole looks as at calibration, 1 = hole fully covered
+  const r=S.holeRef && S.holeRef[x+'|'+rail]; if(!r) return 0;
+  const p=holePatch(img,k,x,S.rails[rail]), t=r.thr*(gain||1); let dark=0; for(const a of p) if(a>=0&&a<t) dark++;
+  return Math.max(0, 1-dark/r.dark);
+}
+const HOLE_COVERED = 0.45;
+function railReach(img, k, xs, target, gain){
+  let sp=0, sm=0; for(const x of xs){ sp=Math.max(sp,holeCover(img,k,x,'plus',gain)); sm=Math.max(sm,holeCover(img,k,x,'minus',gain)); }
+  const st = target==='+'?sp:sm, sw = target==='+'?sm:sp, wrongOuter = outerRail()!==target;
+  const to=st>HOLE_COVERED, tw=sw>HOLE_COVERED;
+  // a leg in the outer rail passes over the inner rail too, so the inner hole can be covered as well
+  const wrong = wrongOuter ? (tw && (!to || sw>=0.8*st)) : (tw && !to);
+  return {reach: wrong ? 'wrong' : to ? 'right' : null, plus:+sp.toFixed(2), minus:+sm.toFixed(2)};
 }
 function partEvidence(cls){
   const fresh = performance.now()-S.detAt < DET_MAX_AGE;
@@ -255,10 +301,12 @@ function partEvidence(cls){
     if(cls==='led' && bx>=C-2 && bx<=C+5 && by>=yTop()-2 && by<=4.5) near=true; }
   return {seen:true, near, conf:best};
 }
-function evidence(R){
+function evidence(R, img, k){
   const ev={view:S.view, railEnds:railEnds(R), resistor:partEvidence('resistor'), led:partEvidence('led')};
   const T=B.targets(S.cols);
   ev.targetChanged={resistor:holeChanged(R,T.col-1,0), led:holeChanged(R,T.col-1,2)};
+  const C=T.col-1, rr=railReach(img,k,[C-1,C,C+1],'+',R.gain), lr=railReach(img,k,[C+2,C+3,C+4],'-',R.gain);
+  ev.reach={resistor:rr.reach, led:lr.reach}; S.reachDbg={r:rr, l:lr};
   return ev;
 }
 function boardSanity(){ // tracked outline vs model's board box (only when the model sees a board)
@@ -311,7 +359,7 @@ function relocalize(g, k, ref, Href, blend){
       const Hn=B.mul(D,Href);
       // sanity: the board must keep a plausible size (scale change < 2x)
       const q=[[0,0],[S.cols-1,0],[S.cols-1,11],[0,11]], d0=Math.hypot(...[0,1].map(i=>B.apply(S.Hcal,...q[1])[i]-B.apply(S.Hcal,...q[0])[i])), d1=Math.hypot(...[0,1].map(i=>B.apply(Hn,...q[1])[i]-B.apply(Hn,...q[0])[i]));
-      if(d1/d0>0.5 && d1/d0<2){ S.H = blend && S.H ? blendH(S.H,Hn,blend) : Hn; ok=true; }
+      if(d1/d0>0.5 && d1/d0<2){ S.H = blend && S.H ? blendH(S.H,Hn,blend) : Hn; S.hJump=true; ok=true; }
     }
     A.delete(); Bm.delete(); inl.delete(); G.delete();
   }catch(e){ console.error(e); }
@@ -521,7 +569,7 @@ cvs.addEventListener('pointerup', ()=>{ S.drag=-1; });
 $('setupUndo').onclick=()=>{ if(S.rails && S.rails.minus!=null) S.rails.minus=null; else if(S.rails && S.rails.plus!=null) S.rails.plus=null; else if(S.taps.length){ S.taps.pop(); S.rails=null; S.H=null; } renderSetup(); };
 $('setupDone').onclick=()=>{
   pctx.drawImage(S.src,0,0,pc.width,pc.height); const img=pctx.getImageData(0,0,pc.width,pc.height), k=pc.width/S.srcW;
-  S.rect=makeRect(); sampleRect(S.rect,img,k); S.ref=captureRef(S.rect); S.prevGray=S.rect.gray.slice();
+  S.rect=makeRect(); sampleRect(S.rect,img,k); S.ref=captureRef(S.rect); S.prevGray=S.rect.gray.slice(); captureHoles(img,k);
   S.Hcal=S.H.slice(); S.needRecal=false; S.lostFrom=0; S.recPrev=null; recentFree(); S.recentAt=performance.now(); trackInit(img,k); S.lastMove=0;
   if(S.cvReady){ refFree(); const g=grayMat(img); S.orbRef=orbOf(g,quad(1.0).map(p=>[p[0]*k,p[1]*k])); g.delete(); }
   log('setup',{cols:S.cols, auto:!!S.autoDone});
@@ -761,7 +809,7 @@ function frame(ts){
   const nowT=performance.now();
   if(!S.track.ok || S.track.static){ if(!S.lostFrom) S.lostFrom=nowT; } else S.lostFrom=0;
   if(S.lostFrom && nowT-S.lostFrom>700 && (!S.track.ok || S.needRecal) && autoRecover()){
-    S.needRecal=false; S.lostFrom=0; trackInit(img,k); S.lostSince=0; log('board_found',{how:'grid'});
+    S.needRecal=false; S.lostFrom=0; trackInit(img,k); S.lostSince=0; S.hJump=true; log('board_found',{how:'grid'});
     banner('رجعت الإرشادات فوق اللوحة.','ok');
   }
   if(S.track.ok && !S.track.static && S.view==='ok' && (S.track.inl||0)>=30 && nowT-(S.recentAt||0)>4000) refreshRecent(img,k);
@@ -769,7 +817,7 @@ function frame(ts){
   boardSanity();
   const R=sampleRect(S.rect,img,k);
   S.view=viewOf(R); S.prevGray=R.gray.slice();
-  const ev=evidence(R);
+  const ev=evidence(R,img,k);
   ev.rawEnds=ev.railEnds; S.ev=ev;
   if(S.phase!=='done'){
     if(S.step && S.step.id==='gate') gateEval(ev); else if(S.step) evalStep(ev);
@@ -777,7 +825,7 @@ function frame(ts){
   }
   drawOverlay(ev, ts);
   const t=Math.round((performance.now()-S.t0)/1000); $('timer').textContent=`${String(Math.floor(t/60)).padStart(2,'0')}:${String(t%60).padStart(2,'0')}`;
-  $('tech').textContent=`التتبع: ${S.cvReady?(S.track.ok?`يعمل (${S.track.inl||0} نقطة)`:'ضائع'):'غير متاح (كاميرا ثابتة فقط)'} · النموذج: ${S.detMs} ملّي ثانية · ${S.fps} إطار/ث · حركة ${(100*(S.motion||0)).toFixed(1)}٪ · جلد ${(100*(S.skin||0)).toFixed(1)}٪`;
+  $('tech').textContent=`التتبع: ${S.cvReady?(S.track.ok?`يعمل (${S.track.inl||0} نقطة)`:'ضائع'):'غير متاح (كاميرا ثابتة فقط)'} · النموذج: ${S.detMs} ملّي ثانية · ${S.fps} إطار/ث · حركة ${(100*(S.motion||0)).toFixed(1)}٪ · جلد ${(100*(S.skin||0)).toFixed(1)}٪ · الصورة: ${({ok:'ثابتة',moving:'تتحرك',hand:'يد',lost:'ضائعة'})[S.view]||S.view}${S.reachDbg?` · فتحات (+ ${S.reachDbg.r.plus}/${S.reachDbg.l.plus}، − ${S.reachDbg.r.minus}/${S.reachDbg.l.minus})`:''}`;
 }
 function chip(t,cls){ const c=$('chip'); c.textContent=t; c.className='chip '+(cls||''); }
 
@@ -829,6 +877,9 @@ function drawOverlay(ev, ts){
   const E=ev.railEnds;
   if(E.red==='-' ) railSeg(S.rails.minus,-0.5,S.cols-0.5,COL.bad);
   if(E.black==='+') railSeg(S.rails.plus,-0.5,S.cols-0.5,COL.bad);
+  const RC=B.targets(S.cols).col-1, RH=ev.reach||{};
+  if(RH.resistor==='wrong') railSeg(S.rails.minus,RC-1.5,RC+1.5,COL.bad,'rgba(255,90,74,.30)');
+  if(RH.led==='wrong') railSeg(S.rails.plus,RC+1.5,RC+4.5,COL.bad,'rgba(255,90,74,.30)');
   // model detections (thin)
   for(const d of (performance.now()-S.detAt<DET_MAX_AGE?S.dets:[])) if(d.cls==='resistor'||d.cls==='led'){
     // uncertainty mode: below the gate confidence the part is not named, it is shown as not recognised
