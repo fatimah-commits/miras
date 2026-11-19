@@ -14,7 +14,7 @@ jobs:
       - name: Circuit engine
         run: node tests/app/circuit.test.mjs
       - name: Camera coach logic + pre-power safety gate
-        run: node tests/coach-logic.test.js && node tests/coach-gate.test.mjs
+        run: node tests/coach-logic.test.js && node tests/coach-gate.test.mjs && node tests/coach-place.test.js
       - uses: supabase/setup-cli@v1
         with: { version: latest }
       - name: Local Supabase

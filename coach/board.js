@@ -132,6 +132,117 @@ function checkCircuit(p){
   return out;
 }
 
+/* ---------- placement from the holes themselves (any column, Nov 19) ----------
+   The camera compares every hole with the calibration picture: a leg pushed into a hole covers its dark opening.
+   Each part is judged by WHERE ITS LEGS ARE ELECTRICALLY (netOf), never by a fixed column: column 10 is only a
+   suggestion on the screen. Any column, any row of the right half, any hole of the right rail is accepted.
+   holes: [{h:{col,row}|{rail,col}, cover:0..1}] = holes that became covered during this step (or in a box). */
+function holeKey(h){ return h.rail ? 'R'+h.rail+h.col : 'M'+h.col+'_'+h.row; }
+function allHoles(cols){ const L=[]; for(let c=1;c<=cols;c++){ for(let r=0;r<10;r++) L.push({col:c,row:r}); L.push({rail:'+',col:c}); L.push({rail:'-',col:c}); } return L; }
+const LEG_LINK = 3.6;      // holes closer than this (board units) belong to the same part
+const LEG_MIN_SPAN = 1.5;  // two legs of a part are at least ~2 holes apart
+const COVER_MAX_NEW = 16;  // more new covered holes than this = the picture changed (light, shadow), not one part
+/* Groups covered holes into parts (single linkage, LEG_LINK). Each group: {items, keys, legs, span}, biggest first.
+   legs = the two covered holes of the group farthest apart (null if the group is one spot). */
+function groupsOf(holes, rails){
+  const H=(holes||[]).filter(x=>x && x.h);
+  const P=H.map(x=>holeXY(x.h, rails)), n=H.length, g=new Array(n).fill(-1); let ng=0;
+  for(let i=0;i<n;i++){ if(g[i]>=0) continue; const st=[i]; g[i]=ng;
+    while(st.length){ const a=st.pop(); for(let b=0;b<n;b++) if(g[b]<0 && Math.hypot(P[a][0]-P[b][0],P[a][1]-P[b][1])<=LEG_LINK){ g[b]=ng; st.push(b); } }
+    ng++; }
+  const out=[];
+  for(let k=0;k<ng;k++){
+    const idx=[]; g.forEach((q,i)=>{ if(q===k) idx.push(i); });
+    let best=null, bd=0;
+    for(let a=0;a<idx.length;a++) for(let b=a+1;b<idx.length;b++){ const i=idx[a], j=idx[b], d=Math.hypot(P[i][0]-P[j][0],P[i][1]-P[j][1]); if(d>bd){ bd=d; best=[i,j]; } }
+    out.push({items:idx.map(i=>H[i]), keys:idx.map(i=>holeKey(H[i].h)), span:bd, legs: best && bd>=LEG_MIN_SPAN ? [H[best[0]].h, H[best[1]].h] : null});
+  }
+  return out.sort((a,b)=>b.items.length-a.items.length || b.span-a.span);
+}
+/* Legs of ONE part from the holes that became covered while it was placed.
+   {legs:[h,h], keys} | {legs:null, why:'none'|'one'|'noise'|'two_groups'} (never a guess when it is unclear) */
+const LEG_REACH = 9;        // a lone covered hole this close to the part's other holes is its far leg (long or bent legs)
+function legsFromHoles(holes, rails){
+  const H=(holes||[]).filter(x=>x && x.h);
+  if(!H.length) return {legs:null, why:'none'};
+  if(H.length>COVER_MAX_NEW) return {legs:null, why:'noise'};
+  const G=groupsOf(H, rails), body=G.filter(q=>q.items.length>=2);
+  // two separate clusters of similar size = two parts (or a part and something else): do not guess
+  if(body.length>1 && body[1].items.length>=body[0].items.length-1) return {legs:null, why:'two_groups'};
+  // the part = its biggest cluster plus lone covered holes near it (a leg far from the body covers only its own hole)
+  const main = body.length ? body[0] : G[0];
+  const P = x => holeXY(x.h, rails), near = x => main.items.some(m=>{ const a=P(m), b=P(x); return Math.hypot(a[0]-b[0],a[1]-b[1])<=LEG_REACH; });
+  const items = main.items.concat(G.filter(q=>q!==main && q.items.length===1).map(q=>q.items[0]).filter(near));
+  let best=null, bd=0;
+  for(let a=0;a<items.length;a++) for(let b=a+1;b<items.length;b++){ const pa=P(items[a]), pb=P(items[b]), d=Math.hypot(pa[0]-pb[0],pa[1]-pb[1]); if(d>bd){ bd=d; best=[items[a],items[b]]; } }
+  const keys=items.map(x=>holeKey(x.h));
+  if(!best || bd<LEG_MIN_SPAN) return {legs:null, why:'one', keys};
+  return {legs:[best[0].h, best[1].h], keys};
+}
+/* Test mode (all parts placed at once, no model box): which group is the resistor and which the LED?
+   The resistor is the group with exactly one leg in the + rail; the LED is the group with a leg in the − rail.
+   Anything else stays unknown: no guessing. */
+function assignParts(holes, rails){
+  const out={resistor:null, led:null}, P=x=>holeXY(x.h, rails), d=(a,b)=>{ const p=P(a), q=P(b); return Math.hypot(p[0]-q[0],p[1]-q[1]); };
+  const G=groupsOf(holes, rails), clusters=G.filter(q=>q.items.length>=2).map(q=>q.items.slice()), singles=G.filter(q=>q.items.length===1).map(q=>q.items[0]);
+  // a lone covered hole is the far leg of the nearest part (long legs cover only their own hole)
+  const left=[];
+  for(const x of singles){ let bi=-1, bd=LEG_REACH; clusters.forEach((c,i)=>{ const m=Math.min(...c.map(y=>d(x,y))); if(m<=bd){ bd=m; bi=i; } }); if(bi>=0) clusters[bi].push(x); else left.push(x); }
+  while(left.length>=2){ const a=left.shift(); let bi=-1, bd=LEG_REACH; left.forEach((b,i)=>{ const q=d(a,b); if(q<=bd){ bd=q; bi=i; } }); if(bi>=0) clusters.push([a, left.splice(bi,1)[0]]); }
+  const parts=clusters.map(items=>{ let best=null, bd=0; for(let i=0;i<items.length;i++) for(let j=i+1;j<items.length;j++){ const q=d(items[i],items[j]); if(q>bd){ bd=q; best=[items[i].h,items[j].h]; } }
+    return {legs: bd>=LEG_MIN_SPAN ? best : null, keys:items.map(x=>holeKey(x.h))}; }).filter(q=>q.legs);
+  if(!parts.length || parts.length>2) return out;
+  const railsOf = q => q.legs.map(netOf).filter(n=>n==='R+'||n==='R-');
+  const res=parts.filter(q=>{ const r=railsOf(q); return r.length===1 && r[0]==='R+'; });
+  const led=parts.filter(q=>railsOf(q).includes('R-') && !res.includes(q));
+  if(res.length===1) out.resistor=res[0];
+  if(led.length===1) out.led=led[0];
+  return out;
+}
+const isRail = n => n==='R+' || n==='R-';
+/* Resistor step: one leg in the + rail, the other in ANY hole of the main area. */
+function judgeResistorLegs(legs){
+  if(!legs) return {state:'unknown', code:'resistor_unseen'};
+  const a=netOf(legs[0]), b=netOf(legs[1]);
+  if(a===b) return {state:'bad', code:'resistor_shorted', at:legs};
+  const r=[a,b].filter(isRail);
+  if(r.length===2) return {state:'bad', code:'resistor_across_rails', at:legs};
+  if(r.length===0) return {state:'bad', code:'resistor_no_rail', at:legs};
+  const railLeg = isRail(a) ? legs[0] : legs[1], other = isRail(a) ? legs[1] : legs[0];
+  if(r[0]==='R-') return {state:'bad', code:'resistor_in_minus', at:[railLeg], net:netOf(other), hole:other};
+  return {state:'ok', code:'resistor_ok', net:netOf(other), hole:other, rail:railLeg};
+}
+/* LED step: one leg in the resistor's own column-half (same 5-hole strip), the other in the − rail.
+   resNet = netOf(the resistor's leg that is not in a rail), or null if the camera did not confirm the resistor. */
+function judgeLedLegs(legs, resNet){
+  if(!legs) return {state:'unknown', code:'led_unseen'};
+  const a=netOf(legs[0]), b=netOf(legs[1]);
+  if(a===b) return {state:'bad', code:'led_shorted', at:legs};
+  const has = n => a===n || b===n, other = n => a===n ? b : a, legAt = n => a===n ? legs[0] : legs[1];
+  if(has('R+') && has('R-')) return {state:'bad', code:'no_resistor', at:legs};
+  if(resNet && has(resNet)){
+    const o=other(resNet);
+    if(o==='R-') return {state:'ok', code:'led_ok', at:legs};
+    if(o==='R+') return {state:'bad', code:'led_short_in_plus', at:[legAt('R+')]};
+    return {state:'bad', code:'led_open', at:[legAt(o)]};                 // second leg not in the − rail
+  }
+  if(has('R-')){
+    const o=other('R-'), oh=legAt(o);
+    if(!resNet) return {state:'warn', code:'led_res_unknown', at:[oh]};
+    // same column number but across the centre channel: looks right, is not connected
+    const rh = resNet.slice(1)===String(oh.col) && !isRail(o);
+    return {state:'bad', code: rh ? 'led_other_half' : 'led_not_series', at:[oh]};
+  }
+  if(has('R+')) return {state:'bad', code:'led_short_in_plus', at:[legAt('R+')]};
+  return {state:'bad', code:'led_not_series', at:legs};
+}
+/* Holes a trainee may use for the next leg (for drawing): the 5 holes of a column-half, or a whole rail. */
+function netHoles(net, cols){
+  if(!net) return [];
+  if(net==='R+'||net==='R-'){ const L=[]; for(let c=1;c<=cols;c++) L.push({rail:net[1],col:c}); return L; }
+  const top=net[0]==='T', col=+net.slice(1), L=[]; for(let r=top?0:5;r<(top?5:10);r++) L.push({col,row:r}); return L;
+}
+
 /* ---------- wire-end reasoning on rail strips ----------
    bands: presence of a colour in strips, as x-intervals (board units):
    {outer:[x...], inner:[x...], main:[x...]}  (lists of column indices where colour coverage passed threshold)
@@ -171,16 +282,24 @@ function judgeStep(step, ev){
   if(red && black && red===black && red!=='unclear') return {state:'bad', code:'short'};
   switch(step){
     case 'resistor': {
-      const r = ev.resistor||{};
+      const r = ev.resistor||{}, P = ev.place && ev.place.resistor;
+      // the legs themselves (any column): a wrong placement is an error, a right one is confirmed
+      if(P && P.state==='bad') return {state:'bad', code:P.code, at:P.at};
+      if(P && P.state==='ok') return {state:'ok', code:'resistor_ok', net:P.net};
       if(ev.reach && ev.reach.resistor==='wrong') return {state:'bad', code:'resistor_in_minus'};
+      if(r.seen && r.near==null && confident(r)) return {state:'unknown', code:'resistor_legs_unseen'};
       if(r.seen && !confident(r)) return {state:'unknown', code:'resistor_low_conf'};
       if(r.seen && r.near) return {state:'ok', code: ev.targetChanged&&ev.targetChanged.resistor ? 'resistor_ok_hole' : 'resistor_ok'};
       if(r.seen && !r.near) return {state:'warn', code:'resistor_far'};
       return {state:'unknown', code:'resistor_unseen'};
     }
     case 'led': {
-      const l = ev.led||{};
+      const l = ev.led||{}, P = ev.place && ev.place.led;
+      if(P && P.state==='bad') return {state:'bad', code:P.code, at:P.at};
+      if(P && P.state==='ok') return {state:'ok', code:'led_ok'};
+      if(P && P.state==='warn') return {state:'warn', code:P.code, at:P.at};
       if(ev.reach && ev.reach.led==='wrong') return {state:'bad', code:'led_short_in_plus'};
+      if(l.seen && l.near==null && confident(l)) return {state:'unknown', code:'led_legs_unseen'};
       if(l.seen && !confident(l)) return {state:'unknown', code:'led_low_conf'};
       if(l.seen && l.near) return {state:'ok', code:'led_ok'};
       if(l.seen && !l.near) return {state:'warn', code:'led_far'};
@@ -234,6 +353,7 @@ function partLine(p, id, min){
   p = p||{};
   if(!p.seen) return {state:'unknown', code:id+'_unseen'};
   if(!confident(p, min)) return {state:'unknown', code:id+'_low_conf'};
+  if(p.near==null) return {state:'warn', code:id+'_legs_unseen'};   // seen, but where its legs are is not known: never ok
   if(!p.near) return {state:'warn', code:id+'_far'};
   return {state:'ok', code:id+'_ok'};
 }
@@ -267,8 +387,10 @@ function safetyGate(ev, confirmation, opts){
     return {state:'unknown', code:'wires_unclear'};
   });
   const reach = ev.reach||{};
-  cam('resistor', () => reach.resistor==='wrong' ? {state:'bad', code:'resistor_in_minus'} : partLine(ev.resistor, 'resistor', min));
-  cam('led', () => reach.led==='wrong' ? {state:'bad', code:'led_short_in_plus'} : partLine(ev.led, 'led', min));
+  // 'wrong' = confirmed danger (cannot be confirmed away); 'suspect' = a wrong placement that does not damage anything:
+  // it blocks like any unconfirmed line, and a trainer who looked with their own eyes may confirm it.
+  cam('resistor', () => reach.resistor==='wrong' ? {state:'bad', code:reach.resistorCode||'resistor_in_minus'} : reach.resistor==='suspect' ? {state:'warn', code:reach.resistorCode||'resistor_far'} : partLine(ev.resistor, 'resistor', min));
+  cam('led', () => reach.led==='wrong' ? {state:'bad', code:reach.ledCode||'led_short_in_plus'} : reach.led==='suspect' ? {state:'warn', code:reach.ledCode||'led_far'} : partLine(ev.led, 'led', min));
   for(const id of TRAINER_LINES){
     if(v) L.push({id, src:'trainer', state:'unknown', code:v.code, fix:'wait'});
     else if(byTrainer.has(id)) L.push({id, src:'trainer', state:'ok', code:'trainer_ok'});
@@ -330,7 +452,7 @@ function makeStabilizer(need){
   };
 }
 
-const api = {ROW_Y,rowY,homography,apply,mul,inv,scaleH,makeBoard,calibHoles,boardFromTaps,orderTaps,guessCols,netOf,sameNet,RAIL_SAFE_MAX_COL,
+const api = {holeKey,allHoles,groupsOf,legsFromHoles,assignParts,judgeResistorLegs,judgeLedLegs,netHoles,LEG_LINK,COVER_MAX_NEW,ROW_Y,rowY,homography,apply,mul,inv,scaleH,makeBoard,calibHoles,boardFromTaps,orderTaps,guessCols,netOf,sameNet,RAIL_SAFE_MAX_COL,
   targets,holeXY,checkCircuit,wireEnd,judgeStep,earlyWarning,safetyGate,RISK,report,makeStabilizer,
   GATE_MIN_CONF,CAMERA_LINES,TRAINER_LINES,GATE_LINES,validConfirmation,makeGateStabilizer};
 if(typeof module!=='undefined' && module.exports) module.exports = api; else root.MirasBoard = api;
