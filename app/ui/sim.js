@@ -61,7 +61,7 @@ export async function simView(el, app, modeArg){
   try{ steps = app.me ? (await app.data.lessonSteps()).map(s=>s.code) : []; }catch(e){ steps = []; }
   steps = steps.filter(c => STEPS.some(s=>s.code===c));
   if(!steps.length) steps = STEPS.map(s=>s.code);   // الزائر أو تعذّر التحميل: خطوات الدرس الافتراضية
-  let idx = 0, items = initialItems(), lit = false, flagged = null, ended = false;
+  let idx = 0, items = initialItems(), lit = false, flagged = null, ended = false, movedInStep = false;
   // الصوت لهذه الشاشة فقط: بعد مغادرتها لا يُشغَّل أي مقطع (حتى لو بقي مؤقت معلّق)
   let alive = true; const say = k => { if(alive) app.voice.say(k); };
 
@@ -89,7 +89,7 @@ export async function simView(el, app, modeArg){
 
   function setState(cls, text){ const s=$('#state'); s.className='state '+(cls||''); s.textContent=text; }
   function enter(i){
-    idx = i; flagged = null;
+    idx = i; flagged = null; movedInStep = false;
     const code = steps[i], [title, key] = STEP_TEXT[code];
     $('#bar').innerHTML = steps.map((_,j)=>`<i class="${j<i?'done':j===i?'cur':''}"></i>`).join('');
     $('#stepNo').textContent = `الخطوة ${i+1} من ${steps.length}`;
@@ -131,7 +131,8 @@ export async function simView(el, app, modeArg){
   // كخطوات «لم تُنفَّذ»، حتى لا تظهر المحاولة بصفر أخطاء وكأنها مكتملة.
   function recordUnfinished(){
     const code = steps[idx];
-    if(code && code !== 'power'){
+    // الخطوة التي لم يلمسها المتدرب أصلاً لا تُعدّ خطأ، بل «توقف هنا»
+    if(code && code !== 'power' && movedInStep){
       const step = STEPS.find(s => s.code === code);
       const r = step.check(toState(items));
       const prior = att.data.events.filter(e => e.step_code === code).pop();
@@ -244,7 +245,7 @@ export async function simView(el, app, modeArg){
     if(ended) return;
     ev.preventDefault();
     const it = items.find(i=>i.id===ev.target.dataset.i), e = it.ends[+ev.target.dataset.k];
-    history.push(snap()); if(history.length > 80) history.shift();
+    history.push(snap()); if(history.length > 80) history.shift(); movedInStep = true;
     const [x,y] = pos(e); e.node = null; e.x = x; e.y = y;
     drag = { e, id:ev.pointerId }; svg.setPointerCapture(ev.pointerId); lit = false; flagged = null;
   }

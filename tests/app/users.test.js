@@ -169,7 +169,7 @@ const attemptsOf = email => psql(`select coalesce(string_agg(mode||':'||complete
     t('4 camera result says it was saved to the account', /حُفظت النتيجة في حسابك/.test(saveMsg), saveMsg);
     const a2c = attemptsOf(people.t2.email);
     t('4 camera attempt is in the database (cam-train, incomplete, 2 errors)', a2c.endsWith(',cam-train:false:-:2'), a2c);
-    t('4 camera error codes stored as judged', psql(`select string_agg(code, ',' order by seq) from attempt_events e join attempts a on a.id=e.attempt_id where a.mode='cam-train' and a.user_id='${uid(people.t2.email)}'`)==='led_other_half,red_in_minus');
+    t('4 camera error codes stored as judged', psql(`select string_agg(code, ',' order by seq) from attempt_events e join attempts a on a.id=e.attempt_id where a.mode='cam-train' and e.kind='error' and a.user_id='${uid(people.t2.email)}'`)==='led_other_half,red_in_minus');
     // الرجوع إلى المنصة من شاشة الكاميرا يفتح صفحة المتدرب نفسها
     await P2.click('#result a:has-text("العودة إلى مراس")'); await P2.waitForSelector('text=سجل محاولاتي');
     t('4 "back to Miras" returns to the trainee home', /\/app\//.test(P2.url()));
