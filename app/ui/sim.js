@@ -79,6 +79,7 @@ export async function simView(el, app, modeArg){
           <button class="btn" id="check">تحقق</button>
           <button class="btn ghost small" id="replay" aria-label="إعادة الاستماع للتعليمات">🔊 أعد التعليمات</button>
         </div>
+        <div class="row"><button class="btn ghost small" id="undoMove">↶ تراجع عن آخر حركة</button><button class="btn ghost small" id="prevStep" hidden>↩ رجوع إلى الخطوة السابقة</button></div>
         <p class="dim" id="rot" hidden>للتحكم الأسهل أدر الجهاز أفقياً.</p>
         <p class="dim" id="tip">اسحب طرف السلك أو رجل القطعة وأفلته فوق الفتحة.</p>
       </aside>
@@ -92,6 +93,7 @@ export async function simView(el, app, modeArg){
     const code = steps[i], [title, key] = STEP_TEXT[code];
     $('#bar').innerHTML = steps.map((_,j)=>`<i class="${j<i?'done':j===i?'cur':''}"></i>`).join('');
     $('#stepNo').textContent = `الخطوة ${i+1} من ${steps.length}`;
+    $('#prevStep').hidden = i === 0;
     $('#title').textContent = title;
     $('#check').textContent = code==='power' ? 'توصيل USB' : 'تحقق';
     setState('', code==='power' ? 'سيُفحص التوصيل كاملاً قبل تشغيل الكهرباء.' : 'عند الانتهاء اضغط تحقق.');
@@ -125,8 +127,22 @@ export async function simView(el, app, modeArg){
     draw();
   }
 
+  // عند الإنهاء قبل اكتمال الدرس: تُفحص الخطوة الحالية (إن لم يضغط المتدرب تحقق) ويُسجَّل ما بعدها
+  // كخطوات «لم تُنفَّذ»، حتى لا تظهر المحاولة بصفر أخطاء وكأنها مكتملة.
+  function recordUnfinished(){
+    const code = steps[idx];
+    if(code && code !== 'power'){
+      const step = STEPS.find(s => s.code === code);
+      const r = step.check(toState(items));
+      const prior = att.data.events.filter(e => e.step_code === code).pop();
+      if(!r.ok && !(prior && prior.kind === 'error' && prior.code === r.code)) att.log(code, 'error', r.code);
+    }
+    for(let j = idx; j < steps.length; j++) att.log(steps[j], 'uncertain', j === idx ? 'stopped_here' : 'not_reached');
+  }
+
   async function finish(completed){
     if(ended) return; ended = true;
+    if(!completed) recordUnfinished();
     const a = att.finish(completed);
     const res = app.me ? await app.data.save(a) : { guest:true };
     const errs = a.events.filter(e=>e.kind==='error');
@@ -134,6 +150,7 @@ export async function simView(el, app, modeArg){
     panel.innerHTML = `<h2>${completed ? 'اكتمل التدريب' : 'انتهت المحاولة دون إكمال'}</h2>
       ${completed ? `<div class="stat"><b>${a.score}</b><span>الدرجة من 100</span></div>` : ''}
       <p class="dim">الوقت: ${Math.round(a.duration_s)} ثانية · الأخطاء: ${errs.length}</p>
+      ${completed ? '' : `<p class="state warn">توقف التدريب عند: ${esc((STEP_TEXT[steps[idx]] || [steps[idx]])[0])}. الخطوات بعدها سُجّلت «لم تُنفَّذ».</p>`}
       ${errs.length ? `<div>${errs.map(e=>`<div class="dim">✗ ${esc(errName(e.code))}</div>`).join('')}</div>` : ''}
       <p class="state ${res.saved?'ok':'warn'}">${res.guest ? 'هذه تجربة بدون حساب، لذلك لم تُحفظ النتيجة.' : res.saved ? 'حُفظت النتيجة في حسابك.' : 'لم تُحفظ بعد (لا اتصال). محفوظة على هذا الجهاز وستُرسل تلقائياً.'}</p>
       <div class="row"><button class="btn" id="again">محاولة جديدة</button>${res.guest ? '<a class="btn ghost" href="#/signup">أنشئ حساباً لحفظ نتائجك</a>' : ''}<a class="link" href="#/home">العودة إلى التدريب</a></div>`;
@@ -207,11 +224,27 @@ export async function simView(el, app, modeArg){
 
   // ---------- السحب ----------
   let drag = null;
+  // سجل الحركات للتراجع: لقطة من أطراف القطع قبل كل سحب
+  const history = [];
+  const snap = () => JSON.stringify(items.map(i => i.ends.map(e => ({ node:e.node, x:e.x, y:e.y }))));
+  function undoMove(){
+    if(ended || !history.length) return;
+    const s = JSON.parse(history.pop());
+    items.forEach((it, i) => it.ends.forEach((e, k) => Object.assign(e, s[i][k])));
+    lit = false; flagged = null; setState('', 'تم التراجع عن آخر حركة.'); draw();
+  }
+  // الرجوع خطوة: يُسجَّل في المحاولة، ولا يمحو الأخطاء التي حدثت
+  function prevStep(){
+    if(ended || idx < 1) return;
+    att.log(steps[idx], 'uncertain', 'went_back');
+    enter(idx - 1);
+  }
   const toSvg = ev => { const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); };
   function startDrag(ev){
     if(ended) return;
     ev.preventDefault();
     const it = items.find(i=>i.id===ev.target.dataset.i), e = it.ends[+ev.target.dataset.k];
+    history.push(snap()); if(history.length > 80) history.shift();
     const [x,y] = pos(e); e.node = null; e.x = x; e.y = y;
     drag = { e, id:ev.pointerId }; svg.setPointerCapture(ev.pointerId); lit = false; flagged = null;
   }
@@ -230,6 +263,8 @@ export async function simView(el, app, modeArg){
   svg.addEventListener('pointercancel', drop);
 
   $('#check').onclick = check;
+  $('#undoMove').onclick = undoMove;
+  $('#prevStep').onclick = prevStep;
   $('#replay').onclick = () => app.voice.replay();
   // الإنهاء يحتاج تأكيداً: ضغطة خاطئة لا تسجّل محاولة فاشلة
   function askQuit(){

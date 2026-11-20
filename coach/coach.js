@@ -638,6 +638,11 @@ async function saveToAccount(sess){
     else if(e.type==='suspect') add(e,'uncertain',e.code);
     else if(e.type==='skipped') add(e,'uncertain','camera_unsure');
   });
+  // محاولة لم تكتمل: ما بعد نقطة التوقف يُسجَّل «لم تُنفَّذ» حتى لا تظهر بصفر أخطاء كأنها مكتملة
+  if(!sess.passed){
+    const ids=STEPS.map(s=>s.id), at=Math.max(0, ids.indexOf(sess.reached));
+    ids.slice(at).forEach((id,k)=>events.push({seq:events.length, step_code:id, kind:'uncertain', code:k===0?'stopped_here':'not_reached', confidence:null, t_s:Math.max(0,sess.seconds||0)}));
+  }
   const errors=events.filter(e=>e.kind==='error');
   const a={ client_id:('cam'+sess.id+Math.random().toString(36).slice(2,8)).slice(0,40), lesson_id:'power-rails', mode:sess.mode==='test'?'cam-test':'cam-train',
     started_at:sess.start, finished_at:sess.end, duration_s:sess.seconds, completed:!!sess.passed, error_count:errors.length,
@@ -970,7 +975,7 @@ function newSession(){ S.trainee=($('trainee').value||'').trim(); S.session={id:
 function log(type, data){ if(!S.session) return; const afterPower = S.step && S.step.id==='power'; S.session.events.push(Object.assign({type, t:Math.round((performance.now()-S.t0)/1000), afterPower}, data)); }
 function finish(lit){
   if(!S.session) return;
-  S.session.end=new Date().toISOString(); S.session.seconds=Math.round((performance.now()-S.t0)/1000); S.session.attempts=S.attempts; S.session.passed=!!lit;
+  S.session.end=new Date().toISOString(); S.session.seconds=Math.round((performance.now()-S.t0)/1000); S.session.attempts=S.attempts; S.session.passed=!!lit; S.session.reached=S.step?S.step.id:null;
   const all=loadAll(); all.push(S.session); saveAll(all); showSaved(S.session);
   const ev=S.session.events, errs=ev.filter(e=>e.type==='error'), blocked=ev.filter(e=>e.type==='blocked').length, man=ev.filter(e=>e.type==='trainer_confirm').length, ovr=ev.filter(e=>e.type==='override').length;
   const skipped=ev.filter(e=>e.type==='skipped'), sus=ev.filter(e=>e.type==='suspect'||e.type==='early'), backs=ev.filter(e=>e.type==='back').length;
