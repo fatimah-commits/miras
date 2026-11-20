@@ -212,7 +212,9 @@ function bindAttemptRows(el, app){
     try{
       const ev = await app.data.events(tr.dataset.a);
       const K = { ok:'✓', error:'✗', override:'تجاوز المدرب', uncertain:'غير متأكد', hint:'تلميح' };
-      td.innerHTML = ev.length ? ev.map(e=>`<div class="dim">${num(e.t_s)} ث · ${K[e.kind]||e.kind} ${e.kind==='error'?esc(errName(e.code)):''}</div>`).join('') : '<span class="dim">لا أحداث.</span>';
+      const U = { went_back:'رجوع إلى خطوة سابقة', stopped_here:'توقف التدريب هنا قبل إكمالها', not_reached:'لم تُنفَّذ (بعد نقطة التوقف)', camera_unsure:'لم تتأكد الكاميرا منها' };
+      const line = e => e.kind==='error' ? errName(e.code) : e.kind==='uncertain' ? (U[e.code] || esc(e.code)) : '';
+      td.innerHTML = ev.length ? ev.map(e=>`<div class="dim">${num(e.t_s)} ث · ${K[e.kind]||e.kind} ${esc(line(e))}</div>`).join('') : '<span class="dim">لا أحداث.</span>';
     }catch(err){ td.innerHTML = `<span class="msg bad">${esc(err.message)}</span>`; }
   });
 }
